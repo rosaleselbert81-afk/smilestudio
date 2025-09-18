@@ -79,7 +79,7 @@ export default function BirthdatePickerModal({ value, onChange }: Props) {
 const styles = StyleSheet.create({
   field: {
     borderWidth: 1.5,
-    borderColor: 'black',
+    borderColor: '#ccc',
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 12,

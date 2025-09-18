@@ -303,7 +303,7 @@ San Jose Del Monte, Bulacan, Philippine
             <View style={styles.pickerContainer}>
               <Picker
                 selectedValue={gender}
-                style={{ height: isMobile ? (Platform.OS === 'ios' ? 230 : 50) : 40, color: 'black' }}
+                style={{ height: isMobile ? (Platform.OS === 'ios' ? 230 : 50) : 40, color: 'black', borderColor: '#ccc' }}
                 itemStyle={{ color: 'black', fontSize: 16 }}
                 onValueChange={(itemValue) => setGender(itemValue)}
               >
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1.5,
-    borderColor: 'black',
+    borderColor: '#ccc',
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 12,
@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
   },
   pickerContainer: {
     borderWidth: 1.5,
-    borderColor: 'black',
+    borderColor: '#ccc',
     borderRadius: 3.5,
     marginBottom: 15,
     backgroundColor: 'white',

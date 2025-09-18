@@ -83,53 +83,54 @@ const { width } = useWindowDimensions();
     setSat(data[0]?.saturday)
   };
 
-  const updateSchedule = async () => {
-    //Check if clinic has schedule provided
-    const { data, error } = await supabase
-      .from("clinic_schedule")
-      .select("*")
-      .eq("clinic_id", props.clinicId)
-    if (error) {
-      console.log(`ERR clinic record schedule : ${error}`);
-    }
+const updateSchedule = async () => {
+  const { data, error } = await supabase
+    .from("clinic_schedule")
+    .select("*")
+    .eq("clinic_id", props.clinicId);
 
-    //Only Insert body if has 
-    let queryBody = {
-        clinic_id : props.clinicId,
-        sunday : sun,
-        monday : mon,
-        tuesday : tue,
-        wednesday : wed,
-        thursday : thu,
-        friday : fri,
-        saturday : sat
-    } as WeekScheduleType
+  if (error) {
+    console.log(`ERR clinic record schedule : ${error}`);
+  }
 
-    //If clinic exist,update record
-    if (data?.length != 0) {
-      const { error } = await supabase
-        .from("clinic_schedule")
-        .update(queryBody)
-        .eq("clinic_id", props.clinicId);
-
-      if (error) {
-        console.log(`ERR mod updateSchedule : ${error}`);
-        return;
-      }
-    } else {
-      const { error } = await supabase
-        .from("clinic_schedule")
-        .insert(queryBody);
-
-      if (error) {
-        console.log(`ERR mod updateSchedule : ${error}`);
-        return;
-      }
-    }
-
-    //Close dialog if saved correctly
-    props.onSave();
+  // Construct queryBody conditionally
+  const queryBody: WeekScheduleType = {
+    clinic_id: props.clinicId,
+    sunday: sun?.hasSchedule ? sun : null,
+    monday: mon?.hasSchedule ? mon : null,
+    tuesday: tue?.hasSchedule ? tue : null,
+    wednesday: wed?.hasSchedule ? wed : null,
+    thursday: thu?.hasSchedule ? thu : null,
+    friday: fri?.hasSchedule ? fri : null,
+    saturday: sat?.hasSchedule ? sat : null,
   };
+
+  // Update or insert
+  if (data?.length !== 0) {
+    const { error } = await supabase
+      .from("clinic_schedule")
+      .update(queryBody)
+      .eq("clinic_id", props.clinicId);
+
+    if (error) {
+      console.log(`ERR mod updateSchedule : ${error}`);
+      return;
+    }
+  } else {
+    const { error } = await supabase
+      .from("clinic_schedule")
+      .insert(queryBody);
+
+    if (error) {
+      console.log(`ERR mod updateSchedule : ${error}`);
+      return;
+    }
+  }
+
+  // Close dialog if saved correctly
+  props.onSave();
+};
+
 
   useEffect(() => {
     getClnicSchedule();

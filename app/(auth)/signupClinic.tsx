@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1.5,
-    borderColor: 'black',
+    borderColor: '#ccc',
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 12,
