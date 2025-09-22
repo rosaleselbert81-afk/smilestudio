@@ -32,6 +32,8 @@ import * as Location from "expo-location";
 import MapPickerView from "../view/MapPickerView";
 import DayScheduleView from "../view/DayScheduleView";
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import ChatView from "../view/ChatView";
+import { useChatRoom } from "@/hooks/useChatRoom";
 
 type Appointment = {
   id: string;
@@ -112,6 +114,9 @@ export default function Account() {
   const [clinicList, setClinicList] = useState<any[]>([]);
   const [selectedClinicId, setSelectedClinicId] = useState<string>();
   const [messageToClinic, setMessageToClinic] = useState<string>("");
+  const [isOthersChecked, setIsOthersChecked] = useState(false);
+  const [showOthersModal, setShowOthersModal] = useState(false);
+  const [tempMessage, setTempMessage] = useState(""); // For editing in modal
 
   const [showOutOfScheduleModal, setShowOutOfScheduleModal] = useState(false);
   const [appointmentsList, setAppointmentList] = useState<Appointment[]>();
@@ -119,6 +124,10 @@ export default function Account() {
     useState<Appointment[]>();
   const [appointmentsPast, setAppointmentPast] = useState<Appointment[]>();
   const [appointmentName, setappointmentName] = useState<string | null>(null);
+  const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
+  const [modalMessage, setModalMessage] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState('');
+  const [termsOfUse, setTermsOfUse] = useState(false);
 
   const [mapView, setMapView] = useState<
     [number | undefined, number | undefined]
@@ -129,6 +138,15 @@ export default function Account() {
   const [permissionChecked, setPermissionChecked] = useState(false);
 
   const [tMap, setTMap] = useState(false);
+
+  const { createOrFindRoom } = useChatRoom();
+
+  const chatWithClinic = async(clinicId : string)=>{
+    if(!session?.user?.id) return;
+
+    const roomId = await createOrFindRoom(session?.user.id, clinicId);
+    console.log(roomId)
+  }
 
   const isWithinClinicSchedule = (
     appointmentDate: Date,
@@ -582,6 +600,39 @@ export default function Account() {
 
     return lines.join("\n"); // insert line breaks
   };
+
+type OptionKey =
+  | 'teethCheckUp'
+  | 'cavitiesRemoval'
+  | 'chippedOrCracked'
+  | 'braces'
+  | 'others';
+
+const optionsList: { label: string; key: OptionKey }[] = [
+  { label: 'Teeth Check Up', key: 'teethCheckUp' },
+  { label: 'Cavities Removal', key: 'cavitiesRemoval' },
+  { label: 'Chipped or Cracked Teeth', key: 'chippedOrCracked' },
+  { label: 'Braces', key: 'braces' },
+  { label: 'Others', key: 'others' },
+];
+
+
+const toggleReason = (reason: string) => {
+  setSelectedReasons((prev) => {
+    const updated = prev.includes(reason)
+      ? prev.filter((r) => r !== reason)
+      : [...prev, reason];
+
+    // Rebuild full messageToClinic
+    const combined = [...updated];
+    if (isOthersChecked && tempMessage.trim()) {
+      combined.push(tempMessage.trim());
+    }
+    setMessageToClinic(combined.join(", "));
+
+    return updated;
+  });
+};
 
   return ( 
     <LinearGradient
@@ -1243,7 +1294,7 @@ export default function Account() {
                     <ActivityIndicator animating color={"black"} />
                   ) : (
                     <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Team
+                      Others
                     </Text>
                   )}
                 </TouchableOpacity>
@@ -1318,6 +1369,7 @@ export default function Account() {
       >
         {/* Dashboard Profile --------------------------------------------------------------------------------------- */}
 
+        {dashboardView === "profile" && (
         <View
           style={[
             styles.dashboard,
@@ -1484,29 +1536,56 @@ export default function Account() {
                               renderItem={(e) => (
                                 <View
                                   style={{
+                                    width: isMobile ? null : 300,
                                     borderWidth: 1,
                                     borderColor: "#ccc",
                                     borderRadius: 10,
                                     padding: 15,
                                     backgroundColor: "#f1f1f1",
                                     marginBottom: 5,
+                                    width: "100%",
                                   }}
                                 >
-                                  <Text style={{ fontWeight: "600" }}>
+                                  <Text style={{ fontWeight: "600", marginBottom: 8 }}>
                                     {`Clinic Name : ${wrapText(
                                       e.item.clinic_profiles.clinic_name
                                     )}`}
                                   </Text>
-                                  <Text style={{ color: "#555" }}>
-                                    {wrapText(e.item.message) ||
-                                      "No message available"}
-                                  </Text>
-                                  <Text style={{ color: "#555" }}>
-                                    {`${new Date(
+                                  {e.item.message.length > 20 ? (
+                                    <TouchableOpacity
+                                      style={{ flex: 1 }}
+                                      onPress={() => {
+                                        setSelectedMessage(e.item.message);
+                                        setModalMessage(true);
+                                      }}
+                                    >
+                                      <Text style={{ color: "blue", textDecorationLine: "underline" }}>
+                                        {e.item.message.slice(0, 20) + "..."}
+                                      </Text>
+                                    </TouchableOpacity>
+                                  ) : (
+                                    <Text style={{ flex: 1 }}>
+                                      {e.item.message}
+                                    </Text>
+                                  )}
+                                  <View
+                                    style={{
+                                      backgroundColor: "#fff",
+                                      padding: 10,
+                                      borderRadius: 8,
+                                      borderWidth: 1,
+                                      borderColor: "#ccc",
+                                      marginBottom: 10,
+                                      marginTop: 15
+                                    }}
+                                  >
+                                  <Text style={{ color: "#000000ff" }}>
+                                    {`Day/Time Request :\n${new Date(
                                       e.item.date_time
                                     ).toLocaleString()}`}
                                   </Text>
-                                  <Text>{`Created at : ${new Date(
+                                  </View>
+                                  <Text style={{ color: "#767676ff", fontSize: 9, alignSelf: "flex-end"}}>{`Created at : ${new Date(
                                     e.item.created_at || 0
                                   ).toLocaleString()}`}</Text>
                                 </View>
@@ -1641,7 +1720,23 @@ export default function Account() {
                         <Text style={{ fontWeight: "bold", marginBottom: 4 }}>
                           Patient's Message :
                         </Text>
-                        <Text>{e.item.message || "No content available"}</Text>
+                        {e.item.message.length > 20 ? (
+                        <TouchableOpacity
+                          style={{ flex: 1 }}
+                          onPress={() => {
+                            setSelectedMessage(e.item.message);
+                            setModalMessage(true);
+                          }}
+                        >
+                          <Text style={{ color: "blue", textDecorationLine: "underline" }}>
+                            {e.item.message.slice(0, 20) + "..."}
+                          </Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <Text style={{ flex: 1 }}>
+                          {e.item.message}
+                        </Text>
+                      )}
                       </View>
 
                       <Text
@@ -1762,7 +1857,23 @@ export default function Account() {
                         <Text style={{ fontWeight: "bold", marginBottom: 4 }}>
                           Patient's Message :
                         </Text>
-                        <Text>{e.item.message || "No content available"}</Text>
+                        {e.item.message.length > 20 ? (
+                        <TouchableOpacity
+                          style={{ flex: 1 }}
+                          onPress={() => {
+                            setSelectedMessage(e.item.message);
+                            setModalMessage(true);
+                          }}
+                        >
+                          <Text style={{ color: "blue", textDecorationLine: "underline" }}>
+                            {e.item.message.slice(0, 20) + "..."}
+                          </Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <Text style={{ flex: 1 }}>
+                          {e.item.message}
+                        </Text>
+                      )}
                       </View>
 
                       <Text style={{ fontWeight: "bold", marginTop: 7 }}>
@@ -1840,9 +1951,11 @@ export default function Account() {
             </View>
           </ScrollView>
         </View>
+        )}
 
         {/* Dashboard Clinics --------------------------------------------------------------------------------------- */}
 
+        {dashboardView === "clinics" && (
         <View
           style={[
             styles.dashboard,
@@ -2068,6 +2181,7 @@ export default function Account() {
       setSelectedClinicId(clinic.id);
       setappointmentName(clinic.clinic_name);
       setMapView([clinic.longitude, clinic.latitude]);
+      chatWithClinic(clinic.id);
     }}
   >
     <Text style={{ color: "#fff", fontSize: isMobile ? 8 : 10 }}>View Clinic</Text>
@@ -2255,7 +2369,9 @@ export default function Account() {
           {/* Message Button */}
           <TouchableOpacity
             onPress={() => {
-              alert(`Messaging ${selectedClinicName}`);
+              chatWithClinic(clinic.id);
+              setviewClinic(false);
+              setDashboardView("chats");
             }}
             style={{
               flex: 1,
@@ -2289,327 +2405,330 @@ export default function Account() {
       </View>
     </View>
   </Modal>
-<Modal
-  visible={fullProfile}
-  transparent={false}
-  onRequestClose={() => setFullProfile(false)}
->
-  <View style={{ flex: 1, backgroundColor: "#fff" }}>
-    
-    {/* Header with Back Button */}
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        paddingTop: 25,
-        paddingHorizontal: 16,
-        paddingBottom: 12,
-        borderBottomWidth: 1,
-        borderColor: "#e0e0e0",
-        backgroundColor: "#b9ffdcff",
-      }}
-    >
-      <TouchableOpacity onPress={() => setFullProfile(false)}>
-        <MaterialIcons
-          name="keyboard-arrow-left"
-          size={34}
-          color="#003f30ff"
-        />
-      </TouchableOpacity>
-      <Text
-        style={{
-          fontSize: 24,
-          fontWeight: "bold",
-          marginLeft: 12,
-          color: "#003f30ff",
-          bottom: 2,
-        }}
-      >
-        Clinic Profile
-      </Text>
-    </View>
-
-    <ScrollView>
-
-    {/* Cover Photo and Profile Picture */}
-    <View>
-      <View
-        style={{
-          width: isMobile ? "95%" : "60%",
-          height: 200,
-          alignSelf: "center",
-          marginTop: isMobile ? 8 : 26,
-          borderRadius: 10,
-          backgroundColor: "#d9d9d9",
-        }}
-      />
-      <View
-        style={{
-          position: "absolute",
-          top: 125,
-          left: 0,
-          right: 0,
-          alignItems: "center",
-        }}
-      >
-        <Image
-          source={{ uri: selectedClinicImage }}
-          style={{
-            width: 150,
-            height: 150,
-            borderRadius: 75,
-            borderWidth: 4,
-            borderColor: "#fff",
-            backgroundColor: "#e0e0e0",
-          }}
-        />
-      </View>
-    </View>
-
-    {/* Scrollable Content */}
-    <ScrollView style={{ flex: 1, padding: 16, paddingTop: 90 }}>
+  <Modal
+    visible={fullProfile}
+    transparent={false}
+    onRequestClose={() => setFullProfile(false)}
+  >
+    <View style={{ flex: 1, backgroundColor: "#fff" }}>
       
-      <View style={{paddingLeft: isMobile ? null : "20%", paddingRight: isMobile ? null : "20%"}}>
-      {/* Clinic Details Title */}
-      <Text
-        style={{
-          fontSize: 22,
-          fontWeight: "bold",
-          color: "#003f30",
-          marginBottom: 10,
-        }}
-      >
-        Clinic Details
-      </Text>
-
-      {/* Clinic Info Container */}
+      {/* Header with Back Button */}
       <View
         style={{
-          backgroundColor: "#f8f9f9",
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 20,
-          elevation: 3,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
+          flexDirection: "row",
+          alignItems: "center",
+          paddingTop: 25,
+          paddingHorizontal: 16,
+          paddingBottom: 12,
+          borderBottomWidth: 1,
+          borderColor: "#e0e0e0",
+          backgroundColor: "#b9ffdcff",
         }}
       >
-        <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 6, color: "#222" }}>
-          {selectedClinicName || "Unnamed Clinic"}
-        </Text>
-        <Text style={{ fontSize: 14, color: "#2a4d4d", marginBottom: 6 }}>
-          {selectedClinicRole || "Clinic"}
-        </Text>
-        <Text style={{ fontSize: 14, color: "#0b5a51", fontStyle: "normal", marginBottom: 6 }}>
-          {selectedClinicEmail}
-        </Text>
-        <Text style={{ fontSize: 14, fontStyle: "italic", color: "#2a594d", marginBottom: 12 }}>
-          {selectedClinicSlogan || ""}
-        </Text>
-
-        <Text style={{ fontSize: 14, marginBottom: 4 }}>📍 {selectedClinicAddress || "No address provided"}</Text>
-        <Text style={{ fontSize: 14, marginBottom: 4 }}>📞 {selectedClinicMobile || "No contact"}</Text>
-        <Text style={{ fontSize: 14, marginBottom: 4 }}>🗓️ Joined: {selectedClinicCreatedAt || "N/A"}</Text>
-        <Text style={{ fontSize: 14 }}>
-          🦷 Dentist Availability: {selectedClinicDentist ? "Yes" : "No"}
-        </Text>
-      </View>
-
-      {/* Clinic Schedule Title */}
-      <Text
-        style={{
-          fontSize: 22,
-          fontWeight: "bold",
-          color: "#003f30",
-          marginBottom: 10,
-        }}
-      >
-        Clinic Schedule
-      </Text>
-
-      {/* Schedule Container */}
-      {/* Clinic Schedule Container */}
-      <View
-        style={{
-          backgroundColor: "#f8f9f9",
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 200,
-          elevation: 3, // shadow for Android
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-        }}
-      >
-
-        {/* Schedule Grid */}
-        <View
+        <TouchableOpacity onPress={() => setFullProfile(false)}>
+          <MaterialIcons
+            name="keyboard-arrow-left"
+            size={34}
+            color="#003f30ff"
+          />
+        </TouchableOpacity>
+        <Text
           style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            marginTop: 12,
+            fontSize: 24,
+            fontWeight: "bold",
+            marginLeft: 12,
+            color: "#003f30ff",
+            bottom: 2,
           }}
         >
-          {[
-            { label: "Sun", time: selectedSunday },
-            { label: "Mon", time: selectedMonday },
-            { label: "Tue", time: selectedTuesday },
-            { label: "Wed", time: selectedWednesday },
-            { label: "Thu", time: selectedThursday },
-            { label: "Fri", time: selectedFriday },
-            { label: "Sat", time: selectedSaturday },
-          ].map((day) => {
-            const hasValidTime = day.time && day.time.from && day.time.to;
-            const formattedTime = hasValidTime
-              ? {
-                  ...day.time,
-                  from: {
-                    ...day.time.from,
-                    minute: day.time.from.minute?.toString().padStart(2, "0"),
-                  },
-                  to: {
-                    ...day.time.to,
-                    minute: day.time.to.minute?.toString().padStart(2, "0"),
-                  },
-                }
-              : undefined;
+          Clinic Profile
+        </Text>
+      </View>
 
-            return (
-              <View
-                key={day.label}
-                style={{
-                  flex: 1,
-                  alignItems: "center",
-                }}
-              >
-                <Text style={{ fontWeight: "600", fontSize: isMobile ? 12 : 15, marginBottom: 4 }}>
-                  {day.label}
-                </Text>
-                {formattedTime ? (
-                  <Text
-                    style={{
-                      fontSize: isMobile ? 9 : 14,
-                      color: "#444",
-                      textAlign: "center",
-                    }}
-                  >
-                    {`${formattedTime.from.hour
-                      .toString()
-                      .padStart(2, "0")}:${formattedTime.from.minute} ${formattedTime.from.atm} - ${formattedTime.to.hour
-                      .toString()
-                      .padStart(2, "0")}:${formattedTime.to.minute} ${formattedTime.to.atm}`}
-                  </Text>
-                ) : (
-                  <Text
-                    style={{
-                      fontSize: isMobile ? 11 : 14,
-                      color: "#b33",
-                      fontStyle: "italic",
-                      textAlign: "center",
-                    }}
-                  >
-                    Closed
-                  </Text>
-                )}
-              </View>
-            );
-          })}
-</View>
+      <ScrollView>
 
-        {/* No schedule fallback */}
-        {[
-          selectedSunday,
-          selectedMonday,
-          selectedTuesday,
-          selectedWednesday,
-          selectedThursday,
-          selectedFriday,
-          selectedSaturday,
-        ].every((day) => !day || !day.from || !day.to) && (
-          <Text
+      {/* Cover Photo and Profile Picture */}
+      <View>
+        <View
+          style={{
+            width: isMobile ? "95%" : "60%",
+            height: 200,
+            alignSelf: "center",
+            marginTop: isMobile ? 8 : 26,
+            borderRadius: 10,
+            backgroundColor: "#d9d9d9",
+          }}
+        />
+        <View
+          style={{
+            position: "absolute",
+            top: 125,
+            left: 0,
+            right: 0,
+            alignItems: "center",
+          }}
+        >
+          <Image
+            source={{ uri: selectedClinicImage }}
             style={{
-              color: "#999",
-              fontSize: 14,
-              textAlign: "center",
+              width: 150,
+              height: 150,
+              borderRadius: 75,
+              borderWidth: 4,
+              borderColor: "#fff",
+              backgroundColor: "#e0e0e0",
+            }}
+          />
+        </View>
+      </View>
+
+      {/* Scrollable Content */}
+      <ScrollView style={{ flex: 1, padding: 16, paddingTop: 90 }}>
+        
+        <View style={{paddingLeft: isMobile ? null : "20%", paddingRight: isMobile ? null : "20%"}}>
+        {/* Clinic Details Title */}
+        <Text
+          style={{
+            fontSize: 22,
+            fontWeight: "bold",
+            color: "#003f30",
+            marginBottom: 10,
+          }}
+        >
+          Clinic Details
+        </Text>
+
+        {/* Clinic Info Container */}
+        <View
+          style={{
+            backgroundColor: "#f8f9f9",
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 20,
+            elevation: 3,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+          }}
+        >
+          <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 6, color: "#222" }}>
+            {selectedClinicName || "Unnamed Clinic"}
+          </Text>
+          <Text style={{ fontSize: 14, color: "#2a4d4d", marginBottom: 6 }}>
+            {selectedClinicRole || "Clinic"}
+          </Text>
+          <Text style={{ fontSize: 14, color: "#0b5a51", fontStyle: "normal", marginBottom: 6 }}>
+            {selectedClinicEmail}
+          </Text>
+          <Text style={{ fontSize: 14, fontStyle: "italic", color: "#2a594d", marginBottom: 12 }}>
+            {selectedClinicSlogan || ""}
+          </Text>
+
+          <Text style={{ fontSize: 14, marginBottom: 4 }}>📍 {selectedClinicAddress || "No address provided"}</Text>
+          <Text style={{ fontSize: 14, marginBottom: 4 }}>📞 {selectedClinicMobile || "No contact"}</Text>
+          <Text style={{ fontSize: 14, marginBottom: 4 }}>🗓️ Joined: {selectedClinicCreatedAt || "N/A"}</Text>
+          <Text style={{ fontSize: 14 }}>
+            🦷 Dentist Availability: {selectedClinicDentist ? "Yes" : "No"}
+          </Text>
+        </View>
+
+        {/* Clinic Schedule Title */}
+        <Text
+          style={{
+            fontSize: 22,
+            fontWeight: "bold",
+            color: "#003f30",
+            marginBottom: 10,
+          }}
+        >
+          Clinic Schedule
+        </Text>
+
+        {/* Schedule Container */}
+        {/* Clinic Schedule Container */}
+        <View
+          style={{
+            backgroundColor: "#f8f9f9",
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 200,
+            elevation: 3, // shadow for Android
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+          }}
+        >
+
+          {/* Schedule Grid */}
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
               marginTop: 12,
             }}
           >
-            No schedule available
-          </Text>
-        )}
-      </View>
-      </View>
+            {[
+              { label: "Sun", time: selectedSunday },
+              { label: "Mon", time: selectedMonday },
+              { label: "Tue", time: selectedTuesday },
+              { label: "Wed", time: selectedWednesday },
+              { label: "Thu", time: selectedThursday },
+              { label: "Fri", time: selectedFriday },
+              { label: "Sat", time: selectedSaturday },
+            ].map((day) => {
+              const hasValidTime = day.time && day.time.from && day.time.to;
+              const formattedTime = hasValidTime
+                ? {
+                    ...day.time,
+                    from: {
+                      ...day.time.from,
+                      minute: day.time.from.minute?.toString().padStart(2, "0"),
+                    },
+                    to: {
+                      ...day.time.to,
+                      minute: day.time.to.minute?.toString().padStart(2, "0"),
+                    },
+                  }
+                : undefined;
 
-    </ScrollView>
-    </ScrollView>
-    
-
-    {/* Action Buttons1 at Bottom */}
-    <View
-      style={{
-        flexDirection: "row",
-        justifyContent: "space-around",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderTopWidth: 1,
-        borderColor: "#ddd",
-        backgroundColor: "#b9ffdcff",
-      }}
-    >
-      <TouchableOpacity
-        onPress={() => alert(`Messaging ${selectedClinicName}`)}
-        style={{
-          backgroundColor: "#3498db",
-          paddingVertical: 12,
-          paddingHorizontal: 20,
-          borderRadius: 8,
-          flex: 1,
-          marginHorizontal: 5,
-          alignItems: "center",
-        }}
-      >
-        <Text style={{ color: "#fff", fontWeight: "600" }}>Message</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={() => {
-          setModalAppoint(true);
-        }}
-        style={{
-          backgroundColor: "#27ae60",
-          paddingVertical: 12,
-          paddingHorizontal: 20,
-          borderRadius: 8,
-          flex: 1,
-          marginHorizontal: 5,
-          alignItems: "center",
-        }}
-      >
-        <Text style={{ color: "#fff", fontWeight: "600" }}>Appoint</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={() => setModalMap(true)}
-        style={{
-          backgroundColor: "#f39c12",
-          paddingVertical: 12,
-          paddingHorizontal: 20,
-          borderRadius: 8,
-          flex: 1,
-          marginHorizontal: 5,
-          alignItems: "center",
-        }}
-      >
-        <Text style={{ color: "#fff", fontWeight: "600" }}>View in Map</Text>
-      </TouchableOpacity>
-    </View>
+              return (
+                <View
+                  key={day.label}
+                  style={{
+                    flex: 1,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ fontWeight: "600", fontSize: isMobile ? 12 : 15, marginBottom: 4 }}>
+                    {day.label}
+                  </Text>
+                  {formattedTime ? (
+                    <Text
+                      style={{
+                        fontSize: isMobile ? 9 : 14,
+                        color: "#444",
+                        textAlign: "center",
+                      }}
+                    >
+                      {`${formattedTime.from.hour
+                        .toString()
+                        .padStart(2, "0")}:${formattedTime.from.minute} ${formattedTime.from.atm} - ${formattedTime.to.hour
+                        .toString()
+                        .padStart(2, "0")}:${formattedTime.to.minute} ${formattedTime.to.atm}`}
+                    </Text>
+                  ) : (
+                    <Text
+                      style={{
+                        fontSize: isMobile ? 11 : 14,
+                        color: "#b33",
+                        fontStyle: "italic",
+                        textAlign: "center",
+                      }}
+                    >
+                      Closed
+                    </Text>
+                  )}
+                </View>
+              );
+            })}
   </View>
-</Modal>
 
+          {/* No schedule fallback */}
+          {[
+            selectedSunday,
+            selectedMonday,
+            selectedTuesday,
+            selectedWednesday,
+            selectedThursday,
+            selectedFriday,
+            selectedSaturday,
+          ].every((day) => !day || !day.from || !day.to) && (
+            <Text
+              style={{
+                color: "#999",
+                fontSize: 14,
+                textAlign: "center",
+                marginTop: 12,
+              }}
+            >
+              No schedule available
+            </Text>
+          )}
+        </View>
+        </View>
 
+      </ScrollView>
+      </ScrollView>
+      
+
+      {/* Action Buttons1 at Bottom */}
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-around",
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+          borderTopWidth: 1,
+          borderColor: "#ddd",
+          backgroundColor: "#b9ffdcff",
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => {
+            chatWithClinic(clinic.id);
+            setFullProfile(false);
+            setviewClinic(false);
+            setDashboardView("chats");
+          }}
+          style={{
+            backgroundColor: "#3498db",
+            paddingVertical: 12,
+            paddingHorizontal: 20,
+            borderRadius: 8,
+            flex: 1,
+            marginHorizontal: 5,
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "600" }}>Message</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => {
+            setModalAppoint(true);
+          }}
+          style={{
+            backgroundColor: "#27ae60",
+            paddingVertical: 12,
+            paddingHorizontal: 20,
+            borderRadius: 8,
+            flex: 1,
+            marginHorizontal: 5,
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "600" }}>Appoint</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => setModalMap(true)}
+          style={{
+            backgroundColor: "#f39c12",
+            paddingVertical: 12,
+            paddingHorizontal: 20,
+            borderRadius: 8,
+            flex: 1,
+            marginHorizontal: 5,
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "600" }}>View in Map</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
 
 </View>
 
@@ -2680,201 +2799,389 @@ export default function Account() {
                             flex: 1,
                             justifyContent: "center",
                             alignItems: "center",
-                            padding: 50,
+                            padding: 20,
                           }}
                         >
                           <View
                             style={{
-                              borderWidth: 1,
-                              borderColor: "#ccc",
                               backgroundColor: "white",
                               borderRadius: 12,
-                              padding: 20,
-                              alignItems: "center",
-                              width: !isMobile ? "30%" : "100%",
+                              borderWidth: 1,
+                              borderColor: "#ccc",
+                              width: !isMobile ? "30%" : "90%",
+                              maxHeight: "90%",
                             }}
                           >
-                            <Text
-                              style={{
-                                fontSize: 24,
-                                fontWeight: "bold",
-                                marginBottom: 20,
-                                alignSelf: "center",
-                                color: "#003f30ff",
+                            <ScrollView
+                              contentContainerStyle={{
+                                padding: 20,
+                                flexGrow: 1,
+                                alignItems: "center",
                               }}
+                              showsVerticalScrollIndicator={false}
                             >
-                              APPOINTMENT
-                            </Text>
-                            <Text
-                              style={{
-                                fontSize: 18,
-                                marginBottom: 20,
-                                textAlign: "center",
-                              }}
-                            >
-                              {appointmentName}
-                            </Text>
-
-                            {/* Date */}
-                            <Text style={{ alignSelf: "flex-start", marginBottom: 5 }}>Date</Text>
-                            <CalendarPicker
-                              day={date.getDate()}
-                              month={date.getMonth() + 1}
-                              year={date.getFullYear()}
-                              onDaySelect={(day, month, year) => {
-                                setAppointmentDate((prev) => {
-                                  const time = new Date(prev);
-                                  time.setDate(day);
-                                  time.setMonth(month - 1);
-                                  time.setFullYear(year);
-                                  return time;
-                                });
-                              }}
-                            />
-
-                            {/* Time */}
-                            <Text style={{ alignSelf: "flex-start", marginBottom: 5 }}>Time</Text>
-                            <TimePicker
-                              minuteSkipBy={1}
-                              onTimeSelected={(hh, mm, atm) => {
-                                setAppointmentDate((prev) => {
-                                  const time = prev;
-                                  const formatHour = atm === "PM" && Number(hh) < 13 ? Number(hh) + 12 : Number(hh);
-                                  time.setHours(formatHour);
-                                  time.setMinutes(Number(mm));
-                                  return time;
-                                });
-                              } } trigger={undefined}              />
-
-                            {/* Message */}
-                            <Text style={{ alignSelf: "flex-start", marginBottom: 5 }}>
-                              Message to clinic
-                            </Text>
-                            <TextInput
-                              editable
-                              multiline
-                              value={messageToClinic}
-                              maxLength={100}
-                              style={{
-                                minHeight: 100,
-                                paddingHorizontal: 16,
-                                paddingVertical: 2,
-                                backgroundColor: "#f1f1f1",
-                                borderRadius: 6,
-                                width: "100%",
-                                marginBottom: 20,
-                                color: "#000",
-                              }}
-                              onChangeText={setMessageToClinic}
-                            />
-
-                            {/* Buttons */}
-                            <View
-                              style={{
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                width: "100%",
-                              }}
-                            >
-                              <TouchableOpacity
+                              <Text
                                 style={{
-                                  flex: 1,
-                                  backgroundColor: "#b32020",
-                                  paddingVertical: 12,
-                                  borderRadius: 8,
-                                  marginRight: 8,
-                                }}
-                                onPress={() => {
-                                  setMessageToClinic("");
-                                  setModalAppoint(false);
+                                  fontSize: 24,
+                                  fontWeight: "bold",
+                                  marginBottom: 20,
+                                  alignSelf: "center",
+                                  color: "#003f30ff",
                                 }}
                               >
-                                <Text
-                                  style={{
-                                    color: "white",
-                                    fontWeight: "bold",
-                                    textAlign: "center",
-                                  }}
-                                >
-                                  Cancel
-                                </Text>
-                              </TouchableOpacity>
+                                APPOINTMENT
+                              </Text>
 
-                              <TouchableOpacity
+                              <Text
                                 style={{
-                                  flex: 1,
-                                  backgroundColor: "#2e7dccff",
-                                  paddingVertical: 12,
-                                  borderRadius: 8,
-                                  marginLeft: 8,
-                                }}
-                                onPress={async () => {
-                                  if (!selectedClinicId) return;
-
-                                  if (!messageToClinic || !messageToClinic.trim()) {
-                                    setShowMessageModal(true);
-                                    return;
-                                  }
-
-                                  const now = new Date();
-                                  if (appointmentDate < now) {
-                                    setShowInvalidTimeModal(true);
-                                    return;
-                                  }
-
-                                  // ✅ Fetch schedule from Supabase
-                                  const { data, error } = await supabase
-                                    .from("clinic_schedule")
-                                    .select("*")
-                                    .eq("clinic_id", selectedClinicId)
-                                    .single();
-
-                                  // ✅ If error or no data, show "out of schedule" modal
-                                  if (error || !data) {
-                                    console.log("❌ Error fetching clinic schedule:", error);
-                                    setShowOutOfScheduleModal(true);
-                                    return;
-                                  }
-
-                                  // ✅ Normalize schedule — treat null as "closed"
-                                  const normalizeSchedule = (day) => {
-                                    return day && day.from && day.to ? day : null;
-                                  };
-
-                                  const schedules = [
-                                    normalizeSchedule(data.sunday),
-                                    normalizeSchedule(data.monday),
-                                    normalizeSchedule(data.tuesday),
-                                    normalizeSchedule(data.wednesday),
-                                    normalizeSchedule(data.thursday),
-                                    normalizeSchedule(data.friday),
-                                    normalizeSchedule(data.saturday),
-                                  ];
-
-                                  // ✅ Validate time against normalized schedule
-                                  if (!isWithinClinicSchedule(appointmentDate, schedules)) {
-                                    setShowOutOfScheduleModal(true);
-                                    return;
-                                  }
-
-                                  // ✅ Proceed to appointment
-                                  createAppointment(selectedClinicId, appointmentDate, messageToClinic);
-                                  setModalAppoint(false);
-                                  setaIndicator(true);
-                                  setMessageToClinic("");
+                                  fontSize: 18,
+                                  marginBottom: 20,
+                                  textAlign: "center",
                                 }}
                               >
-                                <Text
+                                {appointmentName}
+                              </Text>
+
+                              {/* Date */}
+                              <Text style={{ alignSelf: "flex-start", marginBottom: 5 }}>Date</Text>
+                              <CalendarPicker
+                                day={date.getDate()}
+                                month={date.getMonth() + 1}
+                                year={date.getFullYear()}
+                                onDaySelect={(day, month, year) => {
+                                  setAppointmentDate((prev) => {
+                                    const time = new Date(prev);
+                                    time.setDate(day);
+                                    time.setMonth(month - 1);
+                                    time.setFullYear(year);
+                                    return time;
+                                  });
+                                }}
+                              />
+
+                              {/* Time */}
+                              <Text style={{ alignSelf: "flex-start", marginBottom: 5 }}>Time</Text>
+                              <TimePicker
+                                minuteSkipBy={1}
+                                onTimeSelected={(hh, mm, atm) => {
+                                  setAppointmentDate((prev) => {
+                                    const time = new Date(prev);
+                                    const hourNum = Number(hh);
+                                    const formatHour =
+                                      atm === "AM"
+                                        ? hourNum === 12 ? 0 : hourNum
+                                        : hourNum === 12 ? 12 : hourNum + 12;
+
+                                    time.setHours(formatHour);
+                                    time.setMinutes(Number(mm));
+                                    return time;
+                                  });
+                                }}
+                                trigger={undefined}
+                              />
+
+                              {/* Message */}
+                              <Text style={{ alignSelf: "flex-start", marginBottom: 5, marginTop: 8 }}>
+                                Message to clinic: Reason of Appointment
+                              </Text>
+
+                              {/* Checkboxes */}
+                              <View style={{ width: "100%", alignItems: "flex-start" }}>
+                                {["Cavities Removal", "Teeth Check up", "Teeth Cleaning", "Chipped or Cracked Teeth"].map((reason) => (
+                                  <TouchableOpacity
+                                    key={reason}
+                                    onPress={() => toggleReason(reason)}
+                                    style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}
+                                  >
+                                    <View
+                                      style={{
+                                        height: 20,
+                                        width: 20,
+                                        borderRadius: 4,
+                                        borderWidth: 1,
+                                        borderColor: "#888",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        marginRight: 10,
+                                        backgroundColor: selectedReasons.includes(reason) ? "#007bff" : "#fff",
+                                      }}
+                                    >
+                                      {selectedReasons.includes(reason) && (
+                                        <View style={{ width: 10, height: 10, backgroundColor: "#fff" }} />
+                                      )}
+                                    </View>
+                                    <Text>{reason}</Text>
+                                  </TouchableOpacity>
+                                ))}
+                              </View>
+
+                              {/* "Others" checkbox */}
+                              <View style={{ width: "100%" }}>
+                                <TouchableOpacity
+                                  onPress={() => {
+                                    setIsOthersChecked(true);
+                                    setTempMessage(tempMessage || "");
+                                    setShowOthersModal(true);
+                                  }}
+                                  style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}
+                                >
+                                  <View
+                                    style={{
+                                      height: 20,
+                                      width: 20,
+                                      borderRadius: 4,
+                                      borderWidth: 1,
+                                      borderColor: "#888",
+                                      justifyContent: "center",
+                                      alignItems: "center",
+                                      marginRight: 10,
+                                      backgroundColor: isOthersChecked ? "#007bff" : "#fff",
+                                    }}
+                                  >
+                                    {isOthersChecked && (
+                                      <View style={{ width: 10, height: 10, backgroundColor: "#fff" }} />
+                                    )}
+                                  </View>
+                                  <Text>Others</Text>
+                                </TouchableOpacity>
+
+                                {/* ✅ Combined Message Preview (selected checkboxes + others) */}
+                                {messageToClinic.trim() !== "" && (
+                                  <View
+                                    style={{
+                                      padding: 10,
+                                      backgroundColor: "#f1f1f1",
+                                      borderRadius: 6,
+                                      marginBottom: 10,
+                                      width: "100%",
+                                    }}
+                                  >
+                                    <Text style={{ color: "#000" }}>{messageToClinic}</Text>
+                                  </View>
+                                )}
+
+                                {/* Modal for "Others" input */}
+                                <Modal
+                                  transparent
+                                  visible={showOthersModal}
+                                  onRequestClose={() => setShowOthersModal(false)}
+                                >
+                                  <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                                    <View
+                                      style={{
+                                        width: isMobile ? "80%" : "30%",
+                                        backgroundColor: "white",
+                                        borderRadius: 10,
+                                        padding: 20,
+                                        borderWidth: 1,
+                                        borderColor: "#ccc",
+                                        alignItems: "center",
+                                      }}
+                                    >
+                                      <Text style={{ fontSize: 18, marginBottom: 10 }}>
+                                        Message to Clinic
+                                      </Text>
+                                      <TextInput
+                                        value={tempMessage}
+                                        onChangeText={setTempMessage}
+                                        multiline
+                                        style={{
+                                          height: 100,
+                                          width: "100%",
+                                          borderColor: "#ccc",
+                                          borderWidth: 1,
+                                          borderRadius: 6,
+                                          padding: 10,
+                                          marginBottom: 20,
+                                          textAlignVertical: "top",
+                                        }}
+                                        maxLength={300}
+                                        autoFocus
+                                      />
+
+                                      <View
+                                        style={{
+                                          flexDirection: "row",
+                                          justifyContent: "space-between",
+                                          width: "100%",
+                                        }}
+                                      >
+                                        <TouchableOpacity
+                                          style={{
+                                            flex: 1,
+                                            marginRight: 8,
+                                            backgroundColor: "#b32020",
+                                            paddingVertical: 12,
+                                            borderRadius: 6,
+                                          }}
+                                          onPress={() => {
+                                            setShowOthersModal(false);
+                                            setIsOthersChecked(false);
+                                            setTempMessage("");
+
+                                            // Update message with only selected reasons
+                                            setMessageToClinic(selectedReasons.join(", "));
+                                          }}
+                                        >
+                                          <Text
+                                            style={{
+                                              color: "white",
+                                              textAlign: "center",
+                                              fontWeight: "bold",
+                                            }}
+                                          >
+                                            Cancel
+                                          </Text>
+                                        </TouchableOpacity>
+
+                                        <TouchableOpacity
+                                          style={{
+                                            flex: 1,
+                                            marginLeft: 8,
+                                            backgroundColor: "#2e7dccff",
+                                            paddingVertical: 12,
+                                            borderRadius: 6,
+                                          }}
+                                          onPress={() => {
+                                            const newMsg = tempMessage.trim();
+                                            setTempMessage(newMsg);
+                                            setIsOthersChecked(!!newMsg);
+                                            setShowOthersModal(false);
+
+                                            // Combine selected reasons with "others"
+                                            const combined = [...selectedReasons];
+                                            if (newMsg) {
+                                              combined.push(newMsg);
+                                            }
+                                            setMessageToClinic(combined.join(", "));
+                                          }}
+                                        >
+                                          <Text
+                                            style={{
+                                              color: "white",
+                                              textAlign: "center",
+                                              fontWeight: "bold",
+                                            }}
+                                          >
+                                            Save
+                                          </Text>
+                                        </TouchableOpacity>
+                                      </View>
+                                    </View>
+                                  </View>
+                                </Modal>
+                              </View>
+
+                              {/* Buttons */}
+                              <View
+                                style={{
+                                  flexDirection: "row",
+                                  justifyContent: "space-between",
+                                  width: "100%",
+                                  marginTop: 20,
+                                }}
+                              >
+                                <TouchableOpacity
                                   style={{
-                                    color: "white",
-                                    fontWeight: "bold",
-                                    textAlign: "center",
+                                    flex: 1,
+                                    backgroundColor: "#b32020",
+                                    paddingVertical: 12,
+                                    borderRadius: 8,
+                                    marginRight: 8,
+                                  }}
+                                  onPress={() => {
+                                    setMessageToClinic("");
+                                    setModalAppoint(false);
+                                    setIsOthersChecked(false);
+                                    setTempMessage("");
+                                    setSelectedReasons([]);
                                   }}
                                 >
-                                  Appoint
-                                </Text>
-                              </TouchableOpacity>
-                            </View>
+                                  <Text
+                                    style={{
+                                      color: "white",
+                                      fontWeight: "bold",
+                                      textAlign: "center",
+                                    }}
+                                  >
+                                    Cancel
+                                  </Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                  style={{
+                                    flex: 1,
+                                    backgroundColor: "#2e7dccff",
+                                    paddingVertical: 12,
+                                    borderRadius: 8,
+                                    marginLeft: 8,
+                                  }}
+                                  onPress={async () => {
+                                    if (!selectedClinicId) return;
+
+                                    if (!messageToClinic || !messageToClinic.trim()) {
+                                      setShowMessageModal(true);
+                                      return;
+                                    }
+
+                                    const now = new Date();
+                                    if (appointmentDate < now) {
+                                      setShowInvalidTimeModal(true);
+                                      return;
+                                    }
+
+                                    const { data, error } = await supabase
+                                      .from("clinic_schedule")
+                                      .select("*")
+                                      .eq("clinic_id", selectedClinicId)
+                                      .single();
+
+                                    if (error || !data) {
+                                      console.log("❌ Error fetching clinic schedule:", error);
+                                      setShowOutOfScheduleModal(true);
+                                      return;
+                                    }
+
+                                    const normalizeSchedule = (day) => {
+                                      return day && day.from && day.to ? day : null;
+                                    };
+
+                                    const schedules = [
+                                      normalizeSchedule(data.sunday),
+                                      normalizeSchedule(data.monday),
+                                      normalizeSchedule(data.tuesday),
+                                      normalizeSchedule(data.wednesday),
+                                      normalizeSchedule(data.thursday),
+                                      normalizeSchedule(data.friday),
+                                      normalizeSchedule(data.saturday),
+                                    ];
+
+                                    if (!isWithinClinicSchedule(appointmentDate, schedules)) {
+                                      setShowOutOfScheduleModal(true);
+                                      return;
+                                    }
+
+                                    createAppointment(selectedClinicId, appointmentDate, messageToClinic);
+                                    setModalAppoint(false);
+                                    setaIndicator(true);
+                                    setMessageToClinic("");
+                                    setIsOthersChecked(false);
+                                    setTempMessage("");
+                                    setSelectedReasons([]);
+                                  }}
+                                >
+                                  <Text
+                                    style={{
+                                      color: "white",
+                                      fontWeight: "bold",
+                                      textAlign: "center",
+                                    }}
+                                  >
+                                    Appoint
+                                  </Text>
+                                </TouchableOpacity>
+                              </View>
+                            </ScrollView>
                           </View>
                         </View>
                       </Modal>
@@ -2977,7 +3284,7 @@ export default function Account() {
                           >
                             <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>Outside Clinic Schedule</Text>
                             <Text style={{ textAlign: "center", marginBottom: 20 }}>
-                              The clinic is closed at the selected time. Please choose a time within the clinic's working hours.
+                              The clinic is closed at the selected time. Please choose a time within the clinic's working hours. You can view the Clinic's Schedule.
                             </Text>
                             <TouchableOpacity
                               style={{
@@ -3155,9 +3462,11 @@ export default function Account() {
             </ScrollView>
           </View>
         </View>
+        )}
 
         {/* Dashboard Appointments --------------------------------------------------------------------------------------- */}
 
+        {dashboardView === "appointments" && (
         <View
           style={[
             styles.dashboard,
@@ -3220,9 +3529,23 @@ export default function Account() {
                 <Text style={{ flex: 1 }}>
                   {wrapText(item.clinic_profiles.clinic_name)}
                 </Text>
-                <Text style={{ flex: 1, flexWrap: "wrap" }}>
-                  {wrapText(item.message, 40)}
+                {item.message.length > 20 ? (
+                <TouchableOpacity
+                  style={{ flex: 1 }}
+                  onPress={() => {
+                    setSelectedMessage(item.message);
+                    setModalMessage(true);
+                  }}
+                >
+                  <Text style={{ color: "blue", textDecorationLine: "underline" }}>
+                    {item.message.slice(0, 20) + "..."}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={{ flex: 1 }}>
+                  {item.message}
                 </Text>
+              )}
                 <Text style={{ flex: 1 }}>
                   {new Date(item.date_time).toLocaleString()}
                 </Text>
@@ -3242,9 +3565,69 @@ export default function Account() {
             )}
           />
         </View>
+        )}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={modalMessage}
+          onRequestClose={() => setModalMessage(false)}
+        >
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: "#fff",
+                padding: 20,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: "#ccc",
+                width: "80%",
+                maxWidth: 500,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "bold",
+                  marginBottom: 10,
+                  color: "#003f30ff",
+                }}
+              >
+                Message
+              </Text>
+              <Text
+                style={{
+                  fontSize: 16,
+                  marginBottom: 20,
+                  color: "#333",
+                }}
+              >
+                {selectedMessage}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setModalMessage(false)}
+                style={{
+                  alignSelf: "flex-end",
+                  backgroundColor: "#003f30",
+                  paddingVertical: 8,
+                  paddingHorizontal: 16,
+                  borderRadius: 5,
+                }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "600" }}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         {/* Dashboard Pending --------------------------------------------------------------------------------------- */}
 
+        {dashboardView === "pending" && (
         <View
           style={[
             styles.dashboard,
@@ -3313,7 +3696,23 @@ export default function Account() {
                 <Text style={{ flex: 1 }}>
                   {new Date(item.date_time).toLocaleString()}
                 </Text>
-                <Text style={{ flex: 1 }}>{wrapText(item.message, 40)}</Text>
+                {item.message.length > 20 ? (
+                <TouchableOpacity
+                  style={{ flex: 1 }}
+                  onPress={() => {
+                    setSelectedMessage(item.message);
+                    setModalMessage(true);
+                  }}
+                >
+                  <Text style={{ color: "blue", textDecorationLine: "underline" }}>
+                    {item.message.slice(0, 20) + "..."}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={{ flex: 1 }}>
+                  {item.message}
+                </Text>
+              )}
                 <Text style={{ flex: 1 }}>
                   {new Date(item.created_at || 0).toLocaleString()}
                 </Text>
@@ -3330,9 +3729,11 @@ export default function Account() {
             }
           />
         </View>
+        )}
 
         {/* Dashboard history --------------------------------------------------------------------------------------- */}
 
+        {dashboardView === "history" && (
         <View
           style={[
             styles.dashboard,
@@ -3413,11 +3814,24 @@ export default function Account() {
                 </Text>
 
                 {/* Message */}
+                {item.message.length > 20 ? (
+                <TouchableOpacity
+                  style={{ flex: 1 }}
+                  onPress={() => {
+                    setSelectedMessage(item.message);
+                    setModalMessage(true);
+                  }}
+                >
+                  <Text style={{ color: "blue", textDecorationLine: "underline" }}>
+                    {item.message.slice(0, 20) + "..."}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
                 <Text style={{ flex: 1 }}>
-                  {item.message
-                    ? wrapText(item.message, 40)
-                    : "No content available"}
+                  {item.message}
                 </Text>
+              )}
+
 
                 {/* Status */}
                 <Text style={{ flex: 1 }}>
@@ -3448,15 +3862,33 @@ export default function Account() {
             }
           />
         </View>
+        )}
 
         {/* Dashboard Chats --------------------------------------------------------------------------------------- */}
 
+        {dashboardView === "chats" && (
         <View
           style={[
             styles.dashboard,
             {
               width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
               right: dashboardView === "chats" ? 11 : 20000,
+            },
+          ]}
+        >
+            <ChatView key={`chat-${Date.now()}`} role="patient" />
+        </View>
+        )}
+
+        {/* Dashboard Team --------------------------------------------------------------------------------------- */}
+
+        {dashboardView === "team" && (
+        <View
+          style={[
+            styles.dashboard,
+            {
+              width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
+              right: dashboardView === "team" ? 11 : 20000,
             },
           ]}
         >
@@ -3469,22 +3901,335 @@ export default function Account() {
               color: "#003f30ff",
             }}
           >
-            Chats
+            Others
+          </Text>
+          <ScrollView contentContainerStyle={{ padding: 20 }}>
+          <View
+      style={{
+        padding: 20,
+        backgroundColor: "#f7f7f7ff",
+        borderRadius: 16,
+        marginTop: -10,
+        shadowColor: "#000",
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+        elevation: 2,
+      }}
+    >
+      {/* Tagline */}
+      <Text
+        style={{
+          fontSize: 24,
+          fontWeight: "bold",
+          marginBottom: 10,
+          textAlign: "center",
+          color: "#003f30",
+        }}
+      >
+        Explore Dental Clinics Around San Jose Delmonte Bulacan!
+      </Text>
+      <Text
+        style={{
+          fontSize: 16,
+          color: "#444",
+          textAlign: "center",
+          marginBottom: 20,
+        }}
+      >
+        We believe that a confident smile and healthy teeth are best achieved
+        when guided by expertise.
+      </Text>
+
+      {/* Purpose */}
+      <Text
+        style={{
+          fontSize: 20,
+          fontWeight: "bold",
+          marginBottom: 10,
+          color: "#003f30",
+          textAlign: "center",
+        }}
+      >
+        Our Purpose
+      </Text>
+      <Text
+        style={{
+          fontSize: 16,
+          color: "#555",
+          textAlign: "center",
+          marginBottom: 20,
+        }}
+      >
+        This platform was created to bridge the gap between patients and
+        trusted dental clinics in SJDM, Caloocan, and Metro Manila.
+      </Text>
+
+      <View style={{ alignSelf: "center", marginTop: 20, marginBottom: 20 }}>
+        {/* Benefits */}
+        <Text
+          style={{
+            fontSize: 20,
+            fontWeight: "bold",
+            marginBottom: 12,
+            color: "#003f30",
+            textAlign: "left",
+          }}
+        >
+          Platform Benefits
+        </Text>
+        <View style={{ marginBottom: 20 }}>
+          <Text
+            style={{ fontSize: 16, fontWeight: "600", color: "#00796b" }}
+          >
+            • Streamline Dental Appointment Scheduling
+          </Text>
+          <Text
+            style={{ fontSize: 14, color: "#555", marginBottom: 10 }}
+          >
+            Provide a seamless, user-friendly platform for patients to book,
+            reschedule, and cancel appointments anytime, anywhere.
+          </Text>
+
+          <Text
+            style={{ fontSize: 16, fontWeight: "600", color: "#00796b" }}
+          >
+            • Improve Patient Experience Through Accessible Services
+          </Text>
+          <Text
+            style={{ fontSize: 14, color: "#555", marginBottom: 10 }}
+          >
+            Instant booking, reminders, and access to records help patients
+            save time and reduce wait times.
+          </Text>
+
+          <Text
+            style={{ fontSize: 16, fontWeight: "600", color: "#00796b" }}
+          >
+            • AR Tools for Patient Engagement
+          </Text>
+          <Text style={{ fontSize: 14, color: "#555" }}>
+            Preview treatments and learn with Augmented Reality for better
+            understanding and trust.
           </Text>
         </View>
 
-        {/* Dashboard Team --------------------------------------------------------------------------------------- */}
-
-        <View
-          style={[
-            styles.dashboard,
-            {
-              width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
-              right: dashboardView === "team" ? 11 : 20000,
-            },
-          ]}
+        {/* Topics */}
+        <Text
+          style={{
+            fontSize: 20,
+            fontWeight: "bold",
+            marginBottom: 12,
+            color: "#003f30",
+            textAlign: "left",
+          }}
         >
-          <ScrollView contentContainerStyle={{ padding: 20 }}>
+          Covered Topics
+        </Text>
+        <View style={{ marginBottom: 20 }}>
+          <Text
+            style={{ fontSize: 16, fontWeight: "600", color: "#00796b" }}
+          >
+            • Finding the Right Clinic Near You
+          </Text>
+          <Text
+            style={{ fontSize: 14, color: "#555", marginBottom: 10 }}
+          >
+            Browse trusted clinics in San Jose Del Monte Bulacan with full
+            profiles, services, and schedules.
+          </Text>
+
+          <Text
+            style={{ fontSize: 16, fontWeight: "600", color: "#00796b" }}
+          >
+            • Common Dental Concerns, Easy Solutions
+          </Text>
+          <Text
+            style={{ fontSize: 14, color: "#555", marginBottom: 10 }}
+          >
+            From toothaches to check-ups, our hub addresses common oral
+            health needs.
+          </Text>
+
+          <Text
+            style={{ fontSize: 16, fontWeight: "600", color: "#00796b" }}
+          >
+            • Book Your Appointment Online
+          </Text>
+          <Text style={{ fontSize: 14, color: "#555" }}>
+            Skip the calls — schedule your appointments digitally with ease.
+          </Text>
+        </View>
+      </View>
+
+      {/* Trusted Clinics */}
+      <Text style={{ textAlign: "center", fontSize: 14, color: "#888" }}>
+        Trusted by 7+ Dental Clinics around San Jose Delmonte Bulacan
+      </Text>
+
+      {/* Modal Trigger */}
+      <TouchableOpacity
+        onPress={() => setTermsOfUse(true)}
+        style={{
+          marginTop: 30,
+          backgroundColor: "#00796b",
+          paddingVertical: 12,
+          paddingHorizontal: 20,
+          borderRadius: 10,
+          alignSelf: "center",
+        }}
+      >
+        <Text style={{ color: "white", fontWeight: "bold" }}>
+          Terms of Use
+        </Text>
+      </TouchableOpacity>
+
+      {/* Modal */}
+      <Modal
+        visible={termsOfUse}
+        transparent
+        onRequestClose={() => setTermsOfUse(false)}
+      >
+        <View
+        style={{
+          flex: 1,
+          backgroundColor: "rgba(0,0,0,0.5)",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: "white",
+            width: "90%",
+            padding: 20,
+            borderRadius: 16,
+            maxHeight: "80%",
+          }}
+        >
+          <ScrollView>
+            <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10, color: "#003f30" }}>
+              SmileStudio - Terms of Use
+            </Text>
+            <Text style={{ fontSize: 14, marginBottom: 10, color: "#444" }}>
+              <Text style={{ fontWeight: "bold" }}>Last Updated:</Text> May 8, 2025{"\n"}
+              <Text style={{ fontWeight: "bold" }}>Effective Immediately</Text>
+            </Text>
+
+            <Text style={{ fontSize: 14, color: "#444", lineHeight: 22 }}>
+              By accessing or using SmileStudio, owned and operated by Scuba Scripter and Pixel Cowboy Team, User agree to be legally bound by these Terms of Use. These Terms govern your use of SmileStudio, a Web-Based Dental Appointment System with Automated Messaging Follow-Up Reminders via AI Chatbot in San Jose Del Monte Bulacan.
+              If you do not agree with any part of these Terms, you must immediately cease all use of the Platform. Continued access constitutes unconditional acceptance of these Terms and any future modifications.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>1. Definitions{"\n"}</Text>
+              "Appointment"– A scheduled medical consultation booked through SmileStudio.{"\n"}
+              "No-Show"– Failure to attend a booked Appointment without prior cancellation.{"\n"}
+              "Grace Period"– A 15-minute window after a scheduled Appointment time during which a late arrival may still be accommodated.{"\n"}
+              "Malicious Activity"– Any action that disrupts, exploits, or harms the Platform, its users, or affiliated clinics (e.g., hacking, fake bookings, harassment).{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>2. Eligibility & Account Registration{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>2.1 Age Requirement</Text>{" "}
+              The Platform is accessible to users of all ages but is currently intended for non-commercial, academic/capstone project use only. Minors (under 18) must obtain parental/guardian consent before booking Appointments.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>2.2 Account Responsibility</Text>{" "}
+              Users must provide accurate, current, and complete information during registration. You are solely responsible for:{"\n"}
+              - Maintaining the confidentiality of your login credentials.{"\n"}
+              - All activities conducted under your account.{"\n"}
+              - Immediately notify us of any unauthorized account use.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>3. Permitted & Prohibited Use{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>3.1 Acceptable Use</Text>{" "}
+              You may use SmileStudio only for lawful purposes, including:{"\n"}
+              Booking legitimate medical Appointments at partner clinics in San Jose Del Monte, Bulacan.{"\n"}
+              Accessing clinic information, availability, Location, Pricing, Services and AI chatbot reminder assistance.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>3.2 Strictly Prohibited Conduct</Text>{" "}
+              Violations will result in immediate account suspension or termination. You agree NOT to:{"\n"}
+              - Create fake or duplicate Appointments (e.g., under false names).{"\n"}
+              - Engage in hacking, phishing, or data scraping (automated or manual).{"\n"}
+              - Harass clinic staff or other users (e.g., trolling, abusive messages).{"\n"}
+              - Upload malicious software (viruses, spyware) or disrupt server operations.{"\n"}
+              - Misrepresent your identity or medical needs.{"\n"}
+              - Circumvent appointment limits (e.g., creating multiple accounts).{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>4. Appointment Policies{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>4.1 Booking & Cancellation</Text>{" "}
+              Appointments operate on a "First-Appoint, First-Served" basis. No downpayment is required ("Appoint Now, Pay Later"). Cancellations must be made at least 24 hours in advance via the Platform.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>4.2 No-Show & Late Arrival Policy</Text>{" "}
+              AI Chatbot Reminder: Users receive 2 automated alerts:{"\n"}
+              - 2 hours before the Appointment.{"\n"}
+              - Grace Period: A 15-minute late arrival window is permitted. After this:{"\n"}
+              - The Appointment is automatically forfeited.{"\n"}
+              - The slot is released to other patients.{"\n"}
+              - The User must reschedule.{"\n"}
+              Strike System:{"\n"}
+              - 5 No-Shows = 1-month account suspension.{"\n"}
+              - Suspended accounts cannot book new Appointments but may view clinic information.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>5. Intellectual Property Rights{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>5.1 Ownership</Text>{" "}
+              All text, graphics, logos, clinic data, and AI chatbot software APIs are the exclusive property of SmileStudio and its partner clinics. No commercial use (e.g., reselling clinic slots, redistributing data) is permitted.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>5.2 Limited License</Text>{" "}
+              Users are granted a revocable, non-exclusive license to: Access the Platform for personal, non-commercial healthcare purposes.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>6. Privacy & Data Security{"\n"}</Text>
+              Our Privacy Policy (Will be added Soon) details how we collect, store, and protect your data. Clinic Confidentiality: All medical information shared during Appointments is protected under HIPAA-equivalent Philippine laws.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>7. Disclaimers & Limitation of Liability{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>7.1 No Medical Guarantees</Text>{" "}
+              SmileStudio is not a healthcare provider. We do not guarantee diagnosis accuracy, treatment outcomes, or clinic availability.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>7.2 Platform "As Is"</Text>{" "}
+              The Platform may experience downtime, bugs, or delays.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>7.3 No Financial Liability</Text>{" "}
+              We do not charge users and do not handle payments, medical services, or clinic operations. We are not liable for:{"\n"}
+              - User misconduct (e.g., no-shows, fake bookings).{"\n"}
+              - Clinic errors (e.g., overbooking, misdiagnosis).{"\n"}
+              - Indirect damages (e.g., lost time, travel costs).{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>8. Termination & Enforcement{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>8.1 By SmileStudio</Text>{" "}
+              We may suspend or terminate accounts for: Breach of these Terms (e.g., fake Appointments, harassment). Malicious Activity (e.g., hacking attempts). Excessive No-Shows (per Section 4.2).{"\n"}
+              <Text style={{ fontWeight: "bold" }}>8.2 By Users</Text>{" "}
+              You may deactivate your account at any time by contacting: (+63) 921-888-1835{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>9. Governing Law & Dispute Resolution{"\n"}</Text>
+              These Terms are governed by Philippine law (Republic Act No. 10173, Data Privacy Act). Disputes must first undergo mediation in San Jose Del Monte, Bulacan. Unresolved disputes will be settled in Philippine courts.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>10. Contact Information{"\n"}</Text>
+              For inquiries or violations, contact:{"\n"}
+              Scuba Scripter and Pixel Cowboy Team{"\n"}
+              (+63) 921-888-1835{"\n"}
+              San Jose Del Monte, Bulacan, Philippines
+            </Text>
+          </ScrollView>
+
+          <TouchableOpacity
+            onPress={() => setTermsOfUse(false)}
+            style={{
+              marginTop: 20,
+              backgroundColor: "#003f30",
+              paddingVertical: 10,
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ color: "white", textAlign: "center", fontWeight: "bold" }}>
+              Close
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      </Modal>
+    </View>
+
+          <View
+            style={{
+              padding: 20,
+              backgroundColor: "#f7f7f7ff",
+              borderRadius: 16,
+              marginTop: 20,
+              shadowColor: "#000",
+              shadowOpacity: 0.05,
+              shadowRadius: 6,
+              elevation: 2,
+            }}
+          >
             <Text
               style={{
                 fontSize: 28,
@@ -3634,12 +4379,15 @@ export default function Account() {
               <Text style={{ fontSize: 16, color: "#555" }}>
                 System Analyst
               </Text>
+              </View>
             </View>
           </ScrollView>
         </View>
+        )}
 
         {/* Dashboard Augmented Reality --------------------------------------------------------------------------------------- */}
 
+        {dashboardView === "ar" && (
         <View
           style={[
             styles.dashboard,
@@ -3685,6 +4433,7 @@ export default function Account() {
             </View>
           )}
         </View>
+        )}
 
       </LinearGradient>
     </LinearGradient>

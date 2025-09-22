@@ -57,6 +57,7 @@ export default function Account() {
   const [selectedClinicRole, setSelectedClinicRole] = useState("");
   const [selectedClinicDentist, setSelectedClinicDentist] = useState(false);
   const [selectedClinicImage, setSelectedClinicImage] = useState();
+  const [termsOfUse, setTermsOfUse] = useState(false);
 
   const [selectedClinicId, setSelectedClinicId] = useState<string>();
   const [messageToClinic, setMessageToClinic] = useState<string>();
@@ -756,6 +757,25 @@ useEffect(() => {
                     <Text style={{...styles.buttonText, color: "#ffff"}}>Auth Clinics</Text>
                   )}
                 </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    setDashboardView("ar");
+                    if (isMobile) {
+                      setMoved((prev) => !prev);
+                      setExpanded((prev) => !prev);
+                    }
+                  }}
+                  style={styles.mar2}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator animating color={"black"} />
+                  ) : (
+                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
+                      Verify Pendings
+                    </Text>
+                  )}
+                </TouchableOpacity>
                 <TouchableOpacity 
                   onPress={() => {
                     setDashboardView("chats")
@@ -780,27 +800,8 @@ useEffect(() => {
                   disabled={loading}
                 >
                   {
-                    loading ? <ActivityIndicator animating color={"black"}/> : <Text style={{...styles.buttonText, color: "#ffff"}}>Team</Text>
+                    loading ? <ActivityIndicator animating color={"black"}/> : <Text style={{...styles.buttonText, color: "#ffff"}}>Others</Text>
                   }
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("ar");
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Augmented Reality
-                    </Text>
-                  )}
                 </TouchableOpacity>
 
             </View>
@@ -1907,147 +1908,508 @@ useEffect(() => {
     
           {/* Dashboard Team --------------------------------------------------------------------------------------- */}
     
-          <View style={[styles.dashboard, { width: !isDesktop ? '95%' : expanded ? '80%' : '95%', right: dashboardView === 'team' ? 11 : 20000}]}>
-            <ScrollView contentContainerStyle={{ padding: 20 }}>
-              <Text style={{
+        {dashboardView === "team" && (
+        <View
+          style={[
+            styles.dashboard,
+            {
+              width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
+              right: dashboardView === "team" ? 11 : 20000,
+            },
+          ]}
+        >
+          <Text
+            style={{
+              fontSize: 24,
+              fontWeight: "bold",
+              marginBottom: 20,
+              alignSelf: isMobile ? "center" : "flex-start",
+              color: "#003f30ff",
+            }}
+          >
+            Others
+          </Text>
+          <ScrollView contentContainerStyle={{ padding: 20 }}>
+          <View
+      style={{
+        padding: 20,
+        backgroundColor: "#f7f7f7ff",
+        borderRadius: 16,
+        marginTop: -10,
+        shadowColor: "#000",
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+        elevation: 2,
+      }}
+    >
+      {/* Tagline */}
+      <Text
+        style={{
+          fontSize: 24,
+          fontWeight: "bold",
+          marginBottom: 10,
+          textAlign: "center",
+          color: "#003f30",
+        }}
+      >
+        Explore Dental Clinics Around San Jose Delmonte Bulacan!
+      </Text>
+      <Text
+        style={{
+          fontSize: 16,
+          color: "#444",
+          textAlign: "center",
+          marginBottom: 20,
+        }}
+      >
+        We believe that a confident smile and healthy teeth are best achieved
+        when guided by expertise.
+      </Text>
+
+      {/* Purpose */}
+      <Text
+        style={{
+          fontSize: 20,
+          fontWeight: "bold",
+          marginBottom: 10,
+          color: "#003f30",
+          textAlign: "center",
+        }}
+      >
+        Our Purpose
+      </Text>
+      <Text
+        style={{
+          fontSize: 16,
+          color: "#555",
+          textAlign: "center",
+          marginBottom: 20,
+        }}
+      >
+        This platform was created to bridge the gap between patients and
+        trusted dental clinics in SJDM, Caloocan, and Metro Manila.
+      </Text>
+
+      <View style={{ alignSelf: "center", marginTop: 20, marginBottom: 20 }}>
+        {/* Benefits */}
+        <Text
+          style={{
+            fontSize: 20,
+            fontWeight: "bold",
+            marginBottom: 12,
+            color: "#003f30",
+            textAlign: "left",
+          }}
+        >
+          Platform Benefits
+        </Text>
+        <View style={{ marginBottom: 20 }}>
+          <Text
+            style={{ fontSize: 16, fontWeight: "600", color: "#00796b" }}
+          >
+            • Streamline Dental Appointment Scheduling
+          </Text>
+          <Text
+            style={{ fontSize: 14, color: "#555", marginBottom: 10 }}
+          >
+            Provide a seamless, user-friendly platform for patients to book,
+            reschedule, and cancel appointments anytime, anywhere.
+          </Text>
+
+          <Text
+            style={{ fontSize: 16, fontWeight: "600", color: "#00796b" }}
+          >
+            • Improve Patient Experience Through Accessible Services
+          </Text>
+          <Text
+            style={{ fontSize: 14, color: "#555", marginBottom: 10 }}
+          >
+            Instant booking, reminders, and access to records help patients
+            save time and reduce wait times.
+          </Text>
+
+          <Text
+            style={{ fontSize: 16, fontWeight: "600", color: "#00796b" }}
+          >
+            • AR Tools for Patient Engagement
+          </Text>
+          <Text style={{ fontSize: 14, color: "#555" }}>
+            Preview treatments and learn with Augmented Reality for better
+            understanding and trust.
+          </Text>
+        </View>
+
+        {/* Topics */}
+        <Text
+          style={{
+            fontSize: 20,
+            fontWeight: "bold",
+            marginBottom: 12,
+            color: "#003f30",
+            textAlign: "left",
+          }}
+        >
+          Covered Topics
+        </Text>
+        <View style={{ marginBottom: 20 }}>
+          <Text
+            style={{ fontSize: 16, fontWeight: "600", color: "#00796b" }}
+          >
+            • Finding the Right Clinic Near You
+          </Text>
+          <Text
+            style={{ fontSize: 14, color: "#555", marginBottom: 10 }}
+          >
+            Browse trusted clinics in San Jose Del Monte Bulacan with full
+            profiles, services, and schedules.
+          </Text>
+
+          <Text
+            style={{ fontSize: 16, fontWeight: "600", color: "#00796b" }}
+          >
+            • Common Dental Concerns, Easy Solutions
+          </Text>
+          <Text
+            style={{ fontSize: 14, color: "#555", marginBottom: 10 }}
+          >
+            From toothaches to check-ups, our hub addresses common oral
+            health needs.
+          </Text>
+
+          <Text
+            style={{ fontSize: 16, fontWeight: "600", color: "#00796b" }}
+          >
+            • Book Your Appointment Online
+          </Text>
+          <Text style={{ fontSize: 14, color: "#555" }}>
+            Skip the calls — schedule your appointments digitally with ease.
+          </Text>
+        </View>
+      </View>
+
+      {/* Trusted Clinics */}
+      <Text style={{ textAlign: "center", fontSize: 14, color: "#888" }}>
+        Trusted by 7+ Dental Clinics around San Jose Delmonte Bulacan
+      </Text>
+
+      {/* Modal Trigger */}
+      <TouchableOpacity
+        onPress={() => setTermsOfUse(true)}
+        style={{
+          marginTop: 30,
+          backgroundColor: "#00796b",
+          paddingVertical: 12,
+          paddingHorizontal: 20,
+          borderRadius: 10,
+          alignSelf: "center",
+        }}
+      >
+        <Text style={{ color: "white", fontWeight: "bold" }}>
+          Terms of Use
+        </Text>
+      </TouchableOpacity>
+
+      {/* Modal */}
+      <Modal
+        visible={termsOfUse}
+        transparent
+        onRequestClose={() => setTermsOfUse(false)}
+      >
+        <View
+        style={{
+          flex: 1,
+          backgroundColor: "rgba(0,0,0,0.5)",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: "white",
+            width: "90%",
+            padding: 20,
+            borderRadius: 16,
+            maxHeight: "80%",
+          }}
+        >
+          <ScrollView>
+            <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10, color: "#003f30" }}>
+              SmileStudio - Terms of Use
+            </Text>
+            <Text style={{ fontSize: 14, marginBottom: 10, color: "#444" }}>
+              <Text style={{ fontWeight: "bold" }}>Last Updated:</Text> May 8, 2025{"\n"}
+              <Text style={{ fontWeight: "bold" }}>Effective Immediately</Text>
+            </Text>
+
+            <Text style={{ fontSize: 14, color: "#444", lineHeight: 22 }}>
+              By accessing or using SmileStudio, owned and operated by Scuba Scripter and Pixel Cowboy Team, User agree to be legally bound by these Terms of Use. These Terms govern your use of SmileStudio, a Web-Based Dental Appointment System with Automated Messaging Follow-Up Reminders via AI Chatbot in San Jose Del Monte Bulacan.
+              If you do not agree with any part of these Terms, you must immediately cease all use of the Platform. Continued access constitutes unconditional acceptance of these Terms and any future modifications.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>1. Definitions{"\n"}</Text>
+              "Appointment"– A scheduled medical consultation booked through SmileStudio.{"\n"}
+              "No-Show"– Failure to attend a booked Appointment without prior cancellation.{"\n"}
+              "Grace Period"– A 15-minute window after a scheduled Appointment time during which a late arrival may still be accommodated.{"\n"}
+              "Malicious Activity"– Any action that disrupts, exploits, or harms the Platform, its users, or affiliated clinics (e.g., hacking, fake bookings, harassment).{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>2. Eligibility & Account Registration{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>2.1 Age Requirement</Text>{" "}
+              The Platform is accessible to users of all ages but is currently intended for non-commercial, academic/capstone project use only. Minors (under 18) must obtain parental/guardian consent before booking Appointments.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>2.2 Account Responsibility</Text>{" "}
+              Users must provide accurate, current, and complete information during registration. You are solely responsible for:{"\n"}
+              - Maintaining the confidentiality of your login credentials.{"\n"}
+              - All activities conducted under your account.{"\n"}
+              - Immediately notify us of any unauthorized account use.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>3. Permitted & Prohibited Use{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>3.1 Acceptable Use</Text>{" "}
+              You may use SmileStudio only for lawful purposes, including:{"\n"}
+              Booking legitimate medical Appointments at partner clinics in San Jose Del Monte, Bulacan.{"\n"}
+              Accessing clinic information, availability, Location, Pricing, Services and AI chatbot reminder assistance.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>3.2 Strictly Prohibited Conduct</Text>{" "}
+              Violations will result in immediate account suspension or termination. You agree NOT to:{"\n"}
+              - Create fake or duplicate Appointments (e.g., under false names).{"\n"}
+              - Engage in hacking, phishing, or data scraping (automated or manual).{"\n"}
+              - Harass clinic staff or other users (e.g., trolling, abusive messages).{"\n"}
+              - Upload malicious software (viruses, spyware) or disrupt server operations.{"\n"}
+              - Misrepresent your identity or medical needs.{"\n"}
+              - Circumvent appointment limits (e.g., creating multiple accounts).{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>4. Appointment Policies{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>4.1 Booking & Cancellation</Text>{" "}
+              Appointments operate on a "First-Appoint, First-Served" basis. No downpayment is required ("Appoint Now, Pay Later"). Cancellations must be made at least 24 hours in advance via the Platform.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>4.2 No-Show & Late Arrival Policy</Text>{" "}
+              AI Chatbot Reminder: Users receive 2 automated alerts:{"\n"}
+              - 2 hours before the Appointment.{"\n"}
+              - Grace Period: A 15-minute late arrival window is permitted. After this:{"\n"}
+              - The Appointment is automatically forfeited.{"\n"}
+              - The slot is released to other patients.{"\n"}
+              - The User must reschedule.{"\n"}
+              Strike System:{"\n"}
+              - 5 No-Shows = 1-month account suspension.{"\n"}
+              - Suspended accounts cannot book new Appointments but may view clinic information.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>5. Intellectual Property Rights{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>5.1 Ownership</Text>{" "}
+              All text, graphics, logos, clinic data, and AI chatbot software APIs are the exclusive property of SmileStudio and its partner clinics. No commercial use (e.g., reselling clinic slots, redistributing data) is permitted.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>5.2 Limited License</Text>{" "}
+              Users are granted a revocable, non-exclusive license to: Access the Platform for personal, non-commercial healthcare purposes.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>6. Privacy & Data Security{"\n"}</Text>
+              Our Privacy Policy (Will be added Soon) details how we collect, store, and protect your data. Clinic Confidentiality: All medical information shared during Appointments is protected under HIPAA-equivalent Philippine laws.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>7. Disclaimers & Limitation of Liability{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>7.1 No Medical Guarantees</Text>{" "}
+              SmileStudio is not a healthcare provider. We do not guarantee diagnosis accuracy, treatment outcomes, or clinic availability.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>7.2 Platform "As Is"</Text>{" "}
+              The Platform may experience downtime, bugs, or delays.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>7.3 No Financial Liability</Text>{" "}
+              We do not charge users and do not handle payments, medical services, or clinic operations. We are not liable for:{"\n"}
+              - User misconduct (e.g., no-shows, fake bookings).{"\n"}
+              - Clinic errors (e.g., overbooking, misdiagnosis).{"\n"}
+              - Indirect damages (e.g., lost time, travel costs).{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>8. Termination & Enforcement{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>8.1 By SmileStudio</Text>{" "}
+              We may suspend or terminate accounts for: Breach of these Terms (e.g., fake Appointments, harassment). Malicious Activity (e.g., hacking attempts). Excessive No-Shows (per Section 4.2).{"\n"}
+              <Text style={{ fontWeight: "bold" }}>8.2 By Users</Text>{" "}
+              You may deactivate your account at any time by contacting: (+63) 921-888-1835{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>9. Governing Law & Dispute Resolution{"\n"}</Text>
+              These Terms are governed by Philippine law (Republic Act No. 10173, Data Privacy Act). Disputes must first undergo mediation in San Jose Del Monte, Bulacan. Unresolved disputes will be settled in Philippine courts.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>10. Contact Information{"\n"}</Text>
+              For inquiries or violations, contact:{"\n"}
+              Scuba Scripter and Pixel Cowboy Team{"\n"}
+              (+63) 921-888-1835{"\n"}
+              San Jose Del Monte, Bulacan, Philippines
+            </Text>
+          </ScrollView>
+
+          <TouchableOpacity
+            onPress={() => setTermsOfUse(false)}
+            style={{
+              marginTop: 20,
+              backgroundColor: "#003f30",
+              paddingVertical: 10,
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ color: "white", textAlign: "center", fontWeight: "bold" }}>
+              Close
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      </Modal>
+    </View>
+
+          <View
+            style={{
+              padding: 20,
+              backgroundColor: "#f7f7f7ff",
+              borderRadius: 16,
+              marginTop: 20,
+              shadowColor: "#000",
+              shadowOpacity: 0.05,
+              shadowRadius: 6,
+              elevation: 2,
+            }}
+          >
+            <Text
+              style={{
                 fontSize: 28,
-                fontWeight: 'bold',
+                fontWeight: "bold",
                 marginBottom: 20,
-                textAlign: 'center',
-                color: '#003f30',
-              }}>
-                Meet the Team
+                textAlign: "center",
+                color: "#003f30",
+              }}
+            >
+              Meet the Team
+            </Text>
+
+            <View
+              style={{
+                alignItems: "center",
+                marginBottom: 30,
+                backgroundColor: "#f0fff0",
+                borderRadius: 16,
+                padding: 20,
+                shadowColor: "#000",
+                shadowOpacity: 0.1,
+                shadowRadius: 6,
+                elevation: 3,
+              }}
+            >
+              <Image
+                source={
+                  require("../../assets/team/migueldel.png") // fallback/default image
+                }
+                style={{
+                  width: 170,
+                  height: 170,
+                  borderRadius: 60,
+                  borderWidth: 2,
+                  borderColor: "#00bcd4",
+                  backgroundColor: "#eaeaea",
+                }}
+              />
+
+              <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+                Miguel Del Rosario
               </Text>
+              <Text style={{ fontSize: 16, color: "#555" }}>
+                Project Manager
+              </Text>
+            </View>
+            <View
+              style={{
+                alignItems: "center",
+                marginBottom: 30,
+                backgroundColor: "#f0fff0",
+                borderRadius: 16,
+                padding: 20,
+                shadowColor: "#000",
+                shadowOpacity: 0.1,
+                shadowRadius: 6,
+                elevation: 3,
+              }}
+            >
+              <Image
+                source={
+                  require("../../assets/team/paala.png") // fallback/default image
+                }
+                style={{
+                  width: 170,
+                  height: 170,
+                  borderRadius: 60,
+                  borderWidth: 2,
+                  borderColor: "#00bcd4",
+                  backgroundColor: "#eaeaea",
+                }}
+              />
 
-                <View
-                  style={{
-                    alignItems: 'center',
-                    marginBottom: 30,
-                    backgroundColor: '#f0fff0',
-                    borderRadius: 16,
-                    padding: 20,
-                    shadowColor: '#000',
-                    shadowOpacity: 0.1,
-                    shadowRadius: 6,
-                    elevation: 3,
-                  }}
-                >
+              <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+                Paala James
+              </Text>
+              <Text style={{ fontSize: 16, color: "#555" }}>
+                Programmer Specialist
+              </Text>
+            </View>
 
-                  <Image
-                    source={
-                      require('../../assets/team/migueldel.png') // fallback/default image
-                    }
-                    style={{
-                      width: 170,
-                      height: 170,
-                      borderRadius: 60,
-                      borderWidth: 2,
-                      borderColor: '#00bcd4',
-                      backgroundColor: '#eaeaea',
-                    }}
-                  />
-                  
-                  <Text style={{ fontSize: 18, fontWeight: 'bold' }}>Miguel Del Rosario</Text>
-                  <Text style={{ fontSize: 16, color: '#555' }}>Project Manager</Text>
-                </View>
-                <View
-                  style={{
-                    alignItems: 'center',
-                    marginBottom: 30,
-                    backgroundColor: '#f0fff0',
-                    borderRadius: 16,
-                    padding: 20,
-                    shadowColor: '#000',
-                    shadowOpacity: 0.1,
-                    shadowRadius: 6,
-                    elevation: 3,
-                  }}
-                >
+            <View
+              style={{
+                alignItems: "center",
+                marginBottom: 30,
+                backgroundColor: "#f0fff0",
+                borderRadius: 16,
+                padding: 20,
+                shadowColor: "#000",
+                shadowOpacity: 0.1,
+                shadowRadius: 6,
+                elevation: 3,
+              }}
+            >
+              <Image
+                source={
+                  require("../../assets/team/elbert.png") // fallback/default image
+                }
+                style={{
+                  width: 170,
+                  height: 170,
+                  borderRadius: 60,
+                  borderWidth: 2,
+                  borderColor: "#00bcd4",
+                  backgroundColor: "#eaeaea",
+                }}
+              />
 
-                  <Image
-                    source={
-                      require('../../assets/team/paala.png') // fallback/default image
-                    }
-                    style={{
-                      width: 170,
-                      height: 170,
-                      borderRadius: 60,
-                      borderWidth: 2,
-                      borderColor: '#00bcd4',
-                      backgroundColor: '#eaeaea',
-                    }}
-                  />
-                  
-                  <Text style={{ fontSize: 18, fontWeight: 'bold' }}>Paala James</Text>
-                  <Text style={{ fontSize: 16, color: '#555' }}>Programmer Specialist</Text>
-                </View>
+              <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+                Elbert Rosales
+              </Text>
+              <Text style={{ fontSize: 16, color: "#555" }}>
+                Quality Assurance
+              </Text>
+            </View>
 
-                                <View
-                  style={{
-                    alignItems: 'center',
-                    marginBottom: 30,
-                    backgroundColor: '#f0fff0',
-                    borderRadius: 16,
-                    padding: 20,
-                    shadowColor: '#000',
-                    shadowOpacity: 0.1,
-                    shadowRadius: 6,
-                    elevation: 3,
-                  }}
-                >
+            <View
+              style={{
+                alignItems: "center",
+                marginBottom: 30,
+                backgroundColor: "#f0fff0",
+                borderRadius: 16,
+                padding: 20,
+                shadowColor: "#000",
+                shadowOpacity: 0.1,
+                shadowRadius: 6,
+                elevation: 3,
+              }}
+            >
+              <Image
+                source={
+                  require("../../assets/team/rex.png") // fallback/default image
+                }
+                style={{
+                  width: 170,
+                  height: 170,
+                  borderRadius: 60,
+                  borderWidth: 2,
+                  borderColor: "#00bcd4",
+                  backgroundColor: "#eaeaea",
+                }}
+              />
 
-                  <Image
-                    source={
-                      require('../../assets/team/elbert.png') // fallback/default image
-                    }
-                    style={{
-                      width: 170,
-                      height: 170,
-                      borderRadius: 60,
-                      borderWidth: 2,
-                      borderColor: '#00bcd4',
-                      backgroundColor: '#eaeaea',
-                    }}
-                  />
-                  
-                  <Text style={{ fontSize: 18, fontWeight: 'bold' }}>Elbert Rosales</Text>
-                  <Text style={{ fontSize: 16, color: '#555' }}>Quality Assurance</Text>
-                </View>
-
-                                <View
-                  style={{
-                    alignItems: 'center',
-                    marginBottom: 30,
-                    backgroundColor: '#f0fff0',
-                    borderRadius: 16,
-                    padding: 20,
-                    shadowColor: '#000',
-                    shadowOpacity: 0.1,
-                    shadowRadius: 6,
-                    elevation: 3,
-                  }}
-                >
-
-                  <Image
-                    source={
-                      require('../../assets/team/rex.png') // fallback/default image
-                    }
-                    style={{
-                      width: 170,
-                      height: 170,
-                      borderRadius: 60,
-                      borderWidth: 2,
-                      borderColor: '#00bcd4',
-                      backgroundColor: '#eaeaea',
-                    }}
-                  />
-                  
-                  <Text style={{ fontSize: 18, fontWeight: 'bold' }}>Rex Carlo Rosales</Text>
-                  <Text style={{ fontSize: 16, color: '#555' }}>System Analyst</Text>
-                </View>
-                
-            </ScrollView>
-          </View>
+              <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+                Rex Carlo Rosales
+              </Text>
+              <Text style={{ fontSize: 16, color: "#555" }}>
+                System Analyst
+              </Text>
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+        )}
 
           {/* Dashboard Augmented Reality --------------------------------------------------------------------------------------- */}
   
