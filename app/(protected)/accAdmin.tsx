@@ -58,6 +58,8 @@ export default function Account() {
   const [selectedClinicDentist, setSelectedClinicDentist] = useState(false);
   const [selectedClinicImage, setSelectedClinicImage] = useState();
   const [termsOfUse, setTermsOfUse] = useState(false);
+  const [selectedCI, setSelectedCI] = useState("");
+  const [selectedOffers, setSelectedOffers] = useState("");
 
   const [selectedClinicId, setSelectedClinicId] = useState<string>();
   const [messageToClinic, setMessageToClinic] = useState<string>();
@@ -541,14 +543,41 @@ useEffect(() => {
                 >{session?.user?.email}</Text>
 
                 <TouchableOpacity
-                  style={{...styles.mar3, width: "90%"}}
+                  style={{
+                    backgroundColor: "#4CAF50",
+                    borderRadius: 12,
+                    marginTop: 0,
+                    marginBottom: 12,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 8,
+                    elevation: 6,
+                    height: 30,
+                    alignSelf: "center",
+                    width: "90%",
+                  }}
                   onPress={() => setModalUpdate(true)}
                   disabled={loading}
+                  activeOpacity={0.8}
                 >
                   {loading ? (
-                    <ActivityIndicator animating color={"black"} />
+                    <ActivityIndicator animating color={"white"} />
                   ) : (
-                    <Text style={{...styles.buttonTextUpdate, textAlign: "center"}}>Edit Information</Text>
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: "600",
+                        color: "white",
+                        letterSpacing: 0.5,
+                        textTransform: "uppercase",
+                        textAlign: "center",
+                      }}
+                    >
+                      Edit Information
+                    </Text>
                   )}
                 </TouchableOpacity>
 
@@ -1184,6 +1213,8 @@ useEffect(() => {
       setviewClinic(true);
       setSelectedClinicId(clinic.id);
       setMapView([clinic.longitude, clinic.latitude]);
+      setSelectedCI(clinic.introduction);
+      setSelectedOffers(clinic.offers);
     }}
   >
     <Text style={{ color: "#fff", fontSize: isMobile ? 8 : 10 }}>View Clinic</Text>
@@ -1423,7 +1454,6 @@ useEffect(() => {
           borderBottomWidth: 1,
           borderColor: "#e0e0e0",
           backgroundColor: "#b9ffdcff",
-          zIndex:9
         }}
       >
         <TouchableOpacity onPress={() => setFullProfile(false)}>
@@ -1485,9 +1515,11 @@ useEffect(() => {
 
       {/* Scrollable Content */}
       <ScrollView style={{ flex: 1, padding: 16, paddingTop: 90 }}>
+
+        
         
         <View style={{paddingLeft: isMobile ? null : "20%", paddingRight: isMobile ? null : "20%"}}>
-        {/* Clinic Details Title */}
+
         <Text
           style={{
             fontSize: 22,
@@ -1533,6 +1565,86 @@ useEffect(() => {
             🦷 Dentist Availability: {selectedClinicDentist ? "Yes" : "No"}
           </Text>
         </View>
+        
+
+        {/* Clinic Details Title */}
+        <Text
+          style={{
+            fontSize: 22,
+            fontWeight: "bold",
+            color: "#003f30",
+            marginBottom: 10,
+          }}
+        >
+          Introduction
+        </Text>
+
+        {/* Clinic Info Container */}
+        <View
+          style={{
+            backgroundColor: "#f8f9f9",
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 20,
+            elevation: 3,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: selectedCI ? 17 : 14,
+              marginBottom: 6,
+              color: selectedCI ? "#222" : "#ccc",
+              textAlign: selectedCI ? "left" : "center",
+            }}
+          >
+            {selectedCI || "introduction have not yet been set"}
+          </Text>
+        </View>
+
+
+        {/* Clinic Offers */}
+        <Text
+          style={{
+            fontSize: 22,
+            fontWeight: "bold",
+            color: "#003f30",
+            marginBottom: 10,
+          }}
+        >
+          Offers
+        </Text>
+
+        {/* Clinic Info Container */}
+        <View
+          style={{
+            backgroundColor: "#f8f9f9",
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 20,
+            elevation: 3,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: selectedOffers ? 17 : 14,
+              marginBottom: 6,
+              color: selectedOffers ? "#222" : "#ccc",
+              textAlign: selectedOffers ? "left" : "center",
+            }}
+          >
+            {selectedOffers || "offers have not yet been set"}
+          </Text>
+        </View>
+
+        
 
         {/* Clinic Schedule Title */}
         <Text
@@ -2510,23 +2622,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderBottomColor: "#fff", // white line
     borderBottomWidth: 1,      // thickness of line
-  },
-  mar3: {
-    backgroundColor: "#45b4ffff", // fallback solid color
-    borderRadius: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    marginTop: 0,
-    marginBottom: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 5,
-    height: 40,
-    alignSelf: "center",
   },
   buttonText: {
     color: '#000000ff',

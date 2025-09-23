@@ -89,6 +89,8 @@ export default function Account() {
   const [selectedClinicDentist, setSelectedClinicDentist] = useState(false);
   const [selectedClinicImage, setSelectedClinicImage] = useState();
   const [termsOfUse, setTermsOfUse] = useState(false);
+  const [selectedCI, setSelectedCI] = useState("");
+  const [selectedOffers, setSelectedOffers] = useState("");
 
   const [moved, setMoved] = useState(false);
   const [mobilemoved, mobilesetMoved] = useState(false);
@@ -110,6 +112,13 @@ export default function Account() {
   const [modalSignout, setModalSignout] = useState(false);
   const [modalUpdate, setModalUpdate] = useState(false);
   const [modalMap, setModalMap] = useState(false);
+
+  const [profileInfoVisible, setProfileInfoVisible] = useState(false);
+
+  // State for profileInfo modal
+  const [dentistAvailability, setDentistAvailability] = useState(false);
+  const [clinicIntroduction, setClinicIntroduction] = useState("");
+  const [offers, setOffers] = useState("");
 
   const [dashboardView, setDashboardView] = useState("profile");
 
@@ -369,7 +378,7 @@ export default function Account() {
       const { data, error, status } = await supabase
         .from("clinic_profiles")
         .select(
-          `clinic_name, mobile_number, address, clinic_photo_url, license_photo_url`
+          `clinic_name, mobile_number, address, clinic_photo_url, license_photo_url, isDentistAvailable, introduction, offers`
         )
         .eq("id", session?.user.id)
         .single();
@@ -382,6 +391,9 @@ export default function Account() {
         setAdress(data.address);
         setClinicPho(data.clinic_photo_url);
         setLicensePho(data.license_photo_url);
+        setDentistAvailability(data.isDentistAvailable ?? false);
+        setClinicIntroduction(data.introduction ?? "");
+        setOffers(data.offers ?? "");
       }
     } catch (error) {
       if (error instanceof Error) Alert.alert(error.message);
@@ -633,6 +645,33 @@ export default function Account() {
     if (currentLine) lines.push(currentLine);
 
     return lines.join("\n"); // insert line breaks
+  };
+  
+  const toggleDentistAvailability = () => {
+    setDentistAvailability((prev) => !prev);
+  };
+
+  const updateProfileInfoModal = async () => {
+    try {
+      if (!session?.user) throw new Error("No user on the session!");
+
+      const { error } = await supabase
+        .from("clinic_profiles")
+        .update({
+          isDentistAvailable: dentistAvailability,
+          introduction: clinicIntroduction,
+          offers: offers,
+        })
+        .eq("id", session.user.id);
+
+      if (error) throw error;
+
+      Alert.alert("Success", "Profile info updated.");
+    } catch (error) {
+      if (error instanceof Error) {
+        Alert.alert("Error", error.message);
+      }
+    }
   };
 
   return (
@@ -972,16 +1011,36 @@ export default function Account() {
                 </Text>
 
                 <TouchableOpacity
-                  style={{ ...styles.mar3, width: "90%" }}
+                  style={{
+                    backgroundColor: "#4CAF50",
+                    borderRadius: 12,
+                    marginTop: 0,
+                    marginBottom: 12,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 8,
+                    elevation: 6,
+                    height: 30,
+                    alignSelf: "center",
+                    width: "90%",
+                  }}
                   onPress={() => setModalUpdate(true)}
                   disabled={loading}
+                  activeOpacity={0.8}
                 >
                   {loading ? (
-                    <ActivityIndicator animating color={"black"} />
+                    <ActivityIndicator animating color={"white"} />
                   ) : (
                     <Text
                       style={{
-                        ...styles.buttonTextUpdate,
+                        fontSize: 12,
+                        fontWeight: "600",
+                        color: "white",
+                        letterSpacing: 0.5,
+                        textTransform: "uppercase",
                         textAlign: "center",
                       }}
                     >
@@ -1012,7 +1071,7 @@ export default function Account() {
                         borderRadius: 12,
                         padding: 20,
                         alignItems: "center",
-                        width: !isMobile ? "25%" : "85%",
+                        width: !isMobile ? "25%" : "95%",
                       }}
                     >
                       <View style={styles.avatarSection}>
@@ -1122,6 +1181,175 @@ export default function Account() {
                           </Text>
                         </TouchableOpacity>
                       </View>
+                      <Modal
+                        transparent
+                        animationType="fade"
+                        visible={profileInfoVisible}
+                        onRequestClose={() => setProfileInfoVisible(false)}
+                      >
+                        <View
+                          style={{
+                            flex: 1,
+                            backgroundColor: "rgba(0,0,0,0.4)",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            padding: 50,
+                          }}
+                        >
+                          <View
+                            style={{
+                              backgroundColor: "white",
+                              borderRadius: 12,
+                              padding: 20,
+                              width: Platform.OS === "web" ? "25%" : "95%",
+                            }}
+                          >
+                            <TouchableOpacity
+                              onPress={toggleDentistAvailability}
+                              style={{ flexDirection: "row", alignItems: "center", marginBottom: 15 }}
+                            >
+                              <View
+                                style={{
+                                  height: 20,
+                                  width: 20,
+                                  borderRadius: 4,
+                                  borderWidth: 1,
+                                  borderColor: "#888",
+                                  justifyContent: "center",
+                                  alignItems: "center",
+                                  marginRight: 10,
+                                  backgroundColor: dentistAvailability ? "#007bff" : "#fff",
+                                }}
+                              >
+                                {dentistAvailability && (
+                                  <View style={{ width: 10, height: 10, backgroundColor: "#fff" }} />
+                                )}
+                              </View>
+                              <Text>Dentist Availability</Text>
+                            </TouchableOpacity>
+
+                            {/* Clinic's Introduction TextInput */}
+                            <Text style={{ marginBottom: 6, fontWeight: "bold" }}>
+                              Clinic's Introduction
+                            </Text>
+                            <TextInput
+                              style={{
+                                height: 100,
+                                borderColor: "#ccc",
+                                borderWidth: 1,
+                                borderRadius: 8,
+                                padding: 10,
+                                marginBottom: 15,
+                                textAlignVertical: "top",
+                              }}
+                              multiline
+                              placeholder="Write introduction..."
+                              maxLength={500}
+                              value={clinicIntroduction}
+                              onChangeText={setClinicIntroduction}
+                            />
+
+                            {/* Offers TextInput */}
+                            <Text style={{ marginBottom: 6, fontWeight: "bold" }}>Offers</Text>
+                            <TextInput
+                              style={{
+                                height: 100,
+                                borderColor: "#ccc",
+                                borderWidth: 1,
+                                borderRadius: 8,
+                                padding: 10,
+                                marginBottom: 15,
+                                textAlignVertical: "top",
+                              }}
+                              multiline
+                              placeholder="Write offers..."
+                              maxLength={500}
+                              value={offers}
+                              onChangeText={setOffers}
+                            />
+
+                            {/* Buttons at the bottom */}
+                            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                              <TouchableOpacity
+                                style={{
+                                  flex: 1,
+                                  backgroundColor: "#b32020",
+                                  paddingVertical: 12,
+                                  borderRadius: 8,
+                                  marginRight: 10,
+                                }}
+                                onPress={() => setProfileInfoVisible(false)}
+                              >
+                                <Text
+                                  style={{
+                                    color: "white",
+                                    fontWeight: "bold",
+                                    textAlign: "center",
+                                  }}
+                                >
+                                  Close
+                                </Text>
+                              </TouchableOpacity>
+
+                              <TouchableOpacity
+                                style={{
+                                  flex: 1,
+                                  backgroundColor: "#2e7dccff",
+                                  paddingVertical: 12,
+                                  borderRadius: 8,
+                                }}
+                                onPress={() => {
+                                  updateProfileInfoModal(); // always updates with current toggle state
+
+                                  console.log("Clinic Introduction:", clinicIntroduction);
+                                  console.log("Offers:", offers);
+                                  setProfileInfoVisible(false);
+
+                                }}
+                              >
+                                <Text
+                                  style={{
+                                    color: "white",
+                                    fontWeight: "bold",
+                                    textAlign: "center",
+                                  }}
+                                >
+                                  Update
+                                </Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        </View>
+                      </Modal>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          justifyContent: "space-between",
+                          width: "100%",
+                          marginBottom: 8,
+                        }}
+                      >
+                      <TouchableOpacity
+                        style={{
+                          flex: 1,
+                          backgroundColor: "#4CAF50",
+                          paddingVertical: 5,
+                          borderRadius: 8,
+                          marginTop: 10,
+                        }}
+                        onPress={() => setProfileInfoVisible(true)}
+                      >
+                        <Text
+                          style={{
+                            color: "white",
+                            fontWeight: "bold",
+                            textAlign: "center",
+                          }}
+                        >
+                          Open Profile Info
+                        </Text>
+                      </TouchableOpacity>
+                      </View>
                       <View
                         style={{
                           flexDirection: "row",
@@ -1133,7 +1361,7 @@ export default function Account() {
                       <TouchableOpacity
                         style={{
                           flex: 1,
-                          backgroundColor: "#728d64ff",
+                          backgroundColor: "#4CAF50",
                           paddingVertical: 5,
                           borderRadius: 8,
                           marginBottom: 8,
@@ -1157,7 +1385,7 @@ export default function Account() {
                         }}
                         style={{
                           flex: 1,
-                          backgroundColor: "#728d64ff",
+                          backgroundColor: "#4CAF50",
                           paddingVertical: 5,
                           borderRadius: 8,
                           marginBottom: 8,
@@ -1196,7 +1424,7 @@ export default function Account() {
                               textAlign: "center",
                             }}
                           >
-                            Cancel
+                            Back
                           </Text>
                         </TouchableOpacity>
                       </View>
@@ -1814,7 +2042,7 @@ export default function Account() {
                                     }}
                                   >
                                   <Text style={{ color: "#000000ff" }}>
-                                    {`Day/Time Request : \n${new Date(
+                                    {`Date/Time Request : \n${new Date(
                                       e.item.date_time
                                     ).toLocaleString()}`}
                                   </Text>
@@ -2146,7 +2374,7 @@ export default function Account() {
                           ? "Accepted"
                           : e.item.isAccepted === false
                           ? "Rejected"
-                          : "-"}
+                          : "Rejected : past due"}
                       </Text>
 
                       {e.item.isAccepted == false && (
@@ -2431,6 +2659,8 @@ export default function Account() {
       setviewClinic(true);
       setSelectedClinicId(clinic.id);
       setMapView([clinic.longitude, clinic.latitude]);
+      setSelectedCI(clinic.introduction);
+      setSelectedOffers(clinic.offers);
     }}
   >
     <Text style={{ color: "#fff", fontSize: isMobile ? 8 : 10 }}>View Clinic</Text>
@@ -2549,7 +2779,7 @@ export default function Account() {
         <Text style={{ fontSize: 14, fontWeight: "500", marginTop: 12 }}>
           Clinic Schedule
         </Text>
-        <View style={{ marginBottom: 16, gap: 8 }}>
+        <View style={{ marginBottom: 16, gap: 1 }}>
           {[
             { label: "Sunday", time: selectedSunday },
             { label: "Monday", time: selectedMonday },
@@ -2731,9 +2961,11 @@ export default function Account() {
 
       {/* Scrollable Content */}
       <ScrollView style={{ flex: 1, padding: 16, paddingTop: 90 }}>
+
+        
         
         <View style={{paddingLeft: isMobile ? null : "20%", paddingRight: isMobile ? null : "20%"}}>
-        {/* Clinic Details Title */}
+
         <Text
           style={{
             fontSize: 22,
@@ -2779,6 +3011,86 @@ export default function Account() {
             🦷 Dentist Availability: {selectedClinicDentist ? "Yes" : "No"}
           </Text>
         </View>
+        
+
+        {/* Clinic Details Title */}
+        <Text
+          style={{
+            fontSize: 22,
+            fontWeight: "bold",
+            color: "#003f30",
+            marginBottom: 10,
+          }}
+        >
+          Introduction
+        </Text>
+
+        {/* Clinic Info Container */}
+        <View
+          style={{
+            backgroundColor: "#f8f9f9",
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 20,
+            elevation: 3,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: selectedCI ? 17 : 14,
+              marginBottom: 6,
+              color: selectedCI ? "#222" : "#ccc",
+              textAlign: selectedCI ? "left" : "center",
+            }}
+          >
+            {selectedCI || "introduction have not yet been set"}
+          </Text>
+        </View>
+
+
+        {/* Clinic Offers */}
+        <Text
+          style={{
+            fontSize: 22,
+            fontWeight: "bold",
+            color: "#003f30",
+            marginBottom: 10,
+          }}
+        >
+          Offers
+        </Text>
+
+        {/* Clinic Info Container */}
+        <View
+          style={{
+            backgroundColor: "#f8f9f9",
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 20,
+            elevation: 3,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: selectedOffers ? 17 : 14,
+              marginBottom: 6,
+              color: selectedOffers ? "#222" : "#ccc",
+              textAlign: selectedOffers ? "left" : "center",
+            }}
+          >
+            {selectedOffers || "offers have not yet been set"}
+          </Text>
+        </View>
+
+        
 
         {/* Clinic Schedule Title */}
         <Text
@@ -4103,23 +4415,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderBottomColor: "#fff", // white line
     borderBottomWidth: 1, // thickness of line
-  },
-  mar3: {
-    backgroundColor: "#45b4ffff", // fallback solid color
-    borderRadius: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    marginTop: 0,
-    marginBottom: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 5,
-    height: 40,
-    alignSelf: "center",
   },
   buttonText: {
     color: "#000000ff",

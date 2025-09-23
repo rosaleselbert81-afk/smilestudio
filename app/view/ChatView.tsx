@@ -182,9 +182,12 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
               color: isMyMessage ? "#e3f1ffff" : "#555",
             }}
           >
-            {new Date(item.created_at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
+            {new Date(item.created_at).toLocaleString([], {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
             })}
           </Text>
         </View>

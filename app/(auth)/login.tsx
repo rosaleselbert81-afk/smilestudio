@@ -277,7 +277,7 @@ export default function Login() {
                 <View style={styles.modalOverlay}>
                   <View style={{ ...styles.modalBox, width: !isMobile ? 550 : 280 }}>
                     <Text
-                      style={{ ...styles.optionText, fontSize: 20, marginBottom: 20, color: '#000000ff' }}
+                      style={{ ...styles.optionText, fontSize: 20, marginBottom: 20, color: "#003f30ff" }}
                     >
                       Patient or Clinic?
                     </Text>

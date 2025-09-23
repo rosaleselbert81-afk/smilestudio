@@ -24,6 +24,7 @@ export default function SignupScreen() {
 
   const { signUpClinic } = useSession();
   const [modalVisible, setModalVisible] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const pickClinicPhoto = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -376,7 +377,7 @@ San Jose Del Monte, Bulacan, Philippine
                       borderRadius: 10,
                       maxHeight: '80%',
                       padding: 15,
-                      width: isMobile ? '80%' : '30%'
+                      width: isMobile ? '80%' : '30%',
                     }}
                   >
                     <Text
@@ -389,15 +390,37 @@ San Jose Del Monte, Bulacan, Philippine
                     >
                       Terms of Use
                     </Text>
+
                     <ScrollView style={{ marginBottom: 15 }}>
                       <Text style={{ fontSize: 14, lineHeight: 20 }}>{termsText}</Text>
                     </ScrollView>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                      }}
+
+                    {/* ✅ Checkbox */}
+                    <TouchableOpacity
+                      onPress={() => setTermsAccepted((prev) => !prev)}
+                      style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
                     >
+                      <View
+                        style={{
+                          height: 20,
+                          width: 20,
+                          borderRadius: 4,
+                          borderWidth: 1,
+                          borderColor: '#888',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          marginRight: 10,
+                          backgroundColor: termsAccepted ? '#4CAF50' : '#fff',
+                        }}
+                      >
+                        {termsAccepted && (
+                          <View style={{ width: 10, height: 10, backgroundColor: '#fff' }} />
+                        )}
+                      </View>
+                      <Text>I agree to the terms of use</Text>
+                    </TouchableOpacity>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                       <TouchableOpacity
                         onPress={() => setModalVisible(false)}
                         style={{
@@ -407,28 +430,34 @@ San Jose Del Monte, Bulacan, Philippine
                           marginHorizontal: 5,
                           alignItems: 'center',
                           backgroundColor: '#b32020ff',
-                          justifyContent: 'center'
+                          justifyContent: 'center',
                         }}
                       >
-                        <Text style={{ color: 'white', fontWeight: '600', textAlign: 'center'}}>Reject Terms and Close</Text>
+                        <Text style={{ color: 'white', fontWeight: '600', textAlign: 'center' }}>
+                          Reject Terms and Close
+                        </Text>
                       </TouchableOpacity>
+
                       <TouchableOpacity
-                          onPress={() => {
+                        onPress={() => {
+                          if (termsAccepted) {
                             signUpHandler();
                             setModalVisible(false);
-                          }}
+                          }
+                        }}
+                        disabled={!termsAccepted}
                         style={{
                           flex: 1,
                           paddingVertical: 12,
                           borderRadius: 5,
                           marginHorizontal: 5,
                           alignItems: 'center',
-                          backgroundColor: '#4CAF50',
-                          justifyContent: 'center'
+                          backgroundColor: termsAccepted ? '#4CAF50' : '#ccc',
+                          justifyContent: 'center',
                         }}
                       >
                         <Text style={{ color: 'white', fontWeight: '600', textAlign: 'center' }}>
-                          Accept Terms and SignUp
+                          Proceed and SignUp
                         </Text>
                       </TouchableOpacity>
                     </View>

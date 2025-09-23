@@ -128,6 +128,8 @@ export default function Account() {
   const [modalMessage, setModalMessage] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState('');
   const [termsOfUse, setTermsOfUse] = useState(false);
+  const [selectedCI, setSelectedCI] = useState("");
+  const [selectedOffers, setSelectedOffers] = useState("");
 
   const [mapView, setMapView] = useState<
     [number | undefined, number | undefined]
@@ -954,16 +956,36 @@ const toggleReason = (reason: string) => {
                 </Text>
 
                 <TouchableOpacity
-                  style={{ ...styles.mar3, width: "90%" }}
+                  style={{
+                    backgroundColor: "#4CAF50",
+                    borderRadius: 12,
+                    marginTop: 0,
+                    marginBottom: 12,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 8,
+                    elevation: 6,
+                    height: 30,
+                    alignSelf: "center",
+                    width: "90%",
+                  }}
                   onPress={() => setModalUpdate(true)}
                   disabled={loading}
+                  activeOpacity={0.8}
                 >
                   {loading ? (
-                    <ActivityIndicator animating color={"black"} />
+                    <ActivityIndicator animating color={"white"} />
                   ) : (
                     <Text
                       style={{
-                        ...styles.buttonTextUpdate,
+                        fontSize: 12,
+                        fontWeight: "600",
+                        color: "white",
+                        letterSpacing: 0.5,
+                        textTransform: "uppercase",
                         textAlign: "center",
                       }}
                     >
@@ -1580,7 +1602,7 @@ const toggleReason = (reason: string) => {
                                     }}
                                   >
                                   <Text style={{ color: "#000000ff" }}>
-                                    {`Day/Time Request :\n${new Date(
+                                    {`Date/Time Request :\n${new Date(
                                       e.item.date_time
                                     ).toLocaleString()}`}
                                   </Text>
@@ -1884,7 +1906,7 @@ const toggleReason = (reason: string) => {
                           ? "Accepted"
                           : e.item.isAccepted === false
                           ? "Rejected"
-                          : "Rejected : The pending is past due"}
+                          : "Rejected : past due"}
                       </Text>
 
                       {e.item.isAccepted == false && (
@@ -2182,6 +2204,8 @@ const toggleReason = (reason: string) => {
       setappointmentName(clinic.clinic_name);
       setMapView([clinic.longitude, clinic.latitude]);
       chatWithClinic(clinic.id);
+      setSelectedCI(clinic.introduction);
+      setSelectedOffers(clinic.offers);
     }}
   >
     <Text style={{ color: "#fff", fontSize: isMobile ? 8 : 10 }}>View Clinic</Text>
@@ -2300,7 +2324,7 @@ const toggleReason = (reason: string) => {
         <Text style={{ fontSize: 14, fontWeight: "500", marginTop: 12 }}>
           Clinic Schedule
         </Text>
-        <View style={{ marginBottom: 16, gap: 8 }}>
+        <View style={{ marginBottom: 16, gap: 1 }}>
           {[
             { label: "Sunday", time: selectedSunday },
             { label: "Monday", time: selectedMonday },
@@ -2484,9 +2508,11 @@ const toggleReason = (reason: string) => {
 
       {/* Scrollable Content */}
       <ScrollView style={{ flex: 1, padding: 16, paddingTop: 90 }}>
+
+        
         
         <View style={{paddingLeft: isMobile ? null : "20%", paddingRight: isMobile ? null : "20%"}}>
-        {/* Clinic Details Title */}
+
         <Text
           style={{
             fontSize: 22,
@@ -2532,6 +2558,86 @@ const toggleReason = (reason: string) => {
             🦷 Dentist Availability: {selectedClinicDentist ? "Yes" : "No"}
           </Text>
         </View>
+        
+
+        {/* Clinic Details Title */}
+        <Text
+          style={{
+            fontSize: 22,
+            fontWeight: "bold",
+            color: "#003f30",
+            marginBottom: 10,
+          }}
+        >
+          Introduction
+        </Text>
+
+        {/* Clinic Info Container */}
+        <View
+          style={{
+            backgroundColor: "#f8f9f9",
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 20,
+            elevation: 3,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: selectedCI ? 17 : 14,
+              marginBottom: 6,
+              color: selectedCI ? "#222" : "#ccc",
+              textAlign: selectedCI ? "left" : "center",
+            }}
+          >
+            {selectedCI || "introduction have not yet been set"}
+          </Text>
+        </View>
+
+
+        {/* Clinic Offers */}
+        <Text
+          style={{
+            fontSize: 22,
+            fontWeight: "bold",
+            color: "#003f30",
+            marginBottom: 10,
+          }}
+        >
+          Offers
+        </Text>
+
+        {/* Clinic Info Container */}
+        <View
+          style={{
+            backgroundColor: "#f8f9f9",
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 20,
+            elevation: 3,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: selectedOffers ? 17 : 14,
+              marginBottom: 6,
+              color: selectedOffers ? "#222" : "#ccc",
+              textAlign: selectedOffers ? "left" : "center",
+            }}
+          >
+            {selectedOffers || "offers have not yet been set"}
+          </Text>
+        </View>
+
+        
 
         {/* Clinic Schedule Title */}
         <Text
@@ -2676,12 +2782,7 @@ const toggleReason = (reason: string) => {
         }}
       >
         <TouchableOpacity
-          onPress={() => {
-            chatWithClinic(clinic.id);
-            setFullProfile(false);
-            setviewClinic(false);
-            setDashboardView("chats");
-          }}
+          onPress={() => alert(`Messaging ${selectedClinicName}`)}
           style={{
             backgroundColor: "#3498db",
             paddingVertical: 12,
@@ -2693,23 +2794,6 @@ const toggleReason = (reason: string) => {
           }}
         >
           <Text style={{ color: "#fff", fontWeight: "600" }}>Message</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => {
-            setModalAppoint(true);
-          }}
-          style={{
-            backgroundColor: "#27ae60",
-            paddingVertical: 12,
-            paddingHorizontal: 20,
-            borderRadius: 8,
-            flex: 1,
-            marginHorizontal: 5,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ color: "#fff", fontWeight: "600" }}>Appoint</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -2881,7 +2965,7 @@ const toggleReason = (reason: string) => {
                               />
 
                               {/* Message */}
-                              <Text style={{ alignSelf: "flex-start", marginBottom: 5, marginTop: 8 }}>
+                              <Text style={{ alignSelf: "flex-start", marginBottom: 5, marginTop: 10 }}>
                                 Message to clinic: Reason of Appointment
                               </Text>
 
@@ -2995,7 +3079,7 @@ const toggleReason = (reason: string) => {
                                           marginBottom: 20,
                                           textAlignVertical: "top",
                                         }}
-                                        maxLength={300}
+                                        maxLength={350}
                                         autoFocus
                                       />
 
@@ -4488,23 +4572,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#fff", // white line
     borderBottomWidth: 1, // thickness of line
   },
-  mar3: {
-    backgroundColor: "#45b4ffff", // fallback solid color
-    borderRadius: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    marginTop: 0,
-    marginBottom: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 5,
-    height: 40,
-    alignSelf: "center",
-  },
+  
   buttonText: {
     color: "#000000ff",
     fontSize: 18,
