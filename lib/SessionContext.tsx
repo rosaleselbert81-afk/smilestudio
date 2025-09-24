@@ -160,9 +160,6 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
         "temp_clinic_profile",
         JSON.stringify(clinicProfile)
       );
-      alert(
-        "✅ Clinic account created. Please verify your email. If you did not receive a verification, try to use other email."
-      );
     } catch (err: any) {
       console.error("Clinic sign-up error:", err);
       throw err;
