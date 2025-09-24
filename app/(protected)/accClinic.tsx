@@ -1377,7 +1377,7 @@ export default function Account() {
                             fontWeight: "bold",
                             textAlign: "center",
                           }}
-                        >{"Edit in map"}</Text>
+                        >{"Edit Map"}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => {

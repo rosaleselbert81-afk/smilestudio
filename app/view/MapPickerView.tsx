@@ -286,42 +286,26 @@ export default function MapPickerView(props: MapPickerViewType) {
       {
         (!!longitude && !!latitude && props.allowEdit)
         &&
-        <TouchableOpacity
-        style={{
-          flex: 1,
-          backgroundColor: "#728d64ff",
-          ...(width > 720
-          ? {
-              justifyContent: 'center',
-              paddingVertical: 22,
-              marginBottom: -8,
-            }
-          : {
-              height: 18.5,
-              marginBottom: -10,
-            }),
-          borderRadius: 8,
-          marginTop: 8,
-        }}
-        onPress={()=>{
-          props?.onSave(longitude, latitude);
-        }}
-        >
+
           <Text
             style={{
-              color: "white",
+              color: "#003f30ff",
               fontWeight: "bold",
               textAlign: "center",
+              margin: 20,
+              marginTop: 10,
               ...(width > 720
               ? {
                   
                 }
               : {
-                  marginTop: 12,
+                  
                 }),
             }}
+          onPress={()=>{
+            props?.onSave(longitude, latitude);
+          }}
           >Confirm Clinic Location</Text>
-        </TouchableOpacity>
       }
 
     </View>
