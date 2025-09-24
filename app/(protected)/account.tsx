@@ -2782,7 +2782,11 @@ const toggleReason = (reason: string) => {
         }}
       >
         <TouchableOpacity
-          onPress={() => alert(`Messaging ${selectedClinicName}`)}
+          onPress={() => {
+            chatWithClinic(clinic.id);
+            setviewClinic(false);
+            setDashboardView("chats");
+          }}
           style={{
             backgroundColor: "#3498db",
             paddingVertical: 12,

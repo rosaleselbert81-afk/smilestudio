@@ -28,6 +28,7 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="smilestudioproto"/>
+        <data android:scheme="exp+smilestudioproto"/>
       </intent-filter>
     </activity>
   </application>

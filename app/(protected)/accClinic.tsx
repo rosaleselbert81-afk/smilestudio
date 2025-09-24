@@ -2845,22 +2845,6 @@ export default function Account() {
             marginTop: 20,
           }}
         >
-          {/* Message Button */}
-          <TouchableOpacity
-            onPress={() => {
-              alert(`Messaging ${selectedClinicName}`);
-            }}
-            style={{
-              flex: 1,
-              marginRight: 8,
-              backgroundColor: "#3498db",
-              paddingVertical: 10,
-              borderRadius: 8,
-              alignItems: "center",
-            }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "600" }}>Message</Text>
-          </TouchableOpacity>
 
           {/* 🔍 "View Full" Button (replaces the old Close button) */}
           <TouchableOpacity
@@ -3234,20 +3218,6 @@ export default function Account() {
           backgroundColor: "#b9ffdcff",
         }}
       >
-        <TouchableOpacity
-          onPress={() => alert(`Messaging ${selectedClinicName}`)}
-          style={{
-            backgroundColor: "#3498db",
-            paddingVertical: 12,
-            paddingHorizontal: 20,
-            borderRadius: 8,
-            flex: 1,
-            marginHorizontal: 5,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ color: "#fff", fontWeight: "600" }}>Message</Text>
-        </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => setModalMap(true)}
