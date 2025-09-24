@@ -127,9 +127,6 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
       }
 
       await AsyncStorage.setItem("temp_profile", JSON.stringify(profile));
-      alert(
-        "✅ Clinic account created. Please verify your email. If you did not receive a verification, try to use other email."
-      );
     } catch (err: any) {
       console.error("Sign-up error:", err);
       throw err;

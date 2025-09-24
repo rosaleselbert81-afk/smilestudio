@@ -82,7 +82,7 @@ export default function SignupScreen() {
         mobile_number: mobileNumber,
       });
 
-      alert('Account created! Please check your email to verify.');
+      alert("Patient account created. Please verify your email. If you did not receive a verification, try to use other email.");
       router.push('/login');
     } catch (err: any) {
       alert(err.message || 'Sign-up failed.');

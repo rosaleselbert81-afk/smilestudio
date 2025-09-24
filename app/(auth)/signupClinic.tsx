@@ -84,6 +84,7 @@ export default function SignupScreen() {
       // Call signUpClinic from context
       await signUpClinic(email, password, clinicProfile);
 
+      alert("Clinic account created. Please verify your email. If you did not receive a verification, try to use other email.");
       router.push('/login');
     } catch (error: any) {
       Alert.alert('Signup failed', error.message || 'Unknown error');
