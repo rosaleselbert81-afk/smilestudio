@@ -2783,7 +2783,7 @@ const toggleReason = (reason: string) => {
       >
         <TouchableOpacity
           onPress={() => {
-            chatWithClinic(clinic.id);
+            setFullProfile(false);
             setviewClinic(false);
             setDashboardView("chats");
           }}
@@ -2798,6 +2798,24 @@ const toggleReason = (reason: string) => {
           }}
         >
           <Text style={{ color: "#fff", fontWeight: "600" }}>Message</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => {
+            // setSelectedClinicId(clinic.id);
+            // setappointmentName(clinic.clinic_name);
+            setModalAppoint(true);
+          }}
+          style={{
+            backgroundColor: "#34db6cff",
+            paddingVertical: 12,
+            paddingHorizontal: 20,
+            borderRadius: 8,
+            flex: 1,
+            marginHorizontal: 5,
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "600" }}>Appoint</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
