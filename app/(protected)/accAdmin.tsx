@@ -48,6 +48,21 @@ export default function Account() {
   const [selectedFriday, setSelectedFriday] = useState("");
   const [selectedSaturday, setSelectedSaturday] = useState("");
 
+  const [userName, setUserName] = useState("");
+  const [notifmessage, setNotifMessage] = useState("");
+
+  const [tempID, setTempID] = useState("");
+  const [tempWarn, setTempwarn] = useState(false);
+  const [tempBan, setTempBan] = useState(false);
+
+  const [modalType, setModalType] = useState<"warn" | "ban" | null>(null);
+  const [userMessage, setUserMessage] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [reason, setReason] = useState('');
+
+  const [clinicMessage, setClinicMessage] = useState(false);
+  const [selectedClinic, setSelectedClinic] = useState<any>(null);
+
   const [selectedClinicName, setSelectedClinicName] = useState("");
   const [selectedClinicEmail, setSelectedClinicEmail] = useState("");
   const [selectedClinicSlogan, setSelectedClinicSlogan] = useState("");
@@ -60,6 +75,11 @@ export default function Account() {
   const [termsOfUse, setTermsOfUse] = useState(false);
   const [selectedCI, setSelectedCI] = useState("");
   const [selectedOffers, setSelectedOffers] = useState("");
+
+  const [verificationModalVisible, setVerificationModalVisible] = useState(false);
+  const [denialModalVisible, setDenialModalVisible] = useState(false);
+  const [selectedClinicForAction, setSelectedClinicForAction] = useState<any>(null);
+  const [denialReason, setDenialReason] = useState("");
 
   const [selectedClinicId, setSelectedClinicId] = useState<string>();
   const [messageToClinic, setMessageToClinic] = useState<string>();
@@ -81,6 +101,81 @@ export default function Account() {
 
   const [tMap, setTMap] = useState(false);
 
+
+  const [patientUsers, setPatientUsers] = useState<any[]>([]);
+
+
+useEffect(() => {
+  const fetchPatientUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'Patient');
+
+      if (error) throw error;
+      setPatientUsers(data || []);
+    } catch (err) {
+      console.error("Error fetching patient users:", err);
+    }
+  };
+
+  fetchPatientUsers();
+}, []);
+
+
+const warnUser = async (id, currentStatus, reason) => {
+  const newStatus = !currentStatus;
+
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        isWarning: newStatus,
+        notif_message: newStatus ? reason : null,
+        isStriked: true,
+      })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    setPatientUsers((prev) =>
+      prev.map((u) =>
+        u.id === id
+          ? { ...u, isWarning: newStatus, notif_message: newStatus ? reason : null }
+          : u
+      )
+    );
+  } catch (err) {
+    console.error('Failed to warn/unwarn user:', err);
+  }
+};
+
+const banUser = async (id, currentStatus, reason) => {
+  const newStatus = !currentStatus;
+
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        isBan: newStatus,
+        notif_message: newStatus ? reason : null,
+      })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    setPatientUsers((prev) =>
+      prev.map((u) =>
+        u.id === id
+          ? { ...u, isBan: newStatus, notif_message: newStatus ? reason : null }
+          : u
+      )
+    );
+  } catch (err) {
+    console.error('Failed to ban/unban user:', err);
+  }
+};
   
 useEffect(() => {
   async function fetchClinics() {
@@ -392,6 +487,25 @@ useEffect(() => {
       };
       input.click();
     };
+
+
+useEffect(() => {
+  async function fetchRequestedClinics() {
+    const { data, error } = await supabase
+      .from('clinic_profiles')
+      .select('*')
+      .eq('request_verification', true);
+
+    if (error) {
+      console.error("Error fetching requested clinics:", error);
+    } else {
+      setClinicList(data || []);
+    }
+  }
+
+  fetchRequestedClinics();
+}, []);
+
 
   return (
     <LinearGradient
@@ -801,7 +915,7 @@ useEffect(() => {
                     <ActivityIndicator animating color={"black"} />
                   ) : (
                     <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Verify Pendings
+                      Verify Clinics
                     </Text>
                   )}
                 </TouchableOpacity>
@@ -1975,6 +2089,177 @@ useEffect(() => {
           >
             Auth Users
           </Text>
+          <ScrollView horizontal>
+            <View style={{ borderWidth: 1, borderColor: "#ccc", borderRadius: 8 }}>
+              {/* Header */}
+              <View style={{ flexDirection: "row", backgroundColor: "#003f30", padding: 10 }}>
+                <Text style={{ color: "white", width: 150, fontWeight: "bold" }}>Name</Text>
+                <Text style={{ color: "white", width: 100, fontWeight: "bold" }}>Gender</Text>
+                <Text style={{ color: "white", width: 120, fontWeight: "bold" }}>Birthdate</Text>
+                <Text style={{ color: "white", width: 150, fontWeight: "bold" }}>Mobile</Text>
+                <Text style={{ color: "white", width: 150, fontWeight: "bold" }}>Striked?</Text>
+                <Text style={{ color: "white", width: 200, fontWeight: "bold" }}>Actions</Text>
+              </View>
+
+              {/* Rows */}
+              {patientUsers.map((user, index) => (
+                <View
+                  key={user.id}
+                  style={{
+                    flexDirection: "row",
+                    padding: 10,
+                    backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#ffffff",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ width: 150 }}>{`${user.first_name || ""} ${user.last_name || ""}`}</Text>
+                  <Text style={{ width: 100 }}>{user.gender || "N/A"}</Text>
+                  <Text style={{ width: 120 }}>{user.birthdate || "N/A"}</Text>
+                  <Text style={{ width: 150 }}>{user.mobile_number || "N/A"}</Text>
+                  <Text style={{ width: 100 }}>{user.isStriked ? "Yes" : "No"}</Text>
+                  <View style={{ flexDirection: "row", width: 200 }}>
+<TouchableOpacity
+  onPress={() => {
+    setModalType('warn');
+    setSelectedUser(user);
+    setUserMessage(true); // show modal
+  }}
+  style={{
+    backgroundColor: user.isWarning ? '#7f8c8d' : '#f39c12',
+    padding: 6,
+    borderRadius: 4,
+    marginRight: 10,
+  }}
+>
+  <Text style={{ color: '#fff', fontSize: 12 }}>
+    {user.isWarning ? 'Unwarn' : 'Warn'}
+  </Text>
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setModalType('ban');
+    setSelectedUser(user);
+    setUserMessage(true); // show modal
+  }}
+  style={{
+    backgroundColor: user.isBan ? '#7f8c8d' : '#c0392b',
+    padding: 6,
+    borderRadius: 4,
+  }}
+>
+  <Text style={{ color: '#fff', fontSize: 12 }}>
+    {user.isBan ? 'Unban' : 'Ban'}
+  </Text>
+</TouchableOpacity>
+
+<Modal visible={userMessage} transparent animationType="fade">
+  <View
+    style={{
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    }}
+  >
+    <View
+      style={{
+        backgroundColor: '#fff',
+        padding: 20,
+        borderRadius: 8,
+        width: '80%',
+      }}
+    >
+<Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
+  {modalType === 'warn'
+    ? selectedUser?.isWarning
+      ? `Unwarn ${selectedUser?.first_name} ${selectedUser?.last_name}`
+      : `Warn ${selectedUser?.first_name} ${selectedUser?.last_name}`
+    : selectedUser?.isBan
+    ? `Unban ${selectedUser?.first_name} ${selectedUser?.last_name}`
+    : `Ban ${selectedUser?.first_name} ${selectedUser?.last_name}`}
+</Text>
+
+      {/* Show input only if warning or banning */}
+      {((modalType === 'warn' && !selectedUser?.isWarning) ||
+        (modalType === 'ban' && !selectedUser?.isBan)) && (
+        <>
+          <Text style={{ marginBottom: 5 }}>Reason:</Text>
+          <TextInput
+            placeholder="Enter reason"
+            value={reason}
+            onChangeText={setReason}
+            style={{
+              borderWidth: 1,
+              borderColor: '#ccc',
+              borderRadius: 5,
+              padding: 10,
+              marginBottom: 10,
+            }}
+            multiline
+          />
+        </>
+      )}
+
+      {/* Confirmation text only if unwarn/unban */}
+      {((modalType === 'warn' && selectedUser?.isWarning) ||
+        (modalType === 'ban' && selectedUser?.isBan)) && (
+        <Text style={{ marginBottom: 10 }}>
+          Are you sure you want to {modalType === 'warn' ? 'unwarn' : 'unban'} this user?
+        </Text>
+      )}
+
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+        <TouchableOpacity
+          onPress={() => {
+            setUserMessage(false);
+            setSelectedUser(null);
+            setReason('');
+          }}
+          style={{ marginRight: 15 }}
+        >
+          <Text style={{ color: '#888' }}>Cancel</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={async () => {
+            if (!selectedUser) return;
+
+
+            const needsReason =
+              (modalType === 'warn' && !selectedUser.isWarning) ||
+              (modalType === 'ban' && !selectedUser.isBan);
+
+            if (needsReason && reason.trim() === '') {
+              alert('Please enter a reason');
+              return;
+            }
+
+            if (modalType === 'warn') {
+              await warnUser(selectedUser.id, selectedUser.isWarning, reason);
+            } else if (modalType === 'ban') {
+              await banUser(selectedUser.id, selectedUser.isBan, reason);
+            }
+
+            setUserMessage(false);
+            setSelectedUser(null);
+            setReason('');
+          }}
+        >
+          <Text style={{ color: '#007BFF' }}>Confirm</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
+
+
+                  </View>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+
         </View>
 
         {/* Dashboard Auth Clinics --------------------------------------------------------------------------------------- */}
@@ -1999,6 +2284,206 @@ useEffect(() => {
           >
             Auth Clinics
           </Text>
+<ScrollView horizontal>
+  <View style={{ borderWidth: 1, borderColor: "#ccc", borderRadius: 8 }}>
+    {/* Header */}
+    <View style={{ flexDirection: "row", backgroundColor: "#003f30", padding: 10 }}>
+      <Text style={{ color: "white", width: 150, fontWeight: "bold" }}>Clinic Name</Text>
+      <Text style={{ color: "white", width: 120, fontWeight: "bold" }}>Email</Text>
+      <Text style={{ color: "white", width: 140, fontWeight: "bold" }}>Mobile</Text>
+      <Text style={{ color: "white", width: 200, fontWeight: "bold" }}>Address</Text>
+      <Text style={{ color: "white", width: 100, fontWeight: "bold" }}>Striked?</Text>
+      <Text style={{ color: "white", width: 200, fontWeight: "bold" }}>Actions</Text>
+    </View>
+
+    {clinicList.map((clinic, index) => (
+      <View
+        key={clinic.id}
+        style={{
+          flexDirection: "row",
+          padding: 10,
+          backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#ffffff",
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ width: 150 }}>{clinic.clinic_name || "N/A"}</Text>
+        <Text style={{ width: 120 }}>{clinic.email || "N/A"}</Text>
+        <Text style={{ width: 140 }}>{clinic.mobile_number || "N/A"}</Text>
+        <Text style={{ width: 200 }}>{clinic.address || "N/A"}</Text>
+        <Text style={{ width: 200 }}>{clinic.IsStriked ? "Yes" : "No"}</Text>
+
+        <View style={{ flexDirection: "row", width: 200 }}>
+          <TouchableOpacity
+            onPress={() => {
+              console.log("Clinic warn pressed:", clinic.id, clinic.isWarn);
+              setModalType("warn");
+              setSelectedClinic(clinic);
+              setClinicMessage(true);
+            }}
+            style={{
+              backgroundColor: clinic.isWarn ? "#7f8c8d" : "#f39c12",
+              padding: 6,
+              borderRadius: 4,
+              marginRight: 10,
+            }}
+          >
+            <Text style={{ color: "#fff", fontSize: 12 }}>
+              {clinic.isWarn ? "Unwarn" : "Warn"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => {
+              console.log("Clinic ban pressed:", clinic.id, clinic.isBan);
+              setModalType("ban");
+              setSelectedClinic(clinic);
+              setClinicMessage(true);
+            }}
+            style={{
+              backgroundColor: clinic.isBan ? "#7f8c8d" : "#c0392b",
+              padding: 6,
+              borderRadius: 4,
+            }}
+          >
+            <Text style={{ color: "#fff", fontSize: 12 }}>
+              {clinic.isBan ? "Unban" : "Ban"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    ))}
+  </View>
+</ScrollView>
+
+{/* Modal for clinics */}
+<Modal visible={clinicMessage} transparent animationType="fade">
+  <View
+    style={{
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+    <View
+      style={{
+        backgroundColor: "#fff",
+        padding: 20,
+        borderRadius: 8,
+        width: "80%",
+      }}
+    >
+      <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>
+        {modalType === "warn"
+          ? selectedClinic?.isWarn
+            ? `Unwarn ${selectedClinic?.clinic_name}`
+            : `Warn ${selectedClinic?.clinic_name}`
+          : selectedClinic?.isBan
+          ? `Unban ${selectedClinic?.clinic_name}`
+          : `Ban ${selectedClinic?.clinic_name}`}
+      </Text>
+
+      {/* If warning or banning, show reason input */}
+      {((modalType === "warn" && !selectedClinic?.isWarn) ||
+        (modalType === "ban" && !selectedClinic?.isBan)) && (
+        <>
+          <Text style={{ marginBottom: 5 }}>Reason:</Text>
+          <TextInput
+            placeholder="Enter reason"
+            value={reason}
+            onChangeText={setReason}
+            style={{
+              borderWidth: 1,
+              borderColor: "#ccc",
+              borderRadius: 5,
+              padding: 10,
+              marginBottom: 10,
+            }}
+            multiline
+          />
+        </>
+      )}
+
+      {/* Confirmation for un-warn/un-ban */}
+      {((modalType === "warn" && selectedClinic?.isWarn) ||
+        (modalType === "ban" && selectedClinic?.isBan)) && (
+        <Text style={{ marginBottom: 10 }}>
+          Are you sure you want to {modalType === "warn" ? "unwarn" : "unban"} this clinic?
+        </Text>
+      )}
+
+      <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+        <TouchableOpacity
+          onPress={() => {
+            setClinicMessage(false);
+            setSelectedClinic(null);
+            setReason("");
+          }}
+          style={{ marginRight: 15 }}
+        >
+          <Text style={{ color: "#888" }}>Cancel</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={async () => {
+            if (!selectedClinic) return;
+
+            const needsReason =
+              (modalType === "warn" && !selectedClinic.isWarn) ||
+              (modalType === "ban" && !selectedClinic.isBan);
+
+            if (needsReason && reason.trim() === "") {
+              alert("Please enter a reason");
+              return;
+            }
+
+            console.log("Updating clinic:", selectedClinic.id, modalType, reason);
+
+            if (modalType === "warn") {
+
+              const { data, error } = await supabase
+                .from("clinic_profiles")
+                .update({
+                  isWarn: !selectedClinic.isWarn,
+                  notif_message: !selectedClinic.isWarn ? reason : null,
+                  IsStriked: true,
+                })
+                .eq("id", selectedClinic.id);
+              console.log("Warn update result:", data, error);
+            } else if (modalType === "ban") {
+              const { data, error } = await supabase
+                .from("clinic_profiles")
+                .update({
+                  isBan: !selectedClinic.isBan,
+                  notif_message: !selectedClinic.isBan ? reason : null,
+                })
+                .eq("id", selectedClinic.id);
+              console.log("Ban update result:", data, error);
+            }
+
+            // Refresh clinic list from DB
+            const { data: refreshed, error: refErr } = await supabase
+              .from("clinic_profiles")
+              .select("*");
+            if (refErr) {
+              console.error("Clinic refresh error:", refErr);
+            } else {
+              setClinicList(refreshed || []);
+            }
+
+            setClinicMessage(false);
+            setSelectedClinic(null);
+            setReason("");
+          }}
+        >
+          <Text style={{ color: "#007BFF" }}>Confirm</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
+
+
         </View>
 
     
@@ -2523,53 +3008,279 @@ useEffect(() => {
         </View>
         )}
 
-          {/* Dashboard Augmented Reality --------------------------------------------------------------------------------------- */}
+          {/* Dashboard Verify Clinic --------------------------------------------------------------------------------------- */}
   
-          <View
-            style={[
-              styles.dashboard,
-              {
-                width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
-                right: dashboardView === "ar" ? 11 : 20000,
-              },
-            ]}
-          >
-            <Text
-              style={{
-                fontSize: 24,
-                fontWeight: "bold",
-                marginBottom: 20,
-                alignSelf: isMobile ? "center" : "flex-start",
-                color: "#003f30ff",
-              }}
-            >
-              Augmented Reality
-            </Text>
-            {Platform.OS !== "android" && Platform.OS !== "ios" && (
-              <View style={{ paddingVertical: "20%" }}>
-                <Text
+      <View
+        style={[
+          styles.dashboard,
+          {
+            width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
+            right: dashboardView === "ar" ? 11 : 20000,
+          },
+        ]}
+      >
+        <Text
+          style={{
+            fontSize: 24,
+            fontWeight: "bold",
+            marginBottom: 20,
+            alignSelf: isMobile ? "center" : "flex-start",
+            color: "#003f30ff",
+          }}
+        >
+          Verify Clinics
+        </Text>
+
+        <ScrollView horizontal>
+          <View style={{ borderWidth: 1, borderColor: "#ccc", borderRadius: 8 }}>
+            {/* Header */}
+            <View style={{ flexDirection: "row", backgroundColor: "#003f30", padding: 10 }}>
+              <Text style={{ color: "white", width: 180, fontWeight: "bold" }}>Clinic Name</Text>
+              <Text style={{ color: "white", width: 200, fontWeight: "bold" }}>Email</Text>
+              <Text style={{ color: "white", width: 150, fontWeight: "bold" }}>Mobile</Text>
+              <Text style={{ color: "white", width: 250, fontWeight: "bold" }}>Address</Text>
+              <Text style={{ color: "white", width: 250, fontWeight: "bold" }}>Actions</Text>
+            </View>
+
+            {/* Rows */}
+            {clinicList
+              .filter((clinic) => clinic.request_verification === true)
+              .map((clinic, index) => (
+                <View
+                  key={clinic.id}
                   style={{
-                    fontSize: 24,
-                    justifyContent: "center",
-                    alignSelf: "center",
-                    color: "#484848ff",
+                    flexDirection: "row",
+                    padding: 10,
+                    backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#ffffff",
+                    alignItems: "center",
                   }}
                 >
-                  Augmented Reality in Web is not supported by the system :C
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 24,
-                    justifyContent: "center",
-                    alignSelf: "center",
-                    color: "#484848ff",
-                  }}
-                >
-                  Download our app!
-                </Text>
-              </View>
-            )}
+                  <Text style={{ width: 180 }}>{clinic.clinic_name || "N/A"}</Text>
+                  <Text style={{ width: 200 }}>{clinic.email || "No email"}</Text>
+                  <Text style={{ width: 150 }}>{clinic.mobile_number || "N/A"}</Text>
+                  <Text numberOfLines={1} style={{ width: 250 }}>{clinic.address || "N/A"}</Text>
+                  <View style={{ flexDirection: "row", width: 250 }}>
+                    {/* Deny Button */}
+                    <TouchableOpacity
+                      onPress={() => {
+                        setSelectedClinicForAction(clinic);
+                        setDenialReason("");
+                        setDenialModalVisible(true);
+                      }}
+                      style={{
+                        backgroundColor: "#c0392b",
+                        paddingVertical: 6,
+                        paddingHorizontal: 12,
+                        borderRadius: 6,
+                        marginRight: 10,
+                      }}
+                    >
+                      <Text style={{ color: "#fff", fontSize: 14 }}>Deny</Text>
+                    </TouchableOpacity>
+
+                    {/* Verify Button */}
+                    <TouchableOpacity
+                      onPress={() => {
+                        setSelectedClinicForAction(clinic);
+                        setVerificationModalVisible(true);
+                      }}
+                      style={{
+                        backgroundColor: "#2ecc71",
+                        paddingVertical: 6,
+                        paddingHorizontal: 12,
+                        borderRadius: 6,
+                      }}
+                    >
+                      <Text style={{ color: "#fff", fontSize: 14 }}>Verify</Text>
+                    </TouchableOpacity>
+                    <Modal visible={denialModalVisible} transparent animationType="fade">
+                      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" }}>
+                        <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 10, width: "85%" }}>
+                          <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>
+                            Reason for Denial
+                          </Text>
+                          <TextInput
+                            placeholder="Enter reason..."
+                            value={denialReason}
+                            onChangeText={setDenialReason}
+                            multiline
+                            style={{
+                              borderWidth: 1,
+                              borderColor: "#ccc",
+                              borderRadius: 8,
+                              padding: 10,
+                              height: 100,
+                              marginBottom: 20,
+                            }}
+                          />
+
+                          <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+                            <TouchableOpacity
+                              onPress={() => {
+                                setDenialModalVisible(false);
+                                setDenialReason("");
+                                setSelectedClinicForAction(null);
+                              }}
+                              style={{ marginRight: 20 }}
+                            >
+                              <Text style={{ color: "#888" }}>Cancel</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              onPress={async () => {
+                                if (!selectedClinicForAction) return;
+                                if (denialReason.trim() === "") {
+                                  alert("Please enter a reason");
+                                  return;
+                                }
+
+                                // ❌ Update request_verification to false
+                                const { error } = await supabase
+                                  .from("clinic_profiles")
+                                  .update({
+                                    request_verification: false,
+                                    denied_verification_reason: denialReason,
+                                  })
+                                  .eq("id", selectedClinicForAction.id);
+
+                                if (error) {
+                                  alert("Error denying clinic.");
+                                  console.error(error);
+                                } else {
+                                  // Remove from UI
+                                  setClinicList((prev) =>
+                                    prev.map((c) =>
+                                      c.id === selectedClinicForAction.id
+                                        ? { ...c, request_verification: false }
+                                        : c
+                                    )
+                                  );
+                                }
+
+                                setDenialModalVisible(false);
+                                setSelectedClinicForAction(null);
+                                setDenialReason("");
+                              }}
+                            >
+                              <Text style={{ color: "#c0392b", fontWeight: "bold" }}>Submit & Deny</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      </View>
+                    </Modal>
+                    {/* Verification Modal */}
+                    <Modal visible={verificationModalVisible} transparent animationType="fade">
+                      <View
+                        style={{
+                          flex: 1,
+                          backgroundColor: "rgba(0,0,0,0.5)",
+                          justifyContent: "center",
+                          alignItems: "center",
+                        }}
+                      >
+                        <View
+                          style={{
+                            backgroundColor: "#fff",
+                            padding: 20,
+                            borderRadius: 10,
+                            width: isMobile ? "90%" : "40%",
+                            maxHeight: "90%",
+                          }}
+                        >
+                          <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+                            <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>
+                              Are you sure you want to verify{" "}
+                              <Text style={{ fontWeight: "bold" }}>
+                                {selectedClinicForAction?.clinic_name || "this clinic"}?
+                              </Text>
+                            </Text>
+
+                            {/* IMAGE or MESSAGE */}
+                            <View
+                              style={{
+                                marginTop: 15,
+                                marginBottom: 20,
+                                flexGrow: 1,
+                                height: selectedClinicForAction?.license_photo_url ? 450 : undefined,
+                                justifyContent: "center",
+                                alignItems: "center",
+                              }}
+                            >
+                              {selectedClinicForAction?.license_photo_url ? (
+                                <Image
+                                  source={{ uri: selectedClinicForAction.license_photo_url }}
+                                  resizeMode="contain"
+                                  style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    borderRadius: 10,
+                                    borderWidth: 1,
+                                    borderColor: "#ccc",
+                                  }}
+                                />
+                              ) : (
+                                <Text style={{ color: "#c0392b", fontStyle: "italic" }}>
+                                  This clinic did not provide a Business Permit.
+                                </Text>
+                              )}
+                            </View>
+
+                            {/* ACTION BUTTONS */}
+                            <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+                              <TouchableOpacity
+                                onPress={() => {
+                                  setVerificationModalVisible(false);
+                                  setSelectedClinicForAction(null);
+                                }}
+                                style={{ marginRight: 20 }}
+                              >
+                                <Text style={{ color: "#888" }}>Cancel</Text>
+                              </TouchableOpacity>
+
+                              <TouchableOpacity
+                                onPress={async () => {
+                                  if (!selectedClinicForAction) return;
+
+                                  const { error } = await supabase
+                                    .from("clinic_profiles")
+                                    .update({
+                                      request_verification: false,
+                                      denied_verification_reason: null,
+                                      isVerified: true,
+                                    })
+                                    .eq("id", selectedClinicForAction.id);
+                                    
+
+                                  if (error) {
+                                    alert("Error verifying clinic.");
+                                    console.error(error);
+                                  } else {
+                                    setClinicList((prev) =>
+                                      prev.map((c) =>
+                                        c.id === selectedClinicForAction.id
+                                          ? { ...c, request_verification: false, isVerified: true }
+                                          : c
+                                      )
+                                    );
+                                  }
+
+                                  setVerificationModalVisible(false);
+                                  setSelectedClinicForAction(null);
+                                }}
+                              >
+                                <Text style={{ color: "#2ecc71", fontWeight: "bold" }}>Verify</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </ScrollView>
+                        </View>
+                      </View>
+                    </Modal>
+                  </View>
+                </View>
+              ))}
           </View>
+        </ScrollView>
+      </View>
       </LinearGradient>
     </LinearGradient>
   )

@@ -34,6 +34,8 @@ import DayScheduleView from "../view/DayScheduleView";
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import ChatView from "../view/ChatView";
 import { useChatRoom } from "@/hooks/useChatRoom";
+import Entypo from '@expo/vector-icons/Entypo';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 type Appointment = {
   id: string;
@@ -84,6 +86,8 @@ export default function Account() {
 
   const [fullProfile, setFullProfile] = useState(false);
   const [viewFirst, setviewFirst] = useState(false);
+  const [warn, setWarn] = useState(false);
+  const [ban, setBan] = useState(false);
   const [viewClinic, setviewClinic] = useState(false);
   const [aIndicator, setaIndicator] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -130,6 +134,7 @@ export default function Account() {
   const [termsOfUse, setTermsOfUse] = useState(false);
   const [selectedCI, setSelectedCI] = useState("");
   const [selectedOffers, setSelectedOffers] = useState("");
+  const [notifMessage, setNotifMessage] = useState("");
 
   const [mapView, setMapView] = useState<
     [number | undefined, number | undefined]
@@ -349,7 +354,7 @@ export default function Account() {
       const { data, error, status } = await supabase
         .from("profiles")
         .select(
-          `id, username, website, avatar_url, role, last_name, first_name, isFirst`
+          `id, username, website, avatar_url, role, last_name, first_name, isFirst, isWarning, isBan, notif_message`
         ) // Include role here
         .eq("id", session?.user.id)
         .single();
@@ -363,10 +368,19 @@ export default function Account() {
         setRole(data.role || null);
         setLastname(data.last_name);
         setFirstname(data.first_name);
+        setNotifMessage(data.notif_message || "");
 
         if (data.isFirst !== viewFirst) {
           setviewFirst(true);
         }
+        if (data.isWarning !== warn) {
+          setWarn(true);
+        }
+        if (data.isBan !== ban) {
+          setBan(true);
+        }
+
+        console.log(warn);
 
         // Redirect based on role
         if (data.role === "admin") {
@@ -768,6 +782,201 @@ const toggleReason = (reason: string) => {
               }}
             >
               <Text style={{ color: 'white', fontWeight: 'bold' }}>Sure, take me there!</Text>
+            </TouchableOpacity>
+          </View>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={warn}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setWarn(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          }}
+        >
+          <View
+            style={{
+              width: isMobile ? '90%' : '40%',
+              backgroundColor: 'white',
+              padding: 20,
+              borderRadius: 10,
+              alignItems: 'center',
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 24,
+                fontWeight: "bold",
+                marginBottom: 20,
+                alignSelf: "center",
+                color: "#003f30ff",
+              }}
+            >
+              WARNING!
+            </Text>
+            <Entypo name="warning" size={isMobile? 75 : 150} color="black" />
+            <Text
+              style={{
+                fontSize: 16,
+                alignSelf: "center",
+                color: "#000000ff",
+                fontWeight: "bold",
+              }}
+            >
+              The reason why you are seeing this is that you have violated our community guidelines.
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                marginBottom: 30,
+                alignSelf: "center",
+                color: "#000000ff",
+              }}
+            >
+              Admin: {notifMessage}
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                alignSelf: "center",
+                color: "#000000ff",
+              }}
+            >
+              Please read our term of use and privacy policy to avoid getting banned.
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                marginBottom: 20,
+                alignSelf: "center",
+                color: "#2a46ffff",
+              }}
+              onPress={() => setTermsOfUse(true)}
+            >
+              Terms of Use and Privacy Policy
+            </Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              width: '48%',
+              gap: 20,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#4CAF50',
+                padding: 10,
+                borderRadius: 5,
+                marginVertical: 5,
+                width: '100%',
+                alignItems: 'center',
+              }}
+              onPress={async () => {
+                  const { error } = await supabase
+                    .from('profiles')
+                    .update({ isWarning: false })
+                    .eq('id', session?.user.id); // Use the current user's ID
+
+                  setWarn(false);
+              }}
+            >
+              <Text style={{ color: 'white', fontWeight: 'bold' }}>Understood and Close</Text>
+            </TouchableOpacity>
+          </View>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={ban}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setWarn(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          }}
+        >
+          <View
+            style={{
+              width: isMobile ? '90%' : '40%',
+              backgroundColor: 'white',
+              padding: 20,
+              borderRadius: 10,
+              alignItems: 'center',
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 24,
+                fontWeight: "bold",
+                marginBottom: 20,
+                alignSelf: "center",
+                color: "#003f30ff",
+              }}
+            >
+              Your account has been banned!
+            </Text>
+            <FontAwesome name="ban" size={isMobile ? 75 : 150} color="black" />
+            <Text
+              style={{
+                fontSize: 16,
+                alignSelf: "center",
+                color: "#000000ff",
+                fontWeight: "bold",
+              }}
+            >
+              The reason why you are seeing this is that you have violated our community guidelines.
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                marginBottom: 30,
+                alignSelf: "center",
+                color: "#000000ff",
+              }}
+            >
+              Admin: {notifMessage}
+            </Text>
+
+
+          <View
+            style={{
+              flexDirection: 'row',
+              width: '48%',
+              gap: 20,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#4CAF50',
+                padding: 10,
+                borderRadius: 5,
+                marginVertical: 5,
+                width: '100%',
+                alignItems: 'center',
+              }}
+              onPress={async () => {
+                setModalSignout(true)
+              }}
+            >
+              <Text style={{ color: 'white', fontWeight: 'bold' }}>Logout</Text>
             </TouchableOpacity>
           </View>
           </View>
@@ -4189,139 +4398,6 @@ const toggleReason = (reason: string) => {
         </Text>
       </TouchableOpacity>
 
-      {/* Modal */}
-      <Modal
-        visible={termsOfUse}
-        transparent
-        onRequestClose={() => setTermsOfUse(false)}
-      >
-        <View
-        style={{
-          flex: 1,
-          backgroundColor: "rgba(0,0,0,0.5)",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <View
-          style={{
-            backgroundColor: "white",
-            width: "90%",
-            padding: 20,
-            borderRadius: 16,
-            maxHeight: "80%",
-          }}
-        >
-          <ScrollView>
-            <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10, color: "#003f30" }}>
-              SmileStudio - Terms of Use
-            </Text>
-            <Text style={{ fontSize: 14, marginBottom: 10, color: "#444" }}>
-              <Text style={{ fontWeight: "bold" }}>Last Updated:</Text> May 8, 2025{"\n"}
-              <Text style={{ fontWeight: "bold" }}>Effective Immediately</Text>
-            </Text>
-
-            <Text style={{ fontSize: 14, color: "#444", lineHeight: 22 }}>
-              By accessing or using SmileStudio, owned and operated by Scuba Scripter and Pixel Cowboy Team, User agree to be legally bound by these Terms of Use. These Terms govern your use of SmileStudio, a Web-Based Dental Appointment System with Automated Messaging Follow-Up Reminders via AI Chatbot in San Jose Del Monte Bulacan.
-              If you do not agree with any part of these Terms, you must immediately cease all use of the Platform. Continued access constitutes unconditional acceptance of these Terms and any future modifications.{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>1. Definitions{"\n"}</Text>
-              "Appointment"– A scheduled medical consultation booked through SmileStudio.{"\n"}
-              "No-Show"– Failure to attend a booked Appointment without prior cancellation.{"\n"}
-              "Grace Period"– A 15-minute window after a scheduled Appointment time during which a late arrival may still be accommodated.{"\n"}
-              "Malicious Activity"– Any action that disrupts, exploits, or harms the Platform, its users, or affiliated clinics (e.g., hacking, fake bookings, harassment).{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>2. Eligibility & Account Registration{"\n"}</Text>
-              <Text style={{ fontWeight: "bold" }}>2.1 Age Requirement</Text>{" "}
-              The Platform is accessible to users of all ages but is currently intended for non-commercial, academic/capstone project use only. Minors (under 18) must obtain parental/guardian consent before booking Appointments.{"\n"}
-              <Text style={{ fontWeight: "bold" }}>2.2 Account Responsibility</Text>{" "}
-              Users must provide accurate, current, and complete information during registration. You are solely responsible for:{"\n"}
-              - Maintaining the confidentiality of your login credentials.{"\n"}
-              - All activities conducted under your account.{"\n"}
-              - Immediately notify us of any unauthorized account use.{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>3. Permitted & Prohibited Use{"\n"}</Text>
-              <Text style={{ fontWeight: "bold" }}>3.1 Acceptable Use</Text>{" "}
-              You may use SmileStudio only for lawful purposes, including:{"\n"}
-              Booking legitimate medical Appointments at partner clinics in San Jose Del Monte, Bulacan.{"\n"}
-              Accessing clinic information, availability, Location, Pricing, Services and AI chatbot reminder assistance.{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>3.2 Strictly Prohibited Conduct</Text>{" "}
-              Violations will result in immediate account suspension or termination. You agree NOT to:{"\n"}
-              - Create fake or duplicate Appointments (e.g., under false names).{"\n"}
-              - Engage in hacking, phishing, or data scraping (automated or manual).{"\n"}
-              - Harass clinic staff or other users (e.g., trolling, abusive messages).{"\n"}
-              - Upload malicious software (viruses, spyware) or disrupt server operations.{"\n"}
-              - Misrepresent your identity or medical needs.{"\n"}
-              - Circumvent appointment limits (e.g., creating multiple accounts).{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>4. Appointment Policies{"\n"}</Text>
-              <Text style={{ fontWeight: "bold" }}>4.1 Booking & Cancellation</Text>{" "}
-              Appointments operate on a "First-Appoint, First-Served" basis. No downpayment is required ("Appoint Now, Pay Later"). Cancellations must be made at least 24 hours in advance via the Platform.{"\n"}
-              <Text style={{ fontWeight: "bold" }}>4.2 No-Show & Late Arrival Policy</Text>{" "}
-              AI Chatbot Reminder: Users receive 2 automated alerts:{"\n"}
-              - 2 hours before the Appointment.{"\n"}
-              - Grace Period: A 15-minute late arrival window is permitted. After this:{"\n"}
-              - The Appointment is automatically forfeited.{"\n"}
-              - The slot is released to other patients.{"\n"}
-              - The User must reschedule.{"\n"}
-              Strike System:{"\n"}
-              - 5 No-Shows = 1-month account suspension.{"\n"}
-              - Suspended accounts cannot book new Appointments but may view clinic information.{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>5. Intellectual Property Rights{"\n"}</Text>
-              <Text style={{ fontWeight: "bold" }}>5.1 Ownership</Text>{" "}
-              All text, graphics, logos, clinic data, and AI chatbot software APIs are the exclusive property of SmileStudio and its partner clinics. No commercial use (e.g., reselling clinic slots, redistributing data) is permitted.{"\n"}
-              <Text style={{ fontWeight: "bold" }}>5.2 Limited License</Text>{" "}
-              Users are granted a revocable, non-exclusive license to: Access the Platform for personal, non-commercial healthcare purposes.{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>6. Privacy & Data Security{"\n"}</Text>
-              Our Privacy Policy (Will be added Soon) details how we collect, store, and protect your data. Clinic Confidentiality: All medical information shared during Appointments is protected under HIPAA-equivalent Philippine laws.{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>7. Disclaimers & Limitation of Liability{"\n"}</Text>
-              <Text style={{ fontWeight: "bold" }}>7.1 No Medical Guarantees</Text>{" "}
-              SmileStudio is not a healthcare provider. We do not guarantee diagnosis accuracy, treatment outcomes, or clinic availability.{"\n"}
-              <Text style={{ fontWeight: "bold" }}>7.2 Platform "As Is"</Text>{" "}
-              The Platform may experience downtime, bugs, or delays.{"\n"}
-              <Text style={{ fontWeight: "bold" }}>7.3 No Financial Liability</Text>{" "}
-              We do not charge users and do not handle payments, medical services, or clinic operations. We are not liable for:{"\n"}
-              - User misconduct (e.g., no-shows, fake bookings).{"\n"}
-              - Clinic errors (e.g., overbooking, misdiagnosis).{"\n"}
-              - Indirect damages (e.g., lost time, travel costs).{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>8. Termination & Enforcement{"\n"}</Text>
-              <Text style={{ fontWeight: "bold" }}>8.1 By SmileStudio</Text>{" "}
-              We may suspend or terminate accounts for: Breach of these Terms (e.g., fake Appointments, harassment). Malicious Activity (e.g., hacking attempts). Excessive No-Shows (per Section 4.2).{"\n"}
-              <Text style={{ fontWeight: "bold" }}>8.2 By Users</Text>{" "}
-              You may deactivate your account at any time by contacting: (+63) 921-888-1835{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>9. Governing Law & Dispute Resolution{"\n"}</Text>
-              These Terms are governed by Philippine law (Republic Act No. 10173, Data Privacy Act). Disputes must first undergo mediation in San Jose Del Monte, Bulacan. Unresolved disputes will be settled in Philippine courts.{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>10. Contact Information{"\n"}</Text>
-              For inquiries or violations, contact:{"\n"}
-              Scuba Scripter and Pixel Cowboy Team{"\n"}
-              (+63) 921-888-1835{"\n"}
-              San Jose Del Monte, Bulacan, Philippines
-            </Text>
-          </ScrollView>
-
-          <TouchableOpacity
-            onPress={() => setTermsOfUse(false)}
-            style={{
-              marginTop: 20,
-              backgroundColor: "#003f30",
-              paddingVertical: 10,
-              borderRadius: 8,
-            }}
-          >
-            <Text style={{ color: "white", textAlign: "center", fontWeight: "bold" }}>
-              Close
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-      </Modal>
     </View>
 
           <View
@@ -4490,6 +4566,140 @@ const toggleReason = (reason: string) => {
           </ScrollView>
         </View>
         )}
+
+              {/* Modal */}
+      <Modal
+        visible={termsOfUse}
+        transparent
+        onRequestClose={() => setTermsOfUse(false)}
+      >
+        <View
+        style={{
+          flex: 1,
+          backgroundColor: "rgba(0,0,0,0.5)",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: "white",
+            width: "90%",
+            padding: 20,
+            borderRadius: 16,
+            maxHeight: "80%",
+          }}
+        >
+          <ScrollView>
+            <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10, color: "#003f30" }}>
+              SmileStudio - Terms of Use
+            </Text>
+            <Text style={{ fontSize: 14, marginBottom: 10, color: "#444" }}>
+              <Text style={{ fontWeight: "bold" }}>Last Updated:</Text> May 8, 2025{"\n"}
+              <Text style={{ fontWeight: "bold" }}>Effective Immediately</Text>
+            </Text>
+
+            <Text style={{ fontSize: 14, color: "#444", lineHeight: 22 }}>
+              By accessing or using SmileStudio, owned and operated by Scuba Scripter and Pixel Cowboy Team, User agree to be legally bound by these Terms of Use. These Terms govern your use of SmileStudio, a Web-Based Dental Appointment System with Automated Messaging Follow-Up Reminders via AI Chatbot in San Jose Del Monte Bulacan.
+              If you do not agree with any part of these Terms, you must immediately cease all use of the Platform. Continued access constitutes unconditional acceptance of these Terms and any future modifications.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>1. Definitions{"\n"}</Text>
+              "Appointment"– A scheduled medical consultation booked through SmileStudio.{"\n"}
+              "No-Show"– Failure to attend a booked Appointment without prior cancellation.{"\n"}
+              "Grace Period"– A 15-minute window after a scheduled Appointment time during which a late arrival may still be accommodated.{"\n"}
+              "Malicious Activity"– Any action that disrupts, exploits, or harms the Platform, its users, or affiliated clinics (e.g., hacking, fake bookings, harassment).{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>2. Eligibility & Account Registration{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>2.1 Age Requirement</Text>{" "}
+              The Platform is accessible to users of all ages but is currently intended for non-commercial, academic/capstone project use only. Minors (under 18) must obtain parental/guardian consent before booking Appointments.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>2.2 Account Responsibility</Text>{" "}
+              Users must provide accurate, current, and complete information during registration. You are solely responsible for:{"\n"}
+              - Maintaining the confidentiality of your login credentials.{"\n"}
+              - All activities conducted under your account.{"\n"}
+              - Immediately notify us of any unauthorized account use.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>3. Permitted & Prohibited Use{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>3.1 Acceptable Use</Text>{" "}
+              You may use SmileStudio only for lawful purposes, including:{"\n"}
+              Booking legitimate medical Appointments at partner clinics in San Jose Del Monte, Bulacan.{"\n"}
+              Accessing clinic information, availability, Location, Pricing, Services and AI chatbot reminder assistance.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>3.2 Strictly Prohibited Conduct</Text>{" "}
+              Violations will result in immediate account suspension or termination. You agree NOT to:{"\n"}
+              - Create fake or duplicate Appointments (e.g., under false names).{"\n"}
+              - Engage in hacking, phishing, or data scraping (automated or manual).{"\n"}
+              - Harass clinic staff or other users (e.g., trolling, abusive messages).{"\n"}
+              - Upload malicious software (viruses, spyware) or disrupt server operations.{"\n"}
+              - Misrepresent your identity or medical needs.{"\n"}
+              - Circumvent appointment limits (e.g., creating multiple accounts).{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>4. Appointment Policies{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>4.1 Booking & Cancellation</Text>{" "}
+              Appointments operate on a "First-Appoint, First-Served" basis. No downpayment is required ("Appoint Now, Pay Later"). Cancellations must be made at least 24 hours in advance via the Platform.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>4.2 No-Show & Late Arrival Policy</Text>{" "}
+              AI Chatbot Reminder: Users receive 2 automated alerts:{"\n"}
+              - 2 hours before the Appointment.{"\n"}
+              - Grace Period: A 15-minute late arrival window is permitted. After this:{"\n"}
+              - The Appointment is automatically forfeited.{"\n"}
+              - The slot is released to other patients.{"\n"}
+              - The User must reschedule.{"\n"}
+              Strike System:{"\n"}
+              - 5 No-Shows = 1-month account suspension.{"\n"}
+              - Suspended accounts cannot book new Appointments but may view clinic information.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>5. Intellectual Property Rights{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>5.1 Ownership</Text>{" "}
+              All text, graphics, logos, clinic data, and AI chatbot software APIs are the exclusive property of SmileStudio and its partner clinics. No commercial use (e.g., reselling clinic slots, redistributing data) is permitted.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>5.2 Limited License</Text>{" "}
+              Users are granted a revocable, non-exclusive license to: Access the Platform for personal, non-commercial healthcare purposes.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>6. Privacy & Data Security{"\n"}</Text>
+              Our Privacy Policy (Will be added Soon) details how we collect, store, and protect your data. Clinic Confidentiality: All medical information shared during Appointments is protected under HIPAA-equivalent Philippine laws.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>7. Disclaimers & Limitation of Liability{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>7.1 No Medical Guarantees</Text>{" "}
+              SmileStudio is not a healthcare provider. We do not guarantee diagnosis accuracy, treatment outcomes, or clinic availability.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>7.2 Platform "As Is"</Text>{" "}
+              The Platform may experience downtime, bugs, or delays.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>7.3 No Financial Liability</Text>{" "}
+              We do not charge users and do not handle payments, medical services, or clinic operations. We are not liable for:{"\n"}
+              - User misconduct (e.g., no-shows, fake bookings).{"\n"}
+              - Clinic errors (e.g., overbooking, misdiagnosis).{"\n"}
+              - Indirect damages (e.g., lost time, travel costs).{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>8. Termination & Enforcement{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>8.1 By SmileStudio</Text>{" "}
+              We may suspend or terminate accounts for: Breach of these Terms (e.g., fake Appointments, harassment). Malicious Activity (e.g., hacking attempts). Excessive No-Shows (per Section 4.2).{"\n"}
+              <Text style={{ fontWeight: "bold" }}>8.2 By Users</Text>{" "}
+              You may deactivate your account at any time by contacting: (+63) 921-888-1835{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>9. Governing Law & Dispute Resolution{"\n"}</Text>
+              These Terms are governed by Philippine law (Republic Act No. 10173, Data Privacy Act). Disputes must first undergo mediation in San Jose Del Monte, Bulacan. Unresolved disputes will be settled in Philippine courts.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>10. Contact Information{"\n"}</Text>
+              For inquiries or violations, contact:{"\n"}
+              Scuba Scripter and Pixel Cowboy Team{"\n"}
+              (+63) 921-888-1835{"\n"}
+              San Jose Del Monte, Bulacan, Philippines
+            </Text>
+          </ScrollView>
+
+          <TouchableOpacity
+            onPress={() => setTermsOfUse(false)}
+            style={{
+              marginTop: 20,
+              backgroundColor: "#003f30",
+              paddingVertical: 10,
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ color: "white", textAlign: "center", fontWeight: "bold" }}>
+              Close
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      </Modal>
 
         {/* Dashboard Augmented Reality --------------------------------------------------------------------------------------- */}
 

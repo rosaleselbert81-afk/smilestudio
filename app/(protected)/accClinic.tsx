@@ -30,6 +30,8 @@ import WeekScheduleEditor from "../view/WeekScheduleEditor";
 import DayScheduleView from "../view/DayScheduleView";
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import ChatView from "../view/ChatView";
+import Entypo from '@expo/vector-icons/Entypo';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 type Appointment = {
   id: string;
@@ -121,12 +123,17 @@ export default function Account() {
   const [offers, setOffers] = useState("");
 
   const [dashboardView, setDashboardView] = useState("profile");
+  // State for the verification photo
+  const [verifyPhoto, setVerifyPhoto] = useState<string | { uri: string; file: File } | null>(null);
+  // New state for submission loading
+  const [isSubmitting, setIsSubmitting] = useState(false); 
 
   const [clinicList, setClinicList] = useState<any[]>([]);
   const [selectedClinicId, setSelectedClinicId] = useState<string>();
   const [messageToClinic, setMessageToClinic] = useState<string>();
   const [modalMessage, setModalMessage] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState('');
+  const [denialReason, setDenialReason] = useState<string>();
 
   const [appointmentsList, setAppointmentList] = useState<Appointment[]>();
   const [appointmentsCurrentList, setAppointmentCurrentList] =
@@ -141,8 +148,14 @@ export default function Account() {
   const [rejectMsg, setRejectMsg] = useState<string>();
 
   const [showWeeklySchedule, setShowWeeklySchedule] = useState(false);
-
+  const [requestVerification, setRequestVerification] = useState(false);
+  const [verified, setVerified] = useState(false);
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [tMap, setTMap] = useState(false);
+  const [warn, setWarn] = useState(false);
+  const [ban, setBan] = useState(false);
+  const [notifMessage, setNotifMessage] = useState<string>();
+
 
   const fetchAppointments = async () => {
     const { data, error } = await supabase
@@ -378,7 +391,7 @@ export default function Account() {
       const { data, error, status } = await supabase
         .from("clinic_profiles")
         .select(
-          `clinic_name, mobile_number, address, clinic_photo_url, license_photo_url, isDentistAvailable, introduction, offers`
+          `clinic_name, mobile_number, address, clinic_photo_url, license_photo_url, isDentistAvailable, introduction, offers, request_verification, isVerified, denied_verification_reason, isWarn, isBan, notif_message`
         )
         .eq("id", session?.user.id)
         .single();
@@ -394,6 +407,16 @@ export default function Account() {
         setDentistAvailability(data.isDentistAvailable ?? false);
         setClinicIntroduction(data.introduction ?? "");
         setOffers(data.offers ?? "");
+        setRequestVerification(data.request_verification ?? false);
+        setVerified(data.isVerified ?? false);
+        setDenialReason(data.denied_verification_reason ?? "");
+        setNotifMessage(data.notif_message ?? "");
+        if (data.isWarn !== warn) {
+          setWarn(true);
+        }
+        if (data.isBan !== ban) {
+          setBan(true);
+        }
       }
     } catch (error) {
       if (error instanceof Error) Alert.alert(error.message);
@@ -674,6 +697,176 @@ export default function Account() {
     }
   };
 
+    const uploadVerificationImage = async (file: File | Blob | string): Promise<string | undefined> => {
+        if (!session) throw new Error("No session available");
+        // We are using the user's provided code structure but ensuring 
+        // it handles a base64 string or a File/Blob, and returns the URL.
+        try {
+            // 1️⃣ Detect file extension (Simplified for clarity)
+            let fileExt = "png";
+            if (typeof file === "string") {
+                const match = file.match(/^data:(image\/\w+);/);
+                fileExt = match ? match[1].split("/")[1] : "png";
+            } else if (file instanceof File) {
+                fileExt = file.name.split(".").pop() ?? "png";
+            } else if (file instanceof Blob && file.type) {
+                fileExt = file.type.split("/")[1] ?? "png";
+            }
+
+            // 2️⃣ Normalize to Blob if base64 string
+            let fileData: Blob;
+            if (typeof file === "string") {
+                const base64 = file.split(",")[1];
+                const byteChars = atob(base64);
+                const byteNumbers = new Array(byteChars.length);
+                for (let i = 0; i < byteChars.length; i++) {
+                    byteNumbers[i] = byteChars.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                fileData = new Blob([byteArray], { type: `image/${fileExt}` });
+            } else {
+                fileData = file;
+            }
+
+            // 3️⃣ Create unique path in user's folder
+            const fileName = `${session.user.id}-${Date.now()}.${fileExt}`;
+            const filePath = `${session.user.id}/verification/${fileName}`; // Changed path to a 'verification' sub-folder
+            
+            // 4️⃣ Upload to Supabase Storage (using 'avatars' bucket as per your code)
+            const { error: uploadError } = await supabase.storage
+                .from("avatars") 
+                .upload(filePath, fileData, { upsert: true });
+
+            if (uploadError) throw uploadError;
+
+            // 5️⃣ Get public URL
+            const { data } = supabase.storage.from("avatars").getPublicUrl(filePath);
+            const publicUrl = data?.publicUrl;
+            if (!publicUrl) throw new Error("Failed to get public URL");
+
+            return publicUrl;
+        } catch (err) {
+            console.error("Upload failed:", err);
+            throw err; // Re-throw to be caught by the calling function
+        }
+    };
+
+    // MODIFIED pickVerifyPhotoMobile: ONLY updates state, does NOT upload
+    const pickVerifyPhotoMobile = async () => {
+        // ... permission checks ...
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+            Alert.alert(
+                "Permission denied",
+                "We need access to your photos to upload a verification photo."
+            );
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 1,
+        });
+
+        if (!result.canceled && result.assets.length > 0) {
+            // Set the URI to state. The button text will change now.
+            setVerifyPhoto(result.assets[0].uri); 
+        }
+    };
+
+    // MODIFIED pickVerifyPhotoWeb: ONLY updates state, does NOT upload
+    const pickVerifyPhotoWeb = () => {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+        input.onchange = async (event: any) => {
+            const file = event.target.files?.[0];
+            if (file) {
+                // Store the file object and a temporary URL for preview/tracking
+                const uri = URL.createObjectURL(file);
+                setVerifyPhoto({ uri, file });
+            }
+        };
+        input.click();
+    };
+
+    // The generic handler remains the same
+    const handlePickVerifyPhoto = () => {
+        if (Platform.OS === "web") {
+            pickVerifyPhotoWeb();
+        } else {
+            pickVerifyPhotoMobile();
+        }
+    };
+
+
+    // 🎯 NEW FUNCTION: Handles the final verification submission and optional upload
+    const handleVerificationSubmit = async () => {
+        setIsSubmitting(true);
+        let publicUrl: string | undefined = undefined;
+
+        try {
+            if (verifyPhoto) {
+                // 1. Image selected: Prepare data based on platform and upload
+                if (Platform.OS === 'web' && typeof verifyPhoto === 'object' && verifyPhoto.file) {
+                    // Web: upload the File/Blob object
+                    publicUrl = await uploadVerificationImage(verifyPhoto.file);
+                } else if (typeof verifyPhoto === 'string') {
+                    // Mobile/Other: upload the URI (need to convert to base64/blob)
+                    const base64 = await FileSystem.readAsStringAsync(verifyPhoto, {
+                        encoding: FileSystem.EncodingType.Base64,
+                    });
+                    const fileExt = verifyPhoto.split(".").pop() || "jpg";
+                    const dataUrl = `data:image/${fileExt};base64,${base64}`;
+                    publicUrl = await uploadVerificationImage(dataUrl);
+                }
+            }
+
+            // 2. Update clinic_profiles with the new photo URL (if uploaded) and submission status
+            const updates = { 
+                license_photo_url: publicUrl, // Update to the column you want to use for verification
+                // Add a column to track the submission state, e.g., 'verification_submitted: true'
+            };
+
+            // Only update the URL if an image was uploaded
+            const { error: dbUpdateError } = await supabase
+                .from("clinic_profiles")
+                .update(updates)
+                .eq("id", session!.user.id);
+            
+            if (dbUpdateError) throw dbUpdateError;
+
+            Alert.alert("Success", publicUrl ? "Verification photo uploaded and submission sent!" : "Verification request sent!");
+
+            // Clear the local photo state after successful submission
+            setVerifyPhoto(null);
+
+        } catch (error) {
+            console.error("Verification Submission Failed:", error);
+            const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+            Alert.alert("Error", `Failed to complete verification submission: ${errorMessage}`);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+  const handleConfirmVerify = async () => {
+    handleVerificationSubmit();
+    setRequestVerification(true);
+    setShowVerifyModal(false); // close modal
+
+    const { error } = await supabase
+      .from("clinic_profiles")
+      .update({ request_verification: true })
+      .eq("id", session?.user.id);
+
+    if (error) {
+      console.error("Failed to request verification:", error.message);
+    }
+  };
+
   return (
     <LinearGradient
       colors={["#ffffffff", "#6ce2ffff"]}
@@ -829,6 +1022,201 @@ export default function Account() {
           </View>
         </View>
       </Modal>
+      <Modal
+        visible={warn}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setWarn(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          }}
+        >
+          <View
+            style={{
+              width: isMobile ? '90%' : '40%',
+              backgroundColor: 'white',
+              padding: 20,
+              borderRadius: 10,
+              alignItems: 'center',
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 24,
+                fontWeight: "bold",
+                marginBottom: 20,
+                alignSelf: "center",
+                color: "#003f30ff",
+              }}
+            >
+              WARNING!
+            </Text>
+            <Entypo name="warning" size={isMobile? 75 : 150} color="black" />
+            <Text
+              style={{
+                fontSize: 16,
+                alignSelf: "center",
+                color: "#000000ff",
+                fontWeight: "bold",
+              }}
+            >
+              The reason why you are seeing this is that you have violated our community guidelines.
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                marginBottom: 30,
+                alignSelf: "center",
+                color: "#000000ff",
+              }}
+            >
+              Admin: {notifMessage}
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                alignSelf: "center",
+                color: "#000000ff",
+              }}
+            >
+              Please read our term of use and privacy policy to avoid getting banned.
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                marginBottom: 20,
+                alignSelf: "center",
+                color: "#2a46ffff",
+              }}
+              onPress={() => setTermsOfUse(true)}
+            >
+              Terms of Use and Privacy Policy
+            </Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              width: '48%',
+              gap: 20,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#4CAF50',
+                padding: 10,
+                borderRadius: 5,
+                marginVertical: 5,
+                width: '100%',
+                alignItems: 'center',
+              }}
+              onPress={async () => {
+                  const { error } = await supabase
+                    .from('clinic_profiles')
+                    .update({ isWarn: false })
+                    .eq('id', session?.user.id); // Use the current user's ID
+
+                  setWarn(false);
+              }}
+            >
+              <Text style={{ color: 'white', fontWeight: 'bold' }}>Understood and Close</Text>
+            </TouchableOpacity>
+          </View>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={ban}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setWarn(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          }}
+        >
+          <View
+            style={{
+              width: isMobile ? '90%' : '40%',
+              backgroundColor: 'white',
+              padding: 20,
+              borderRadius: 10,
+              alignItems: 'center',
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 24,
+                fontWeight: "bold",
+                marginBottom: 20,
+                alignSelf: "center",
+                color: "#003f30ff",
+              }}
+            >
+              Your account has been banned!
+            </Text>
+            <FontAwesome name="ban" size={isMobile ? 75 : 150} color="black" />
+            <Text
+              style={{
+                fontSize: 16,
+                alignSelf: "center",
+                color: "#000000ff",
+                fontWeight: "bold",
+              }}
+            >
+              The reason why you are seeing this is that you have violated our community guidelines.
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                marginBottom: 30,
+                alignSelf: "center",
+                color: "#000000ff",
+              }}
+            >
+              Admin: {notifMessage}
+            </Text>
+
+
+          <View
+            style={{
+              flexDirection: 'row',
+              width: '48%',
+              gap: 20,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#4CAF50',
+                padding: 10,
+                borderRadius: 5,
+                marginVertical: 5,
+                width: '100%',
+                alignItems: 'center',
+              }}
+              onPress={async () => {
+                setModalSignout(true)
+              }}
+            >
+              <Text style={{ color: 'white', fontWeight: 'bold' }}>Logout</Text>
+            </TouchableOpacity>
+          </View>
+          </View>
+        </View>
+      </Modal>
       {/* Glider Panel */}
       <View
         style={{
@@ -962,7 +1350,6 @@ export default function Account() {
                 alignItems: "center",
                 justifyContent: "center",
                 minHeight: "100%",
-                paddingBottom: 60,
               }}
             >
               <Image
@@ -1513,6 +1900,25 @@ export default function Account() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => {
+                    setDashboardView("offers");
+                    if (isMobile) {
+                      setMoved((prev) => !prev);
+                      setExpanded((prev) => !prev);
+                    }
+                  }}
+                  style={styles.mar2}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator animating color={"black"} />
+                  ) : (
+                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
+                      Offers
+                    </Text>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
                     setDashboardView("clinics");
                     if (isMobile) {
                       setMoved((prev) => !prev);
@@ -1603,6 +2009,25 @@ export default function Account() {
                   ) : (
                     <Text style={{ ...styles.buttonText, color: "#ffff" }}>
                       Chats
+                    </Text>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    setDashboardView("verify");
+                    if (isMobile) {
+                      setMoved((prev) => !prev);
+                      setExpanded((prev) => !prev);
+                    }
+                  }}
+                  style={styles.mar2}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator animating color={"black"} />
+                  ) : (
+                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
+                      Verification
                     </Text>
                   )}
                 </TouchableOpacity>
@@ -2437,6 +2862,32 @@ export default function Account() {
               </View>
             </View>
           </ScrollView>
+        </View>
+        )}
+
+        {/* Dashboard Chats --------------------------------------------------------------------------------------- */}
+
+        {dashboardView === "offers" && (
+        <View
+          style={[
+            styles.dashboard,
+            {
+              width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
+              right: dashboardView === "offers" ? 11 : 20000,
+            },
+          ]}
+        >
+          <Text
+            style={{
+              fontSize: 24,
+              fontWeight: "bold",
+              marginBottom: 20,
+              alignSelf: isMobile ? "center" : "flex-start",
+              color: "#003f30ff",
+            }}
+          >
+            Offers
+          </Text>
         </View>
         )}
 
@@ -3827,6 +4278,241 @@ export default function Account() {
         </View>
         )}
 
+        {/* Dashboard verification --------------------------------------------------------------------------------------- */}
+
+        {dashboardView === "verify" && (
+          <View
+            style={[
+              styles.dashboard,
+              {
+                width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
+                right: dashboardView === "verify" ? 11 : 20000,
+                padding: 20,
+              },
+            ]}
+          >
+            <Text
+              style={{
+                fontSize: 24,
+                fontWeight: "bold",
+                marginBottom: 20,
+                alignSelf: isMobile ? "center" : "flex-start",
+                color: "#003f30ff",
+              }}
+            >
+              Verification
+            </Text>
+
+            {/* Introduction Section */}
+            <View style={{justifyContent: "center", alignItems: "center", flex: 1, padding: 10, backgroundColor: "#f7f7f7ff", borderRadius: 16, marginTop: -10, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,}}>
+              <Text
+                style={{
+                  fontSize: 48,
+                  fontWeight: "bold",
+                  marginBottom: 20,
+                  alignSelf: "center",
+                  justifyContent: "center",
+                  color: "#003f30ff",
+                }}
+              >
+                VERIFY YOUR CLINIC!
+              </Text>
+              <Text
+                style={{
+                  fontSize: 16,
+                  color: "#444",
+                  marginBottom: 20,
+                  lineHeight: 22,
+                }}
+              >
+                Verified clinics build more trust with patients. When your clinic is verified:
+                {"\n"}• Patients are able to create an appointment.
+                {"\n"}• Your clinic is highlighted as trustworthy and authentic.
+              </Text>
+
+              {/* Upload Area */}
+              <View
+                style={{
+                  borderWidth: 1,
+                  borderColor: "#ccc",
+                  borderRadius: 10,
+                  padding: 20,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: !!verified ? "#edffe8ff" : !!requestVerification ? "#fffde8ff" : "#f9f9f9",
+                  marginBottom: 20,
+                }}
+              >
+                {!!verified && (
+                  <Text style={{ fontSize: 16, fontWeight: "bold", color: "#666", textAlign: "center"  }}>
+                    Your Clinic is Verified!
+                  </Text>
+                )}
+                {!!requestVerification && (
+                  <Text style={{ color: "#666", textAlign: "center"  }}>
+                    Your verification request is pending. Please wait for admin approval. Thank you!
+                  </Text>
+                )}
+                {!verified && !requestVerification && (
+                  <Text style={{ marginBottom: 10, color: "#666", textAlign: "center"  }}>
+                    Optional: Uploading a photo of Business Permit helps verify your clinic's legitimacy fast.
+                  </Text>
+                )}
+
+                  {!!verifyPhoto && (
+                      <Image
+                          source={{ uri: typeof verifyPhoto === 'object' ? verifyPhoto.uri : verifyPhoto }}
+                          style={{ width: 200, height: 150, borderRadius: 10, marginBottom: 15 }}
+                          resizeMode="cover"
+                      />
+                  )}
+
+                  {/* Replace with actual upload logic later */}
+              {!verified && !requestVerification && (
+                  <TouchableOpacity
+                    onPress={async () => {
+                      handlePickVerifyPhoto(); // Existing logic to pick a photo
+                    }}
+                    style={{
+                      backgroundColor: "#e0f2f1",
+                      paddingVertical: 10,
+                      paddingHorizontal: 20,
+                      borderRadius: 5,
+                    }}
+                  >
+                    <Text style={{ color: "#00796b" }}>
+                      {!!verifyPhoto ? "Change Photo" : "Upload Photo"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                {denialReason ? (
+                  <Text style={{ color: "red", marginTop: 8, textAlign: "center" }}>
+                    Your clinic has been denied.
+                    {"\n"}Reason: {denialReason}
+                  </Text>
+                ) : null}
+              </View>
+
+              {/* Verify Button */}
+              {!verified && !requestVerification && (
+                <TouchableOpacity
+                  onPress={() => setShowVerifyModal(true)}
+                  style={{
+                    backgroundColor: "#00796b",
+                    paddingVertical: 12,
+                    paddingHorizontal: 30,
+                    borderRadius: 8,
+                    alignSelf: "center",
+                  }}
+                >
+                  <Text style={{ color: "#fff", fontSize: 16 }}>Verify</Text>
+                </TouchableOpacity>
+              )}
+                <Modal
+                  visible={showVerifyModal}
+                  transparent
+                  animationType="fade"
+                  onRequestClose={() => setShowVerifyModal(false)}
+                >
+                  <View
+                    style={{
+                      flex: 1,
+                      backgroundColor: "rgba(0,0,0,0.5)",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <View
+                      style={{
+                        backgroundColor: "white",
+                        borderRadius: 10,
+                        padding: 20,
+                        width: "80%",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 18,
+                          fontWeight: "bold",
+                          marginBottom: 10,
+                          textAlign: "center",
+                        }}
+                      >
+                        Do you want to verify your clinic?
+                      </Text>
+
+                      {!verifyPhoto && (
+                        <Text
+                          style={{
+                            color: "#f57c00",
+                            fontSize: 14,
+                            marginVertical: 10,
+                            textAlign: "center",
+                          }}
+                        >
+                          Providing a photo of your business permit will make the process faster.
+                        </Text>
+                      )}
+
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          marginTop: 20,
+                          gap: 20,
+                        }}
+                      >
+                        <TouchableOpacity
+                          onPress={() => setShowVerifyModal(false)}
+                          style={{
+                            paddingVertical: 10,
+                            paddingHorizontal: 20,
+                            borderRadius: 6,
+                            borderWidth: 1,
+                            borderColor: "#00796b",
+                            backgroundColor: "#ffffff",
+                          }}
+                        >
+                          <Text style={{ color: "#00796b" }}>Cancel</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          onPress={async () => {
+                            handleVerificationSubmit();
+                            setRequestVerification(true);
+                            setShowVerifyModal(false);
+                            setDenialReason("");
+
+                            const { error } = await supabase
+                              .from("clinic_profiles")
+                              .update({ 
+                                request_verification: true,
+                                denied_verification_reason: null,
+                              })
+                              .eq("id", session?.user.id);
+
+                            if (error) {
+                              console.error("Failed to request verification:", error.message);
+                            }
+                          }}
+                          style={{
+                            paddingVertical: 10,
+                            paddingHorizontal: 20,
+                            borderRadius: 6,
+                            backgroundColor: "#00796b",
+                          }}
+                        >
+                          <Text style={{ color: "#fff" }}>Verify</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                </Modal>
+            </View>
+          </View>
+        )}
+
+
         {/* Dashboard Team --------------------------------------------------------------------------------------- */}
 
         {dashboardView === "team" && (
@@ -4029,140 +4715,6 @@ export default function Account() {
           Terms of Use
         </Text>
       </TouchableOpacity>
-
-      {/* Modal */}
-      <Modal
-        visible={termsOfUse}
-        transparent
-        onRequestClose={() => setTermsOfUse(false)}
-      >
-        <View
-        style={{
-          flex: 1,
-          backgroundColor: "rgba(0,0,0,0.5)",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <View
-          style={{
-            backgroundColor: "white",
-            width: "90%",
-            padding: 20,
-            borderRadius: 16,
-            maxHeight: "80%",
-          }}
-        >
-          <ScrollView>
-            <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10, color: "#003f30" }}>
-              SmileStudio - Terms of Use
-            </Text>
-            <Text style={{ fontSize: 14, marginBottom: 10, color: "#444" }}>
-              <Text style={{ fontWeight: "bold" }}>Last Updated:</Text> May 8, 2025{"\n"}
-              <Text style={{ fontWeight: "bold" }}>Effective Immediately</Text>
-            </Text>
-
-            <Text style={{ fontSize: 14, color: "#444", lineHeight: 22 }}>
-              By accessing or using SmileStudio, owned and operated by Scuba Scripter and Pixel Cowboy Team, User agree to be legally bound by these Terms of Use. These Terms govern your use of SmileStudio, a Web-Based Dental Appointment System with Automated Messaging Follow-Up Reminders via AI Chatbot in San Jose Del Monte Bulacan.
-              If you do not agree with any part of these Terms, you must immediately cease all use of the Platform. Continued access constitutes unconditional acceptance of these Terms and any future modifications.{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>1. Definitions{"\n"}</Text>
-              "Appointment"– A scheduled medical consultation booked through SmileStudio.{"\n"}
-              "No-Show"– Failure to attend a booked Appointment without prior cancellation.{"\n"}
-              "Grace Period"– A 15-minute window after a scheduled Appointment time during which a late arrival may still be accommodated.{"\n"}
-              "Malicious Activity"– Any action that disrupts, exploits, or harms the Platform, its users, or affiliated clinics (e.g., hacking, fake bookings, harassment).{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>2. Eligibility & Account Registration{"\n"}</Text>
-              <Text style={{ fontWeight: "bold" }}>2.1 Age Requirement</Text>{" "}
-              The Platform is accessible to users of all ages but is currently intended for non-commercial, academic/capstone project use only. Minors (under 18) must obtain parental/guardian consent before booking Appointments.{"\n"}
-              <Text style={{ fontWeight: "bold" }}>2.2 Account Responsibility</Text>{" "}
-              Users must provide accurate, current, and complete information during registration. You are solely responsible for:{"\n"}
-              - Maintaining the confidentiality of your login credentials.{"\n"}
-              - All activities conducted under your account.{"\n"}
-              - Immediately notify us of any unauthorized account use.{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>3. Permitted & Prohibited Use{"\n"}</Text>
-              <Text style={{ fontWeight: "bold" }}>3.1 Acceptable Use</Text>{" "}
-              You may use SmileStudio only for lawful purposes, including:{"\n"}
-              Booking legitimate medical Appointments at partner clinics in San Jose Del Monte, Bulacan.{"\n"}
-              Accessing clinic information, availability, Location, Pricing, Services and AI chatbot reminder assistance.{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>3.2 Strictly Prohibited Conduct</Text>{" "}
-              Violations will result in immediate account suspension or termination. You agree NOT to:{"\n"}
-              - Create fake or duplicate Appointments (e.g., under false names).{"\n"}
-              - Engage in hacking, phishing, or data scraping (automated or manual).{"\n"}
-              - Harass clinic staff or other users (e.g., trolling, abusive messages).{"\n"}
-              - Upload malicious software (viruses, spyware) or disrupt server operations.{"\n"}
-              - Misrepresent your identity or medical needs.{"\n"}
-              - Circumvent appointment limits (e.g., creating multiple accounts).{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>4. Appointment Policies{"\n"}</Text>
-              <Text style={{ fontWeight: "bold" }}>4.1 Booking & Cancellation</Text>{" "}
-              Appointments operate on a "First-Appoint, First-Served" basis. No downpayment is required ("Appoint Now, Pay Later"). Cancellations must be made at least 24 hours in advance via the Platform.{"\n"}
-              <Text style={{ fontWeight: "bold" }}>4.2 No-Show & Late Arrival Policy</Text>{" "}
-              AI Chatbot Reminder: Users receive 2 automated alerts:{"\n"}
-              - 2 hours before the Appointment.{"\n"}
-              - Grace Period: A 15-minute late arrival window is permitted. After this:{"\n"}
-              - The Appointment is automatically forfeited.{"\n"}
-              - The slot is released to other patients.{"\n"}
-              - The User must reschedule.{"\n"}
-              Strike System:{"\n"}
-              - 5 No-Shows = 1-month account suspension.{"\n"}
-              - Suspended accounts cannot book new Appointments but may view clinic information.{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>5. Intellectual Property Rights{"\n"}</Text>
-              <Text style={{ fontWeight: "bold" }}>5.1 Ownership</Text>{" "}
-              All text, graphics, logos, clinic data, and AI chatbot software APIs are the exclusive property of SmileStudio and its partner clinics. No commercial use (e.g., reselling clinic slots, redistributing data) is permitted.{"\n"}
-              <Text style={{ fontWeight: "bold" }}>5.2 Limited License</Text>{" "}
-              Users are granted a revocable, non-exclusive license to: Access the Platform for personal, non-commercial healthcare purposes.{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>6. Privacy & Data Security{"\n"}</Text>
-              Our Privacy Policy (Will be added Soon) details how we collect, store, and protect your data. Clinic Confidentiality: All medical information shared during Appointments is protected under HIPAA-equivalent Philippine laws.{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>7. Disclaimers & Limitation of Liability{"\n"}</Text>
-              <Text style={{ fontWeight: "bold" }}>7.1 No Medical Guarantees</Text>{" "}
-              SmileStudio is not a healthcare provider. We do not guarantee diagnosis accuracy, treatment outcomes, or clinic availability.{"\n"}
-              <Text style={{ fontWeight: "bold" }}>7.2 Platform "As Is"</Text>{" "}
-              The Platform may experience downtime, bugs, or delays.{"\n"}
-              <Text style={{ fontWeight: "bold" }}>7.3 No Financial Liability</Text>{" "}
-              We do not charge users and do not handle payments, medical services, or clinic operations. We are not liable for:{"\n"}
-              - User misconduct (e.g., no-shows, fake bookings).{"\n"}
-              - Clinic errors (e.g., overbooking, misdiagnosis).{"\n"}
-              - Indirect damages (e.g., lost time, travel costs).{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>8. Termination & Enforcement{"\n"}</Text>
-              <Text style={{ fontWeight: "bold" }}>8.1 By SmileStudio</Text>{" "}
-              We may suspend or terminate accounts for: Breach of these Terms (e.g., fake Appointments, harassment). Malicious Activity (e.g., hacking attempts). Excessive No-Shows (per Section 4.2).{"\n"}
-              <Text style={{ fontWeight: "bold" }}>8.2 By Users</Text>{" "}
-              You may deactivate your account at any time by contacting: (+63) 921-888-1835{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>9. Governing Law & Dispute Resolution{"\n"}</Text>
-              These Terms are governed by Philippine law (Republic Act No. 10173, Data Privacy Act). Disputes must first undergo mediation in San Jose Del Monte, Bulacan. Unresolved disputes will be settled in Philippine courts.{"\n\n"}
-
-              <Text style={{ fontWeight: "bold" }}>10. Contact Information{"\n"}</Text>
-              For inquiries or violations, contact:{"\n"}
-              Scuba Scripter and Pixel Cowboy Team{"\n"}
-              (+63) 921-888-1835{"\n"}
-              San Jose Del Monte, Bulacan, Philippines
-            </Text>
-          </ScrollView>
-
-          <TouchableOpacity
-            onPress={() => setTermsOfUse(false)}
-            style={{
-              marginTop: 20,
-              backgroundColor: "#003f30",
-              paddingVertical: 10,
-              borderRadius: 8,
-            }}
-          >
-            <Text style={{ color: "white", textAlign: "center", fontWeight: "bold" }}>
-              Close
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-      </Modal>
     </View>
 
           <View
@@ -4331,6 +4883,139 @@ export default function Account() {
           </ScrollView>
         </View>
         )}
+      {/* Modal */}
+      <Modal
+        visible={termsOfUse}
+        transparent
+        onRequestClose={() => setTermsOfUse(false)}
+      >
+        <View
+        style={{
+          flex: 1,
+          backgroundColor: "rgba(0,0,0,0.5)",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: "white",
+            width: "90%",
+            padding: 20,
+            borderRadius: 16,
+            maxHeight: "80%",
+          }}
+        >
+          <ScrollView>
+            <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10, color: "#003f30" }}>
+              SmileStudio - Terms of Use
+            </Text>
+            <Text style={{ fontSize: 14, marginBottom: 10, color: "#444" }}>
+              <Text style={{ fontWeight: "bold" }}>Last Updated:</Text> May 8, 2025{"\n"}
+              <Text style={{ fontWeight: "bold" }}>Effective Immediately</Text>
+            </Text>
+
+            <Text style={{ fontSize: 14, color: "#444", lineHeight: 22 }}>
+              By accessing or using SmileStudio, owned and operated by Scuba Scripter and Pixel Cowboy Team, User agree to be legally bound by these Terms of Use. These Terms govern your use of SmileStudio, a Web-Based Dental Appointment System with Automated Messaging Follow-Up Reminders via AI Chatbot in San Jose Del Monte Bulacan.
+              If you do not agree with any part of these Terms, you must immediately cease all use of the Platform. Continued access constitutes unconditional acceptance of these Terms and any future modifications.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>1. Definitions{"\n"}</Text>
+              "Appointment"– A scheduled medical consultation booked through SmileStudio.{"\n"}
+              "No-Show"– Failure to attend a booked Appointment without prior cancellation.{"\n"}
+              "Grace Period"– A 15-minute window after a scheduled Appointment time during which a late arrival may still be accommodated.{"\n"}
+              "Malicious Activity"– Any action that disrupts, exploits, or harms the Platform, its users, or affiliated clinics (e.g., hacking, fake bookings, harassment).{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>2. Eligibility & Account Registration{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>2.1 Age Requirement</Text>{" "}
+              The Platform is accessible to users of all ages but is currently intended for non-commercial, academic/capstone project use only. Minors (under 18) must obtain parental/guardian consent before booking Appointments.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>2.2 Account Responsibility</Text>{" "}
+              Users must provide accurate, current, and complete information during registration. You are solely responsible for:{"\n"}
+              - Maintaining the confidentiality of your login credentials.{"\n"}
+              - All activities conducted under your account.{"\n"}
+              - Immediately notify us of any unauthorized account use.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>3. Permitted & Prohibited Use{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>3.1 Acceptable Use</Text>{" "}
+              You may use SmileStudio only for lawful purposes, including:{"\n"}
+              Booking legitimate medical Appointments at partner clinics in San Jose Del Monte, Bulacan.{"\n"}
+              Accessing clinic information, availability, Location, Pricing, Services and AI chatbot reminder assistance.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>3.2 Strictly Prohibited Conduct</Text>{" "}
+              Violations will result in immediate account suspension or termination. You agree NOT to:{"\n"}
+              - Create fake or duplicate Appointments (e.g., under false names).{"\n"}
+              - Engage in hacking, phishing, or data scraping (automated or manual).{"\n"}
+              - Harass clinic staff or other users (e.g., trolling, abusive messages).{"\n"}
+              - Upload malicious software (viruses, spyware) or disrupt server operations.{"\n"}
+              - Misrepresent your identity or medical needs.{"\n"}
+              - Circumvent appointment limits (e.g., creating multiple accounts).{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>4. Appointment Policies{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>4.1 Booking & Cancellation</Text>{" "}
+              Appointments operate on a "First-Appoint, First-Served" basis. No downpayment is required ("Appoint Now, Pay Later"). Cancellations must be made at least 24 hours in advance via the Platform.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>4.2 No-Show & Late Arrival Policy</Text>{" "}
+              AI Chatbot Reminder: Users receive 2 automated alerts:{"\n"}
+              - 2 hours before the Appointment.{"\n"}
+              - Grace Period: A 15-minute late arrival window is permitted. After this:{"\n"}
+              - The Appointment is automatically forfeited.{"\n"}
+              - The slot is released to other patients.{"\n"}
+              - The User must reschedule.{"\n"}
+              Strike System:{"\n"}
+              - 5 No-Shows = 1-month account suspension.{"\n"}
+              - Suspended accounts cannot book new Appointments but may view clinic information.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>5. Intellectual Property Rights{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>5.1 Ownership</Text>{" "}
+              All text, graphics, logos, clinic data, and AI chatbot software APIs are the exclusive property of SmileStudio and its partner clinics. No commercial use (e.g., reselling clinic slots, redistributing data) is permitted.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>5.2 Limited License</Text>{" "}
+              Users are granted a revocable, non-exclusive license to: Access the Platform for personal, non-commercial healthcare purposes.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>6. Privacy & Data Security{"\n"}</Text>
+              Our Privacy Policy (Will be added Soon) details how we collect, store, and protect your data. Clinic Confidentiality: All medical information shared during Appointments is protected under HIPAA-equivalent Philippine laws.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>7. Disclaimers & Limitation of Liability{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>7.1 No Medical Guarantees</Text>{" "}
+              SmileStudio is not a healthcare provider. We do not guarantee diagnosis accuracy, treatment outcomes, or clinic availability.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>7.2 Platform "As Is"</Text>{" "}
+              The Platform may experience downtime, bugs, or delays.{"\n"}
+              <Text style={{ fontWeight: "bold" }}>7.3 No Financial Liability</Text>{" "}
+              We do not charge users and do not handle payments, medical services, or clinic operations. We are not liable for:{"\n"}
+              - User misconduct (e.g., no-shows, fake bookings).{"\n"}
+              - Clinic errors (e.g., overbooking, misdiagnosis).{"\n"}
+              - Indirect damages (e.g., lost time, travel costs).{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>8. Termination & Enforcement{"\n"}</Text>
+              <Text style={{ fontWeight: "bold" }}>8.1 By SmileStudio</Text>{" "}
+              We may suspend or terminate accounts for: Breach of these Terms (e.g., fake Appointments, harassment). Malicious Activity (e.g., hacking attempts). Excessive No-Shows (per Section 4.2).{"\n"}
+              <Text style={{ fontWeight: "bold" }}>8.2 By Users</Text>{" "}
+              You may deactivate your account at any time by contacting: (+63) 921-888-1835{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>9. Governing Law & Dispute Resolution{"\n"}</Text>
+              These Terms are governed by Philippine law (Republic Act No. 10173, Data Privacy Act). Disputes must first undergo mediation in San Jose Del Monte, Bulacan. Unresolved disputes will be settled in Philippine courts.{"\n\n"}
+
+              <Text style={{ fontWeight: "bold" }}>10. Contact Information{"\n"}</Text>
+              For inquiries or violations, contact:{"\n"}
+              Scuba Scripter and Pixel Cowboy Team{"\n"}
+              (+63) 921-888-1835{"\n"}
+              San Jose Del Monte, Bulacan, Philippines
+            </Text>
+          </ScrollView>
+
+          <TouchableOpacity
+            onPress={() => setTermsOfUse(false)}
+            style={{
+              marginTop: 20,
+              backgroundColor: "#003f30",
+              paddingVertical: 10,
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ color: "white", textAlign: "center", fontWeight: "bold" }}>
+              Close
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      </Modal>
 
 
       </LinearGradient>
