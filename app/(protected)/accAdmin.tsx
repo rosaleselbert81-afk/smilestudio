@@ -100,6 +100,7 @@ export default function Account() {
   const [clinicList, setClinicList] = useState<any[]>([]);
 
   const [tMap, setTMap] = useState(false);
+  const [verified, setVerified] = useState(false);
 
 
   const [patientUsers, setPatientUsers] = useState<any[]>([]);
@@ -929,7 +930,7 @@ useEffect(() => {
                   }}
                   style={styles.mar2} 
                   disabled={loading}>
-                  {loading ? <ActivityIndicator animating color={'black'} /> : <Text style={{...styles.buttonText, color: "#ffff"}}>Chats</Text>}
+                  {loading ? <ActivityIndicator animating color={'black'} /> : <Text style={{...styles.buttonText, color: "#ffff"}}>Support</Text>}
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => {
@@ -1251,7 +1252,9 @@ useEffect(() => {
                           justifyContent: isMobile ? "flex-start" : "center",
                         }}
                       >
-                        {clinicList.map((clinic, index) => (
+                        {clinicList
+                        .filter((clinic) => clinic.isFirst === false)
+                        .map((clinic, index) => (
                           <LinearGradient
                             colors={["#ffffffff", "#bdeeffff"]}
                             key={clinic.id || index}
@@ -1329,6 +1332,7 @@ useEffect(() => {
       setMapView([clinic.longitude, clinic.latitude]);
       setSelectedCI(clinic.introduction);
       setSelectedOffers(clinic.offers);
+      setVerified(clinic.isVerified);
     }}
   >
     <Text style={{ color: "#fff", fontSize: isMobile ? 8 : 10 }}>View Clinic</Text>
@@ -1400,7 +1404,7 @@ useEffect(() => {
               {selectedClinicName || "Unnamed Clinic"}
             </Text>
             <Text style={{ fontSize: 11, color: "#226064ff", marginBottom: 6 }}>
-              {selectedClinicRole || "N/A"}
+              {verified ? "✅ Verified Clinic" : "❌ Unverified Clinic"}
             </Text>
             <Text style={{ fontSize: 14, color: "#3c6422ff" }}>
               {selectedClinicEmail}
@@ -1447,7 +1451,7 @@ useEffect(() => {
         <Text style={{ fontSize: 14, fontWeight: "500", marginTop: 12 }}>
           Clinic Schedule
         </Text>
-        <View style={{ marginBottom: 16, gap: 8 }}>
+        <View style={{ marginBottom: 16, gap: 1 }}>
           {[
             { label: "Sunday", time: selectedSunday },
             { label: "Monday", time: selectedMonday },
@@ -1513,22 +1517,6 @@ useEffect(() => {
             marginTop: 20,
           }}
         >
-          {/* Message Button */}
-          <TouchableOpacity
-            onPress={() => {
-              alert(`Messaging ${selectedClinicName}`);
-            }}
-            style={{
-              flex: 1,
-              marginRight: 8,
-              backgroundColor: "#3498db",
-              paddingVertical: 10,
-              borderRadius: 8,
-              alignItems: "center",
-            }}
-          >
-            <Text style={{ color: "#fff", fontWeight: "600" }}>Message</Text>
-          </TouchableOpacity>
 
           {/* 🔍 "View Full" Button (replaces the old Close button) */}
           <TouchableOpacity
@@ -1663,7 +1651,7 @@ useEffect(() => {
             {selectedClinicName || "Unnamed Clinic"}
           </Text>
           <Text style={{ fontSize: 14, color: "#2a4d4d", marginBottom: 6 }}>
-            {selectedClinicRole || "Clinic"}
+            {verified ? "✅ Verified Clinic" : "❌ Unverified Clinic"}
           </Text>
           <Text style={{ fontSize: 14, color: "#0b5a51", fontStyle: "normal", marginBottom: 6 }}>
             {selectedClinicEmail}
@@ -1754,7 +1742,19 @@ useEffect(() => {
               textAlign: selectedOffers ? "left" : "center",
             }}
           >
-            {selectedOffers || "offers have not yet been set"}
+            {selectedOffers && selectedOffers.trim() !== '' ? (
+              selectedOffers
+                .split('?')
+                .filter(offer => offer.trim() !== '')
+                .map((offer, i) => (
+                  <Text key={i}>
+                    {'• ' + offer}
+                    {'\n'}
+                  </Text>
+                ))
+            ) : (
+              "offers have not yet been set"
+            )}
           </Text>
         </View>
 
@@ -1902,20 +1902,6 @@ useEffect(() => {
           backgroundColor: "#b9ffdcff",
         }}
       >
-        <TouchableOpacity
-          onPress={() => alert(`Messaging ${selectedClinicName}`)}
-          style={{
-            backgroundColor: "#3498db",
-            paddingVertical: 12,
-            paddingHorizontal: 20,
-            borderRadius: 8,
-            flex: 1,
-            marginHorizontal: 5,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ color: "#fff", fontWeight: "600" }}>Message</Text>
-        </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => setModalMap(true)}
@@ -2499,7 +2485,7 @@ useEffect(() => {
               color: "#003f30ff",
             }}
           >
-            Chats
+            Support
           </Text>
           </View>
     

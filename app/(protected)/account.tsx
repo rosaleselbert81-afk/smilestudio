@@ -142,6 +142,13 @@ export default function Account() {
   const [notifMessage, setNotifMessage] = useState("");
   const [downloadModal, setDownloadModal] = useState(false);
   const [showTooCloseModal, setShowTooCloseModal] = useState(false);
+  const [verified, setVerified] = useState(false);
+  const [offerList, setOfferList] = useState<string>("");
+  const offersArray = typeof offerList === "string"
+    ? offerList.split("?")
+    : Array.isArray(offerList)
+    ? offerList
+    : [];
 
   const [mapView, setMapView] = useState<
     [number | undefined, number | undefined]
@@ -2532,7 +2539,9 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                   justifyContent: isMobile ? "flex-start" : "center",
                 }}
               >
-                {clinicList.map((clinic, index) => (
+                {clinicList
+                .filter((clinic) => clinic.isFirst === false)
+                .map((clinic, index) => (
                   <LinearGradient
                     colors={["#ffffffff", "#bdeeffff"]}
                     key={clinic.id || index}
@@ -2613,6 +2622,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
       chatWithClinic(clinic.id);
       setSelectedCI(clinic.introduction);
       setSelectedOffers(clinic.offers);
+      setVerified(clinic.isVerified);
     }}
   >
     <Text style={{ color: "#fff", fontSize: isMobile ? 8 : 10 }}>View Clinic</Text>
@@ -2684,7 +2694,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
               {selectedClinicName || "Unnamed Clinic"}
             </Text>
             <Text style={{ fontSize: 11, color: "#226064ff", marginBottom: 6 }}>
-              {selectedClinicRole || "N/A"}
+              {verified ? "✅ Verified Clinic" : "❌ Unverified Clinic"}
             </Text>
             <Text style={{ fontSize: 14, color: "#3c6422ff" }}>
               {selectedClinicEmail}
@@ -2949,7 +2959,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
             {selectedClinicName || "Unnamed Clinic"}
           </Text>
           <Text style={{ fontSize: 14, color: "#2a4d4d", marginBottom: 6 }}>
-            {selectedClinicRole || "Clinic"}
+            {verified ? "✅ Verified Clinic" : "❌ Unverified Clinic"}
           </Text>
           <Text style={{ fontSize: 14, color: "#0b5a51", fontStyle: "normal", marginBottom: 6 }}>
             {selectedClinicEmail}
@@ -3040,7 +3050,19 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
               textAlign: selectedOffers ? "left" : "center",
             }}
           >
-            {selectedOffers || "offers have not yet been set"}
+            {selectedOffers && selectedOffers.trim() !== '' ? (
+              selectedOffers
+                .split('?')
+                .filter(offer => offer.trim() !== '')
+                .map((offer, i) => (
+                  <Text key={i}>
+                    {'• ' + offer}
+                    {'\n'}
+                  </Text>
+                ))
+            ) : (
+              "offers have not yet been set"
+            )}
           </Text>
         </View>
 
@@ -3275,6 +3297,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                         onPress={() => {
                           setSelectedClinicId(clinic.id);
                           setappointmentName(clinic.clinic_name);
+                          setOfferList(clinic.offers || []);
                           setModalAppoint(true);
                         }}
                         style={{
@@ -3398,34 +3421,38 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                                 Message to clinic: Reason of Appointment
                               </Text>
 
-                              {/* Checkboxes */}
+                              {/* Checkboxes for Offers */}
                               <View style={{ width: "100%", alignItems: "flex-start" }}>
-                                {["Cavities Removal", "Teeth Check up", "Teeth Cleaning", "Chipped or Cracked Teeth"].map((reason) => (
-                                  <TouchableOpacity
-                                    key={reason}
-                                    onPress={() => toggleReason(reason)}
-                                    style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}
-                                  >
-                                    <View
-                                      style={{
-                                        height: 20,
-                                        width: 20,
-                                        borderRadius: 4,
-                                        borderWidth: 1,
-                                        borderColor: "#888",
-                                        justifyContent: "center",
-                                        alignItems: "center",
-                                        marginRight: 10,
-                                        backgroundColor: selectedReasons.includes(reason) ? "#007bff" : "#fff",
-                                      }}
+                                {(Array.isArray(offerList) ? offerList : offerList ? offerList.split("?") : []).map((offer) => {
+                                  const trimmedOffer = offer.trim();
+                                  if (!trimmedOffer) return null;
+                                  return (
+                                    <TouchableOpacity
+                                      key={trimmedOffer}
+                                      onPress={() => toggleReason(trimmedOffer)}
+                                      style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}
                                     >
-                                      {selectedReasons.includes(reason) && (
-                                        <View style={{ width: 10, height: 10, backgroundColor: "#fff" }} />
-                                      )}
-                                    </View>
-                                    <Text>{reason}</Text>
-                                  </TouchableOpacity>
-                                ))}
+                                      <View
+                                        style={{
+                                          height: 20,
+                                          width: 20,
+                                          borderRadius: 4,
+                                          borderWidth: 1,
+                                          borderColor: "#888",
+                                          justifyContent: "center",
+                                          alignItems: "center",
+                                          marginRight: 10,
+                                          backgroundColor: selectedReasons.includes(trimmedOffer) ? "#007bff" : "#fff",
+                                        }}
+                                      >
+                                        {selectedReasons.includes(trimmedOffer) && (
+                                          <View style={{ width: 10, height: 10, backgroundColor: "#fff" }} />
+                                        )}
+                                      </View>
+                                      <Text>{trimmedOffer}</Text>
+                                    </TouchableOpacity>
+                                  );
+                                })}
                               </View>
 
                               {/* "Others" checkbox */}

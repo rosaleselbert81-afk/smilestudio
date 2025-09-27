@@ -161,6 +161,39 @@ export default function Account() {
   const [warn, setWarn] = useState(false);
   const [ban, setBan] = useState(false);
   const [notifMessage, setNotifMessage] = useState<string>();
+  const [offerList, setOfferList] = useState<string[]>([]);
+  const [isSaved, setIsSaved] = useState(false);
+  const [offerModalVisible, setOfferModalVisible] = useState(false);
+
+const handleSaveOffers = async () => {
+  try {
+    if (!session?.user) {
+      throw new Error("User not authenticated");
+    }
+
+    // Filter out empty offers before joining
+    const filteredOffers = offerList.filter(offer => offer.trim() !== "");
+
+    if (filteredOffers.length === 0) {
+      Alert.alert("No offers to save", "Please add at least one offer before saving.");
+      return;
+    }
+
+    const combinedOffers = filteredOffers.join("?");
+
+    const { error } = await supabase
+      .from("clinic_profiles")
+      .update({ offers: combinedOffers })
+      .eq("id", session.user.id);
+
+    if (error) throw error;
+
+    Alert.alert("Success", "Your offers have been saved.");
+  } catch (err: any) {
+    console.error("Error saving offers:", err);
+    Alert.alert("Error", err.message || "An error occurred while saving your offers.");
+  }
+};
 
 
   const fetchAppointments = async () => {
@@ -1062,19 +1095,25 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               }}
               onPress={async () => {
                 try {
-                  // Update `isFirst` to false in Supabase
-                  const { error } = await supabase
+                  // Update `isFirst` in `profiles`
+                  const { error: profileError } = await supabase
                     .from('profiles')
                     .update({ isFirst: false })
-                    .eq('id', session?.user.id); // Use the current user's ID
+                    .eq('id', session?.user.id);
 
-                  if (error) {
-                    console.error('Failed to update isFirst:', error.message);
+                  // Update `isFirst` in `clinic_profiles`
+                  const { error: clinicProfileError } = await supabase
+                    .from('clinic_profiles')
+                    .update({ isFirst: false })
+                    .eq('id', session?.user.id); // use the correct FK column
+
+                  if (profileError || clinicProfileError) {
+                    console.error('Update error:', profileError || clinicProfileError);
                     Alert.alert('Error', 'Failed to update your profile.');
                     return;
                   }
 
-                  // Close the modal locally
+                  // Close modal
                   setviewFirst(false);
                 } catch (err) {
                   console.error('Unexpected error:', err);
@@ -1096,14 +1135,20 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               }}
               onPress={async () => {
                 try {
-                  // Update `isFirst` to false in Supabase
-                  const { error } = await supabase
+                  // Update `isFirst` in `profiles`
+                  const { error: profileError } = await supabase
                     .from('profiles')
                     .update({ isFirst: false })
-                    .eq('id', session?.user.id); // Use the current user's ID
+                    .eq('id', session?.user.id);
 
-                  if (error) {
-                    console.error('Failed to update isFirst:', error.message);
+                  // Update `isFirst` in `clinic_profiles`
+                  const { error: clinicProfileError } = await supabase
+                    .from('clinic_profiles')
+                    .update({ isFirst: false })
+                    .eq('id', session?.user.id); // use the correct FK column
+
+                  if (profileError || clinicProfileError) {
+                    console.error('Update error:', profileError || clinicProfileError);
                     Alert.alert('Error', 'Failed to update your profile.');
                     return;
                   }
@@ -1897,6 +1942,26 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                         </Text>
                       </TouchableOpacity>
                       </View>
+                        {!verified && (
+                          <Text style={{ 
+                            color: "#000000ff", 
+                            marginBottom: 10, 
+                            textAlign: "center",
+                          }}>
+                            {"To access these features, please "}
+                            <Text style={{ textDecorationLine: "underline", color: "blue" }} onPress={() => {
+                              setDashboardView("verify");
+                              setModalUpdate(false);
+                              if (isMobile) {
+                                setMoved((prev) => !prev);
+                                setExpanded((prev) => !prev);
+                              }
+                            }}>
+                              verify
+                            </Text>
+                            {" here."}
+                          </Text>
+                        )}
                       <View
                         style={{
                           flexDirection: "row",
@@ -1905,47 +1970,57 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                           gap: 5,
                         }}
                       >
-                      <TouchableOpacity
-                        style={{
-                          flex: 1,
-                          backgroundColor: "#4CAF50",
-                          paddingVertical: 5,
-                          borderRadius: 8,
-                          marginBottom: 8,
-                          height: isMobile? 28 : 30,
-                        }}
-                        onPress={() => {
-                          setShowMapPicketModal(true);
-                        }}
-                      >
-                        <Text
+                        <TouchableOpacity
+                          disabled={!verified}
                           style={{
-                            color: "white",
-                            fontWeight: "bold",
-                            textAlign: "center",
+                            flex: 1,
+                            backgroundColor: verified ? "#4CAF50" : "#A5D6A7", // lighter green or gray when disabled
+                            paddingVertical: 5,
+                            borderRadius: 8,
+                            marginBottom: 8,
+                            height: isMobile ? 28 : 30,
+                            opacity: verified ? 1 : 0.6, // visually indicate disabled state
                           }}
-                        >{"Edit Map"}</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setShowWeeklySchedule(true);
-                        }}
-                        style={{
-                          flex: 1,
-                          backgroundColor: "#4CAF50",
-                          paddingVertical: 5,
-                          borderRadius: 8,
-                          marginBottom: 8,
-                          height: isMobile? 28 : 30,
-                        }}
-                      >
-                        <Text
+                          onPress={() => {
+                            if (verified) setShowMapPicketModal(true);
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: "white",
+                              fontWeight: "bold",
+                              textAlign: "center",
+                            }}
+                          >
+                            {"Edit Map"}
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          disabled={!verified}
                           style={{
-                            color: "white",
-                            fontWeight: "bold",
-                            textAlign: "center",
-                          }}>Edit Schedule</Text>
-                      </TouchableOpacity>
+                            flex: 1,
+                            backgroundColor: verified ? "#4CAF50" : "#A5D6A7",
+                            paddingVertical: 5,
+                            borderRadius: 8,
+                            marginBottom: 8,
+                            height: isMobile ? 28 : 30,
+                            opacity: verified ? 1 : 0.6,
+                          }}
+                          onPress={() => {
+                            if (verified) setShowWeeklySchedule(true);
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: "white",
+                              fontWeight: "bold",
+                              textAlign: "center",
+                            }}
+                          >
+                            Edit Schedule
+                          </Text>
+                        </TouchableOpacity>
                       </View>
                       <View
                         style={{
@@ -3050,31 +3125,244 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
         </View>
         )}
 
-        {/* Dashboard Chats --------------------------------------------------------------------------------------- */}
+        {/* Dashboard Offers --------------------------------------------------------------------------------------- */}
 
-        {dashboardView === "offers" && (
+      {dashboardView === 'offers' && (
         <View
           style={[
             styles.dashboard,
             {
-              width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
-              right: dashboardView === "offers" ? 11 : 20000,
+              width: !isDesktop ? '95%' : expanded ? '80%' : '95%',
+              right: dashboardView === 'offers' ? 11 : 20000,
             },
           ]}
         >
           <Text
             style={{
               fontSize: 24,
-              fontWeight: "bold",
+              fontWeight: 'bold',
               marginBottom: 20,
-              alignSelf: isMobile ? "center" : "flex-start",
-              color: "#003f30ff",
+              alignSelf: isMobile ? 'center' : 'flex-start',
+              color: '#003f30ff',
             }}
           >
             Offers
           </Text>
+
+          {/* Add Offer Button */}
+          <TouchableOpacity
+            onPress={() => {
+              if (offerList.length < 7) {
+                setOfferList([...offerList, '']);
+              } else {
+                Alert.alert(
+                  'Limit Reached',
+                  'You can only add up to 20 offers.'
+                );
+              }
+            }}
+            style={{
+              backgroundColor: '#003f30ff',
+              padding: 10,
+              borderRadius: 8,
+              marginBottom: 20,
+              alignSelf: 'flex-start',
+            }}
+          >
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>
+              + Add Offer
+            </Text>
+          </TouchableOpacity>
+
+          {/* Scrollable offer inputs */}
+          {!isSaved && (
+            <View
+              style={{
+                padding: 20,
+                backgroundColor: '#f9f9f9',
+                borderRadius: 8,
+                marginBottom: 8,
+              }}
+            >
+              <ScrollView style={{ maxHeight: 300, marginBottom: 10 }}>
+                {offerList.map((offer, index) => (
+                  <View key={index} style={{ marginBottom: 10 }}>
+                    <Text style={{ marginBottom: 4, fontWeight: '600' }}>
+                      Offer {index + 1}
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <TextInput
+                        value={offer}
+                        onChangeText={(text) => {
+                          const newOfferList = [...offerList];
+                          newOfferList[index] = text;
+                          setOfferList(newOfferList);
+
+                          const filteredOffers = newOfferList.filter(
+                            (offer) => offer.trim() !== ''
+                          );
+                          setOffers(filteredOffers.join('?'));
+                        }}
+                        placeholder="Describe your offer..."
+                        style={{
+                          flex: 1,
+                          borderWidth: 1,
+                          borderColor: '#ccc',
+                          padding: 10,
+                          borderRadius: 6,
+                          backgroundColor: '#fff',
+                        }}
+                      />
+                      {/* Remove Offer Button */}
+                      <TouchableOpacity
+                        onPress={() => {
+                          const newOfferList = offerList.filter(
+                            (_, i) => i !== index
+                          );
+                          setOfferList(newOfferList);
+                        }}
+                        style={{
+                          marginLeft: 10,
+                          backgroundColor: '#ff4444',
+                          padding: 8,
+                          borderRadius: 6,
+                        }}
+                      >
+                        <Text style={{ color: 'white', fontWeight: 'bold' }}>
+                          Remove
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          <View
+            style={{
+              padding: 20,
+              backgroundColor: '#f9f9f9',
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ fontSize: 16, lineHeight: 22 }}>
+              {offers && offers.trim() !== '' ? (
+                offers
+                  .split('?')
+                  .filter(offer => offer.trim() !== '')
+                  .map((offer, i) => (
+                    <Text key={i}>
+                      {'• ' + offer}
+                      {'\n'}
+                    </Text>
+                  ))
+              ) : (
+                "offers have not yet been set"
+              )}
+            </Text>
+          </View>
+
+          {/* Update Offers Button triggers modal */}
+          <TouchableOpacity
+            onPress={() => setOfferModalVisible(true)}
+            style={{
+              backgroundColor: '#007bff',
+              padding: 12,
+              borderRadius: 8,
+              alignSelf: 'center',
+              marginTop: 10,
+            }}
+          >
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>
+              Update Offers
+            </Text>
+          </TouchableOpacity>
         </View>
-        )}
+      )}
+
+      {/* Offer Update Confirmation Modal */}
+      <Modal
+        visible={offerModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setOfferModalVisible(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: 'white',
+              padding: 20,
+              borderRadius: 10,
+              width: '80%',
+              alignItems: 'center',
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: 'bold',
+                marginBottom: 20,
+                textAlign: 'center',
+                color: '#003f30ff',
+              }}
+            >
+              Are you sure you want to update your offers?
+            </Text>
+
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => {
+                  setOfferModalVisible(false);
+                }}
+                style={{
+                  paddingVertical: 10,
+                  paddingHorizontal: 20,
+                  backgroundColor: '#ccc',
+                  borderRadius: 8,
+                  marginRight: 10,
+                }}
+              >
+                <Text style={{ color: '#333' }}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  handleSaveOffers();
+                  setIsSaved(true);
+                  setOfferModalVisible(false);
+                }}
+                style={{
+                  paddingVertical: 10,
+                  paddingHorizontal: 20,
+                  backgroundColor: '#007bff',
+                  borderRadius: 8,
+                }}
+              >
+                <Text style={{ color: 'white', fontWeight: 'bold' }}>
+                  Confirm
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+
+
+
 
         {/* Dashboard Clinics --------------------------------------------------------------------------------------- */}
 
@@ -3219,7 +3507,9 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                   justifyContent: isMobile ? "flex-start" : "center",
                 }}
               >
-                {clinicList.map((clinic, index) => (
+                {clinicList
+                  .filter((clinic) => clinic.isFirst === false)
+                  .map((clinic, index) => (
                   <LinearGradient
                     colors={["#ffffffff", "#bdeeffff"]}
                     key={clinic.id || index}
@@ -3368,7 +3658,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               {selectedClinicName || "Unnamed Clinic"}
             </Text>
             <Text style={{ fontSize: 11, color: "#226064ff", marginBottom: 6 }}>
-              {selectedClinicRole || "N/A"}
+              {verified ? "✅ Verified Clinic" : "❌ Unverified Clinic"}
             </Text>
             <Text style={{ fontSize: 14, color: "#3c6422ff" }}>
               {selectedClinicEmail}
@@ -3615,7 +3905,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
             {selectedClinicName || "Unnamed Clinic"}
           </Text>
           <Text style={{ fontSize: 14, color: "#2a4d4d", marginBottom: 6 }}>
-            {selectedClinicRole || "Clinic"}
+            {verified ? "✅ Verified Clinic" : "❌ Unverified Clinic"}
           </Text>
           <Text style={{ fontSize: 14, color: "#0b5a51", fontStyle: "normal", marginBottom: 6 }}>
             {selectedClinicEmail}
@@ -3706,7 +3996,19 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               textAlign: selectedOffers ? "left" : "center",
             }}
           >
-            {selectedOffers || "offers have not yet been set"}
+            {selectedOffers && selectedOffers.trim() !== '' ? (
+              selectedOffers
+                .split('?')
+                .filter(offer => offer.trim() !== '')
+                .map((offer, i) => (
+                  <Text key={i}>
+                    {'• ' + offer}
+                    {'\n'}
+                  </Text>
+                ))
+            ) : (
+              "offers have not yet been set"
+            )}
           </Text>
         </View>
 
@@ -4570,6 +4872,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               >
                 Verified clinics build more trust with patients. When your clinic is verified:
                 {"\n"}• Patients are able to create an appointment.
+                {"\n"}• You can set your clinic's operating hours and location.
                 {"\n"}• Your clinic is highlighted as trustworthy and authentic.
               </Text>
 
@@ -4587,8 +4890,8 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 }}
               >
                 {!!verified && (
-                  <Text style={{ fontSize: 16, fontWeight: "bold", color: "#666", textAlign: "center"  }}>
-                    Your Clinic is Verified!
+                  <Text style={{ fontSize: 16, fontWeight: "bold", color: "#003f30ff", textAlign: "center"  }}>
+                    Your Clinic is Verified
                   </Text>
                 )}
                 {!!requestVerification && (
@@ -4628,13 +4931,14 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                     </Text>
                   </TouchableOpacity>
                 )}
-                {denialReason ? (
-                  <Text style={{ color: "red", marginTop: 8, textAlign: "center" }}>
-                    Your clinic has been denied.
-                    {"\n"}Reason: {denialReason}
-                  </Text>
-                ) : null}
               </View>
+
+              {denialReason ? (
+                <Text style={{ color: "red", marginBottom: 10, marginTop: -2, textAlign: "center" }}>
+                  Your clinic has been denied.
+                  {"\n"}Reason: {denialReason}
+                </Text>
+              ) : null}
 
               {/* Verify Button */}
               {!verified && !requestVerification && (
