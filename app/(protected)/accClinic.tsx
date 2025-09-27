@@ -32,6 +32,11 @@ import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import ChatView from "../view/ChatView";
 import Entypo from '@expo/vector-icons/Entypo';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+import RNFS from 'react-native-fs';
+import Share from 'react-native-share';
+import * as Sharing from 'expo-sharing';
 
 type Appointment = {
   id: string;
@@ -114,6 +119,7 @@ export default function Account() {
   const [modalSignout, setModalSignout] = useState(false);
   const [modalUpdate, setModalUpdate] = useState(false);
   const [modalMap, setModalMap] = useState(false);
+  const [downloadModal, setDownloadModal] = useState(false);
 
   const [profileInfoVisible, setProfileInfoVisible] = useState(false);
 
@@ -867,6 +873,101 @@ export default function Account() {
     }
   };
 
+
+type Appointment = {
+  id: string;
+  created_at: string;
+  clinic_id: string;
+  patient_id: string;
+  date_time: string;
+  message: string;
+  clinic_profiles: { clinic_name: string };
+  profiles: { first_name: string; last_name: string };
+  isAccepted: boolean | null;
+  rejection_note: string;
+};
+
+const base64ArrayBuffer = (arrayBuffer: ArrayBuffer) => {
+  const base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let base64 = '';
+  const bytes = new Uint8Array(arrayBuffer);
+  const len = bytes.length;
+
+  for (let i = 0; i < len; i += 3) {
+    const a = bytes[i];
+    const b = i + 1 < len ? bytes[i + 1] : 0;
+    const c = i + 2 < len ? bytes[i + 2] : 0;
+
+    const triplet = (a << 16) | (b << 8) | c;
+
+    base64 += base64Chars[(triplet >> 18) & 0x3f];
+    base64 += base64Chars[(triplet >> 12) & 0x3f];
+    base64 += i + 1 < len ? base64Chars[(triplet >> 6) & 0x3f] : '=';
+    base64 += i + 2 < len ? base64Chars[triplet & 0x3f] : '=';
+  }
+  return base64;
+};
+
+const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
+  if (!appointmentsPast || appointmentsPast.length === 0) {
+    Alert.alert('No data to export');
+    return;
+  }
+
+  const dataToExport = appointmentsPast.map(item => ({
+    'Clinic Name': item.clinic_profiles?.clinic_name || '',
+    Patient: item.profiles?.last_name || '',
+    'Request Date & Time': new Date(item.date_time).toLocaleString(),
+    Message: item.message,
+    Status: item.isAccepted ? 'Accepted' : 'Rejected',
+    'Rejection Note':
+      item.isAccepted === false
+        ? item.rejection_note || 'No rejection note'
+        : '-',
+    'Created At': new Date(item.created_at || 0).toLocaleString(),
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(dataToExport);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'History');
+
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+  if (Platform.OS === 'web') {
+    // dynamically import file-saver only here
+    const { saveAs } = await import('file-saver');
+    const blob = new Blob([wbout], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    saveAs(blob, 'history.xlsx');
+  } else {
+    // Mobile (Expo / bare RN)
+    try {
+      const base64 = base64ArrayBuffer(wbout.buffer || wbout);
+      const fileUri = FileSystem.documentDirectory + 'history.xlsx';
+
+      await FileSystem.writeAsStringAsync(fileUri, base64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      const canShare = await Sharing.isAvailableAsync();
+      if (!canShare) {
+        Alert.alert('Sharing is not available on this device');
+        return;
+      }
+
+      await Sharing.shareAsync(fileUri, {
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        dialogTitle: 'Export Excel',
+        UTI: 'com.microsoft.excel.xlsx',
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      Alert.alert('Error exporting file');
+    }
+  }
+};
+
   return (
     <LinearGradient
       colors={["#ffffffff", "#6ce2ffff"]}
@@ -1022,6 +1123,7 @@ export default function Account() {
           </View>
         </View>
       </Modal>
+      
       <Modal
         visible={warn}
         transparent
@@ -1217,6 +1319,64 @@ export default function Account() {
           </View>
         </View>
       </Modal>
+              <Modal
+          animationType="fade"
+          transparent={true}
+          visible={modalMessage}
+          onRequestClose={() => setModalMessage(false)}
+        >
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: "#fff",
+                padding: 20,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: "#ccc",
+                width: "80%",
+                maxWidth: 500,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "bold",
+                  marginBottom: 10,
+                  color: "#003f30ff",
+                }}
+              >
+                Message
+              </Text>
+              <Text
+                style={{
+                  fontSize: 16,
+                  marginBottom: 20,
+                  color: "#333",
+                }}
+              >
+                {selectedMessage}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setModalMessage(false)}
+                style={{
+                  alignSelf: "flex-end",
+                  backgroundColor: "#003f30",
+                  paddingVertical: 8,
+                  paddingHorizontal: 16,
+                  borderRadius: 5,
+                }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "600" }}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       {/* Glider Panel */}
       <View
         style={{
@@ -2439,17 +2599,19 @@ export default function Account() {
                                     {`${e.item.profiles.first_name} ${e.item.profiles.last_name}`}
                                   </Text>
                                   {e.item.message.length > 20 ? (
-                                    <TouchableOpacity
-                                      style={{ flex: 1 }}
+                                    <Text style={{ textAlign: "left", flex: 1 }}>
+                                      <Text style={{ color: "#000" }}>
+                                        {e.item.message.slice(0, 20) + "..."}
+                                      </Text>
+                                      <Text
                                       onPress={() => {
                                         setSelectedMessage(e.item.message);
                                         setModalMessage(true);
-                                      }}
-                                    >
-                                      <Text style={{ color: "blue", textDecorationLine: "underline" }}>
-                                        {e.item.message.slice(0, 20) + "..."}
+                                        setModalVisible(false);
+                                      }} style={{ color: "blue", textDecorationLine: "underline" }}>
+                                        See More
                                       </Text>
-                                    </TouchableOpacity>
+                                    </Text>
                                   ) : (
                                     <Text style={{ flex: 1 }}>
                                       {e.item.message}
@@ -2467,9 +2629,14 @@ export default function Account() {
                                     }}
                                   >
                                   <Text style={{ color: "#000000ff" }}>
-                                    {`Date/Time Request : \n${new Date(
-                                      e.item.date_time
-                                    ).toLocaleString()}`}
+                                    {`Date/Time Request : \n${new Date(e.item.date_time).toLocaleString(undefined, {
+                                      year: "numeric",
+                                      month: "numeric",
+                                      day: "numeric",
+                                      hour: "numeric",
+                                      minute: "2-digit",
+                                      hour12: true,
+                                    })}`}
                                   </Text>
                                   </View>
                                   <Text style={{ color: "#767676ff", fontSize: 9, alignSelf: "flex-end"}}>{`Created at : ${new Date(
@@ -2580,7 +2747,14 @@ export default function Account() {
                       <Text>{`${e.item.profiles.first_name} ${e.item.profiles.last_name}`}</Text>
 
                       <Text style={{ fontWeight: "bold" }}>Date & Time of Appointment :</Text>
-                      <Text>{`Date : ${new Date(e.item.date_time).toLocaleString()}`}</Text>
+                      <Text>{`Date : ${new Date(e.item.date_time).toLocaleString(undefined, {
+                              year: "numeric",
+                              month: "numeric",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            })}`}</Text>
 
                       <View
                         style={{
@@ -2594,17 +2768,18 @@ export default function Account() {
                       >
                         <Text style={{ fontWeight: "bold" }}>Message :</Text>
                         {e.item.message.length > 20 ? (
-                        <TouchableOpacity
-                          style={{ flex: 1 }}
-                          onPress={() => {
-                            setSelectedMessage(e.item.message);
-                            setModalMessage(true);
-                          }}
-                        >
-                          <Text style={{ color: "blue", textDecorationLine: "underline" }}>
-                            {e.item.message.slice(0, 20) + "..."}
+                          <Text style={{ textAlign: "left", flex: 1 }}>
+                            <Text style={{ color: "#000" }}>
+                              {e.item.message.slice(0, 20) + "..."}
+                            </Text>
+                            <Text
+                            onPress={() => {
+                              setSelectedMessage(e.item.message);
+                              setModalMessage(true);
+                            }} style={{ color: "blue", textDecorationLine: "underline" }}>
+                              See More
+                            </Text>
                           </Text>
-                        </TouchableOpacity>
                       ) : (
                         <Text style={{ flex: 1 }}>
                           {e.item.message}
@@ -2761,7 +2936,16 @@ export default function Account() {
                       <Text>{`${e.item.profiles.first_name} ${e.item.profiles.last_name}`}</Text>
 
                       <Text style={{ fontWeight: "bold" }}>Date & Time:</Text>
-                      <Text>{`${new Date(e.item.date_time).toLocaleString()}`}</Text>
+                      <Text>
+                        {`${new Date(e.item.date_time).toLocaleString(undefined, {
+                          year: "numeric",
+                          month: "numeric",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}`}
+                      </Text>
 
                       <View
                         style={{
@@ -2775,17 +2959,18 @@ export default function Account() {
                       >
                         <Text style={{ fontWeight: "bold" }}>Message :</Text>
                         {e.item.message.length > 20 ? (
-                        <TouchableOpacity
-                          style={{ flex: 1 }}
-                          onPress={() => {
-                            setSelectedMessage(e.item.message);
-                            setModalMessage(true);
-                          }}
-                        >
-                          <Text style={{ color: "blue", textDecorationLine: "underline" }}>
-                            {e.item.message.slice(0, 20) + "..."}
+                          <Text style={{ textAlign: "left", flex: 1 }}>
+                            <Text style={{ color: "#000" }}>
+                              {e.item.message.slice(0, 20) + "..."}
+                            </Text>
+                            <Text
+                            onPress={() => {
+                              setSelectedMessage(e.item.message);
+                              setModalMessage(true);
+                            }} style={{ color: "blue", textDecorationLine: "underline" }}>
+                              See More
+                            </Text>
                           </Text>
-                        </TouchableOpacity>
                       ) : (
                         <Text style={{ flex: 1 }}>
                           {e.item.message}
@@ -3892,24 +4077,32 @@ export default function Account() {
                     )}
                   </Text>
                   {item.message.length > 20 ? (
-                    <TouchableOpacity
-                      style={{ flex: 1 }}
+                    <Text style={{ textAlign: "left", flex: 1 }}>
+                      <Text style={{ color: "#000" }}>
+                        {item.message.slice(0, 20) + "..."}
+                      </Text>
+                      <Text
                       onPress={() => {
                         setSelectedMessage(item.message);
                         setModalMessage(true);
-                      }}
-                    >
-                      <Text style={{ color: "blue", textDecorationLine: "underline" }}>
-                        {item.message.slice(0, 20) + "..."}
+                      }} style={{ color: "blue", textDecorationLine: "underline" }}>
+                        See More
                       </Text>
-                    </TouchableOpacity>
+                    </Text>
                   ) : (
                     <Text style={{ flex: 1 }}>
                       {item.message}
                     </Text>
                   )}
                   <Text style={{ flex: 1 }}>
-                    {new Date(item.date_time).toLocaleString()}
+                    {`${new Date(item.date_time).toLocaleString(undefined, {
+                      year: "numeric",
+                      month: "numeric",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                      hour12: true,
+                    })}`}
                   </Text>
                   <Text style={{ flex: 1 }}>
                     {new Date(item.created_at || 0).toLocaleString()}
@@ -3930,64 +4123,6 @@ export default function Account() {
           </View>
         </View>
         )}
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={modalMessage}
-          onRequestClose={() => setModalMessage(false)}
-        >
-          <View
-            style={{
-              flex: 1,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <View
-              style={{
-                backgroundColor: "#fff",
-                padding: 20,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: "#ccc",
-                width: "80%",
-                maxWidth: 500,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "bold",
-                  marginBottom: 10,
-                  color: "#003f30ff",
-                }}
-              >
-                Message
-              </Text>
-              <Text
-                style={{
-                  fontSize: 16,
-                  marginBottom: 20,
-                  color: "#333",
-                }}
-              >
-                {selectedMessage}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setModalMessage(false)}
-                style={{
-                  alignSelf: "flex-end",
-                  backgroundColor: "#003f30",
-                  paddingVertical: 8,
-                  paddingHorizontal: 16,
-                  borderRadius: 5,
-                }}
-              >
-                <Text style={{ color: "#fff", fontWeight: "600" }}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
 
         {/* Dashboard Pending --------------------------------------------------------------------------------------- */}
 
@@ -4063,22 +4198,30 @@ export default function Account() {
 
                 {/* Date & Time */}
                 <Text style={{ flex: 1 }}>
-                  {new Date(item.date_time).toLocaleString()}
+                  {`${new Date(item.date_time).toLocaleString(undefined, {
+                    year: "numeric",
+                    month: "numeric",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true,
+                  })}`}
                 </Text>
 
                 {/* Message */}
                 {item.message.length > 20 ? (
-                    <TouchableOpacity
-                      style={{ flex: 1 }}
-                      onPress={() => {
-                        setSelectedMessage(item.message);
-                        setModalMessage(true);
-                      }}
-                    >
-                      <Text style={{ color: "blue", textDecorationLine: "underline" }}>
-                        {item.message.slice(0, 20) + "..."}
-                      </Text>
-                    </TouchableOpacity>
+                  <Text style={{ textAlign: "left", flex: 1 }}>
+                    <Text style={{ color: "#000" }}>
+                      {item.message.slice(0, 20) + "..."}
+                    </Text>
+                    <Text
+                    onPress={() => {
+                      setSelectedMessage(item.message);
+                      setModalMessage(true);
+                    }} style={{ color: "blue", textDecorationLine: "underline" }}>
+                      See More
+                    </Text>
+                  </Text>
                   ) : (
                     <Text style={{ flex: 1 }}>
                       {item.message}
@@ -4161,6 +4304,98 @@ export default function Account() {
           >
             History
           </Text>
+
+          <TouchableOpacity
+            onPress={() => setDownloadModal(true)}
+            style={{
+              backgroundColor: '#007AFF',
+              paddingVertical: 12,
+              paddingHorizontal: 20,
+              borderRadius: 8,
+              alignItems: 'center',
+              marginBottom: 10,
+            }}
+          >
+            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
+              Download History Excel
+            </Text>
+          </TouchableOpacity>
+
+            <Modal
+              visible={downloadModal}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setDownloadModal(false)}
+            >
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: 'rgba(0,0,0,0.5)',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  padding: 20,
+                }}
+              >
+                <View
+                  style={{
+                    backgroundColor: '#fff',
+                    borderRadius: 10,
+                    padding: 24,
+                    width: '100%',
+                    maxWidth: 400,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>
+                    Confirm Download
+                  </Text>
+                  <Text style={{ fontSize: 16, marginBottom: 24, textAlign: 'center' }}>
+                    Are you sure you want to download the history?
+                  </Text>
+          
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      width: '100%',
+                    }}
+                  >
+                    <TouchableOpacity
+                      onPress={() => setDownloadModal(false)}
+                      style={{
+                        backgroundColor: '#ccc',
+                        paddingVertical: 10,
+                        paddingHorizontal: 20,
+                        borderRadius: 8,
+                        flex: 1,
+                        marginRight: 10,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ fontSize: 16 }}>Cancel</Text>
+                    </TouchableOpacity>
+          
+                    <TouchableOpacity
+                      onPress={() => {
+                        setDownloadModal(false);
+                        handleDownloadExcel(appointmentsPast);
+                      }}
+                      style={{
+                        backgroundColor: '#007AFF',
+                        paddingVertical: 10,
+                        paddingHorizontal: 20,
+                        borderRadius: 8,
+                        flex: 1,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={{ color: '#fff', fontSize: 16 }}>Download</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </Modal>
+
           <FlatList
             data={appointmentsPast}
             keyExtractor={(e) => e.id}
@@ -4209,22 +4444,30 @@ export default function Account() {
 
                 {/* Date & Time */}
                 <Text style={{ flex: 1 }}>
-                  {new Date(item.date_time).toLocaleString()}
+                  {`${new Date(item.date_time).toLocaleString(undefined, {
+                    year: "numeric",
+                    month: "numeric",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true,
+                  })}`}
                 </Text>
 
                 {/* Message */}
                   {item.message.length > 20 ? (
-                    <TouchableOpacity
-                      style={{ flex: 1 }}
+                    <Text style={{ textAlign: "left", flex: 1 }}>
+                      <Text style={{ color: "#000" }}>
+                        {item.message.slice(0, 20) + "..."}
+                      </Text>
+                      <Text
                       onPress={() => {
                         setSelectedMessage(item.message);
                         setModalMessage(true);
-                      }}
-                    >
-                      <Text style={{ color: "blue", textDecorationLine: "underline" }}>
-                        {item.message.slice(0, 20) + "..."}
+                      }} style={{ color: "blue", textDecorationLine: "underline" }}>
+                        See More
                       </Text>
-                    </TouchableOpacity>
+                    </Text>
                   ) : (
                     <Text style={{ flex: 1 }}>
                       {item.message}
@@ -4490,6 +4733,15 @@ export default function Account() {
                                 denied_verification_reason: null,
                               })
                               .eq("id", session?.user.id);
+
+                            if(!verifyPhoto){
+                              const { error } = await supabase
+                                .from("clinic_profiles")
+                                .update({ 
+                                  license_photo_url: null,
+                                })
+                                .eq("id", session?.user.id);
+                            }
 
                             if (error) {
                               console.error("Failed to request verification:", error.message);

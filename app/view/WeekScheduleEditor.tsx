@@ -93,17 +93,52 @@ const updateSchedule = async () => {
     console.log(`ERR clinic record schedule : ${error}`);
   }
 
+function getMinutesSinceMidnight(hour: number, minute: number, atm: "AM" | "PM"): number {
+  const isPM = atm === "PM";
+  const adjustedHour = hour % 12 + (isPM ? 12 : 0); // 12 AM => 0, 12 PM => 12
+  return adjustedHour * 60 + minute;
+}
+
+function isValidSchedule(
+  from: ClockScheduleType,
+  to: ClockScheduleType
+): boolean {
+  const fromMinutes = getMinutesSinceMidnight(from.hour, from.minute, from.atm);
+  const toMinutes = getMinutesSinceMidnight(to.hour, to.minute, to.atm);
+  return toMinutes - fromMinutes >= 30;
+}
+
   // Construct queryBody conditionally
-  const queryBody: WeekScheduleType = {
+const validateDay = (day: DayScheduleType | undefined, name: string): DayScheduleType | null => {
+  if (!day?.hasSchedule) return null;
+
+  const valid = isValidSchedule(day.from, day.to);
+  if (!valid) {
+    alert(`${name} schedule must be at least 30 minutes.`);
+    throw new Error(`${name} schedule invalid`);
+  }
+
+  return day;
+};
+
+let queryBody: WeekScheduleType;
+
+try {
+  queryBody = {
     clinic_id: props.clinicId,
-    sunday: sun?.hasSchedule ? sun : null,
-    monday: mon?.hasSchedule ? mon : null,
-    tuesday: tue?.hasSchedule ? tue : null,
-    wednesday: wed?.hasSchedule ? wed : null,
-    thursday: thu?.hasSchedule ? thu : null,
-    friday: fri?.hasSchedule ? fri : null,
-    saturday: sat?.hasSchedule ? sat : null,
+    sunday: validateDay(sun, "Sunday"),
+    monday: validateDay(mon, "Monday"),
+    tuesday: validateDay(tue, "Tuesday"),
+    wednesday: validateDay(wed, "Wednesday"),
+    thursday: validateDay(thu, "Thursday"),
+    friday: validateDay(fri, "Friday"),
+    saturday: validateDay(sat, "Saturday"),
   };
+} catch (err) {
+  console.log(err);
+  return; // Stop update if any invalid
+}
+
 
   // Update or insert
   if (data?.length !== 0) {

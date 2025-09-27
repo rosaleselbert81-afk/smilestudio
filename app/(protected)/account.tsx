@@ -36,6 +36,11 @@ import ChatView from "../view/ChatView";
 import { useChatRoom } from "@/hooks/useChatRoom";
 import Entypo from '@expo/vector-icons/Entypo';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+import RNFS from 'react-native-fs';
+import Share from 'react-native-share';
+import * as Sharing from 'expo-sharing';
 
 type Appointment = {
   id: string;
@@ -135,6 +140,8 @@ export default function Account() {
   const [selectedCI, setSelectedCI] = useState("");
   const [selectedOffers, setSelectedOffers] = useState("");
   const [notifMessage, setNotifMessage] = useState("");
+  const [downloadModal, setDownloadModal] = useState(false);
+  const [showTooCloseModal, setShowTooCloseModal] = useState(false);
 
   const [mapView, setMapView] = useState<
     [number | undefined, number | undefined]
@@ -650,6 +657,116 @@ const toggleReason = (reason: string) => {
   });
 };
 
+
+type Appointment = {
+  id: string;
+  created_at: string;
+  clinic_id: string;
+  patient_id: string;
+  date_time: string;
+  message: string;
+  clinic_profiles: { clinic_name: string };
+  profiles: { first_name: string; last_name: string };
+  isAccepted: boolean | null;
+  rejection_note: string;
+};
+
+const base64ArrayBuffer = (arrayBuffer: ArrayBuffer) => {
+  const base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let base64 = '';
+  const bytes = new Uint8Array(arrayBuffer);
+  const len = bytes.length;
+
+  for (let i = 0; i < len; i += 3) {
+    const a = bytes[i];
+    const b = i + 1 < len ? bytes[i + 1] : 0;
+    const c = i + 2 < len ? bytes[i + 2] : 0;
+
+    const triplet = (a << 16) | (b << 8) | c;
+
+    base64 += base64Chars[(triplet >> 18) & 0x3f];
+    base64 += base64Chars[(triplet >> 12) & 0x3f];
+    base64 += i + 1 < len ? base64Chars[(triplet >> 6) & 0x3f] : '=';
+    base64 += i + 2 < len ? base64Chars[triplet & 0x3f] : '=';
+  }
+  return base64;
+};
+
+const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
+  if (!appointmentsPast || appointmentsPast.length === 0) {
+    Alert.alert('No data to export');
+    return;
+  }
+
+  const dataToExport = appointmentsPast.map(item => ({
+    'Clinic Name': item.clinic_profiles?.clinic_name || '',
+    Patient: item.profiles?.last_name || '',
+    'Request Date & Time': new Date(item.date_time).toLocaleString(),
+    Message: item.message,
+    Status: item.isAccepted ? 'Accepted' : 'Rejected',
+    'Rejection Note':
+      item.isAccepted === false
+        ? item.rejection_note || 'No rejection note'
+        : '-',
+    'Created At': new Date(item.created_at || 0).toLocaleString(),
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(dataToExport);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'History');
+
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+  if (Platform.OS === 'web') {
+    // dynamically import file-saver only here
+    const { saveAs } = await import('file-saver');
+    const blob = new Blob([wbout], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    saveAs(blob, 'history.xlsx');
+  } else {
+    // Mobile (Expo / bare RN)
+    try {
+      const base64 = base64ArrayBuffer(wbout.buffer || wbout);
+      const fileUri = FileSystem.documentDirectory + 'history.xlsx';
+
+      await FileSystem.writeAsStringAsync(fileUri, base64, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      const canShare = await Sharing.isAvailableAsync();
+      if (!canShare) {
+        Alert.alert('Sharing is not available on this device');
+        return;
+      }
+
+      await Sharing.shareAsync(fileUri, {
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        dialogTitle: 'Export Excel',
+        UTI: 'com.microsoft.excel.xlsx',
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      Alert.alert('Error exporting file');
+    }
+  }
+};
+
+function getMinutesSinceMidnight(date: Date): number {
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+function getScheduleMinutes(schedule: ClockScheduleType): number {
+  const hour = schedule.hour % 12 + (schedule.atm === "PM" ? 12 : 0);
+  return hour * 60 + schedule.minute;
+}
+
+function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleType): boolean {
+  const appointmentMins = getMinutesSinceMidnight(appointment);
+  const closingMins = getScheduleMinutes(closing);
+  return appointmentMins <= closingMins - 30;
+}
+
   return ( 
     <LinearGradient
       colors={["#ffffffff", "#6ce2ffff"]}
@@ -982,6 +1099,65 @@ const toggleReason = (reason: string) => {
           </View>
         </View>
       </Modal>
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={modalMessage}
+          onRequestClose={() => setModalMessage(false)}
+        >
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 100,
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: "#fff",
+                padding: 20,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: "#ccc",
+                width: "80%",
+                maxWidth: 500,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "bold",
+                  marginBottom: 10,
+                  color: "#003f30ff",
+                }}
+              >
+                Message
+              </Text>
+              <Text
+                style={{
+                  fontSize: 16,
+                  marginBottom: 20,
+                  color: "#333",
+                }}
+              >
+                {selectedMessage}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setModalMessage(false)}
+                style={{
+                  alignSelf: "flex-end",
+                  backgroundColor: "#003f30",
+                  paddingVertical: 8,
+                  paddingHorizontal: 16,
+                  borderRadius: 5,
+                }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "600" }}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
       {/* Glider Panel */}
       <View
@@ -1788,6 +1964,7 @@ const toggleReason = (reason: string) => {
                                       onPress={() => {
                                         setSelectedMessage(e.item.message);
                                         setModalMessage(true);
+                                        setModalVisible(false);
                                       }}
                                     >
                                       <Text style={{ color: "blue", textDecorationLine: "underline" }}>
@@ -1811,9 +1988,14 @@ const toggleReason = (reason: string) => {
                                     }}
                                   >
                                   <Text style={{ color: "#000000ff" }}>
-                                    {`Date/Time Request :\n${new Date(
-                                      e.item.date_time
-                                    ).toLocaleString()}`}
+                                    {`Date/Time Request :\n${new Date(e.item.date_time).toLocaleString(undefined, {
+                                      year: "numeric",
+                                      month: "numeric",
+                                      day: "numeric",
+                                      hour: "numeric",
+                                      minute: "2-digit",
+                                      hour12: true,
+                                    })}`}
                                   </Text>
                                   </View>
                                   <Text style={{ color: "#767676ff", fontSize: 9, alignSelf: "flex-end"}}>{`Created at : ${new Date(
@@ -1934,9 +2116,16 @@ const toggleReason = (reason: string) => {
                       <Text style={{ fontWeight: "bold" }}>
                         Date & Time of Appointment :
                       </Text>
-                      <Text>{`${new Date(
-                        e.item.date_time
-                      ).toLocaleString()}`}</Text>
+                      <Text>
+                        {`${new Date(e.item.date_time).toLocaleString(undefined, {
+                          year: "numeric",
+                          month: "numeric",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}`}
+                      </Text>
 
                       <View
                         style={{
@@ -1952,17 +2141,18 @@ const toggleReason = (reason: string) => {
                           Patient's Message :
                         </Text>
                         {e.item.message.length > 20 ? (
-                        <TouchableOpacity
-                          style={{ flex: 1 }}
-                          onPress={() => {
-                            setSelectedMessage(e.item.message);
-                            setModalMessage(true);
-                          }}
-                        >
-                          <Text style={{ color: "blue", textDecorationLine: "underline" }}>
-                            {e.item.message.slice(0, 20) + "..."}
+                          <Text style={{ textAlign: "left", flex: 1 }}>
+                            <Text style={{ color: "#000" }}>
+                              {e.item.message.slice(0, 20) + "..."}
+                            </Text>
+                            <Text
+                            onPress={() => {
+                              setSelectedMessage(e.item.message);
+                              setModalMessage(true);
+                            }} style={{ color: "blue", textDecorationLine: "underline" }}>
+                              See More
+                            </Text>
                           </Text>
-                        </TouchableOpacity>
                       ) : (
                         <Text style={{ flex: 1 }}>
                           {e.item.message}
@@ -2067,9 +2257,16 @@ const toggleReason = (reason: string) => {
                       <Text>{`${e.item.clinic_profiles.clinic_name} ${e.item.profiles.last_name}`}</Text>
 
                       <Text style={{ fontWeight: "bold" }}>Date & Time :</Text>
-                      <Text>{`${new Date(
-                        e.item.date_time
-                      ).toLocaleString()}`}</Text>
+                      <Text>
+                        {`${new Date(e.item.date_time).toLocaleString(undefined, {
+                          year: "numeric",
+                          month: "numeric",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}`}
+                       </Text>
 
                       <View
                         style={{
@@ -2089,17 +2286,18 @@ const toggleReason = (reason: string) => {
                           Patient's Message :
                         </Text>
                         {e.item.message.length > 20 ? (
-                        <TouchableOpacity
-                          style={{ flex: 1 }}
-                          onPress={() => {
-                            setSelectedMessage(e.item.message);
-                            setModalMessage(true);
-                          }}
-                        >
-                          <Text style={{ color: "blue", textDecorationLine: "underline" }}>
-                            {e.item.message.slice(0, 20) + "..."}
+                          <Text style={{ textAlign: "left", flex: 1 }}>
+                            <Text style={{ color: "#000" }}>
+                              {e.item.message.slice(0, 20) + "..."}
+                            </Text>
+                            <Text
+                            onPress={() => {
+                              setSelectedMessage(e.item.message);
+                              setModalMessage(true);
+                            }} style={{ color: "blue", textDecorationLine: "underline" }}>
+                              See More
+                            </Text>
                           </Text>
-                        </TouchableOpacity>
                       ) : (
                         <Text style={{ flex: 1 }}>
                           {e.item.message}
@@ -3475,6 +3673,19 @@ const toggleReason = (reason: string) => {
                                       setShowOutOfScheduleModal(true);
                                       return;
                                     }
+                                    
+                                    // Get weekday index: 0 (Sunday) to 6 (Saturday)
+                                    const dayIndex = appointmentDate.getDay();
+                                    const daySchedule = schedules[dayIndex];
+
+                                    if (daySchedule && daySchedule.to) {
+                                      const isValid = isAtLeast30MinsBeforeClosing(appointmentDate, daySchedule.to);
+                                      if (!isValid) {
+                                        setShowTooCloseModal(true);
+                                        return;
+                                      }
+                                    }
+
 
                                     createAppointment(selectedClinicId, appointmentDate, messageToClinic);
                                     setModalAppoint(false);
@@ -3497,6 +3708,47 @@ const toggleReason = (reason: string) => {
                                 </TouchableOpacity>
                               </View>
                             </ScrollView>
+                          </View>
+                        </View>
+                      </Modal>
+
+                      {/* Closing Time Modal */}
+                      <Modal
+                        transparent
+                        visible={showTooCloseModal}
+                        animationType="fade"
+                        onRequestClose={() => setShowTooCloseModal(false)}
+                      >
+                        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
+                          <View
+                            style={{
+                              backgroundColor: "white",
+                              padding: 20,
+                              borderRadius: 10,
+                              borderWidth: 1,
+                              borderColor: "#ccc",
+                              width: isMobile ? "85%" : "30%",
+                              alignItems: "center",
+                            }}
+                          >
+                            <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10, color: "#b32020" }}>
+                              Appointment too close to closing time!
+                            </Text>
+                            <Text style={{ textAlign: "center", fontSize: 16 }}>
+                              Please choose a time at least 30 minutes before the clinic closes.
+                            </Text>
+                            <TouchableOpacity
+                              onPress={() => setShowTooCloseModal(false)}
+                              style={{
+                                marginTop: 20,
+                                backgroundColor: "#2e7dcc",
+                                paddingVertical: 10,
+                                paddingHorizontal: 20,
+                                borderRadius: 6,
+                              }}
+                            >
+                              <Text style={{ color: "white", fontWeight: "bold" }}>OK</Text>
+                            </TouchableOpacity>
                           </View>
                         </View>
                       </Modal>
@@ -3845,24 +4097,32 @@ const toggleReason = (reason: string) => {
                   {wrapText(item.clinic_profiles.clinic_name)}
                 </Text>
                 {item.message.length > 20 ? (
-                <TouchableOpacity
-                  style={{ flex: 1 }}
+                <Text style={{ textAlign: "left", flex: 1 }}>
+                  <Text style={{ color: "#000" }}>
+                    {item.message.slice(0, 20) + "..."}
+                  </Text>
+                  <Text
                   onPress={() => {
                     setSelectedMessage(item.message);
                     setModalMessage(true);
-                  }}
-                >
-                  <Text style={{ color: "blue", textDecorationLine: "underline" }}>
-                    {item.message.slice(0, 20) + "..."}
+                  }} style={{ color: "blue", textDecorationLine: "underline" }}>
+                    See More
                   </Text>
-                </TouchableOpacity>
+                </Text>
               ) : (
                 <Text style={{ flex: 1 }}>
                   {item.message}
                 </Text>
               )}
                 <Text style={{ flex: 1 }}>
-                  {new Date(item.date_time).toLocaleString()}
+                  {`${new Date(item.date_time).toLocaleString(undefined, {
+                    year: "numeric",
+                    month: "numeric",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true,
+                  })}`}
                 </Text>
                 <Text style={{ flex: 1 }}>
                   {new Date(item.created_at || 0).toLocaleString()}
@@ -3881,64 +4141,6 @@ const toggleReason = (reason: string) => {
           />
         </View>
         )}
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={modalMessage}
-          onRequestClose={() => setModalMessage(false)}
-        >
-          <View
-            style={{
-              flex: 1,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <View
-              style={{
-                backgroundColor: "#fff",
-                padding: 20,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: "#ccc",
-                width: "80%",
-                maxWidth: 500,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "bold",
-                  marginBottom: 10,
-                  color: "#003f30ff",
-                }}
-              >
-                Message
-              </Text>
-              <Text
-                style={{
-                  fontSize: 16,
-                  marginBottom: 20,
-                  color: "#333",
-                }}
-              >
-                {selectedMessage}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setModalMessage(false)}
-                style={{
-                  alignSelf: "flex-end",
-                  backgroundColor: "#003f30",
-                  paddingVertical: 8,
-                  paddingHorizontal: 16,
-                  borderRadius: 5,
-                }}
-              >
-                <Text style={{ color: "#fff", fontWeight: "600" }}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
 
         {/* Dashboard Pending --------------------------------------------------------------------------------------- */}
 
@@ -4009,20 +4211,28 @@ const toggleReason = (reason: string) => {
                   {wrapText(item.profiles.last_name)}
                 </Text>
                 <Text style={{ flex: 1 }}>
-                  {new Date(item.date_time).toLocaleString()}
+                  {`${new Date(item.date_time).toLocaleString(undefined, {
+                    year: "numeric",
+                    month: "numeric",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true,
+                  })}`}
                 </Text>
                 {item.message.length > 20 ? (
-                <TouchableOpacity
-                  style={{ flex: 1 }}
+                <Text style={{ textAlign: "left", flex: 1 }}>
+                  <Text style={{ color: "#000" }}>
+                    {item.message.slice(0, 20) + "..."}
+                  </Text>
+                  <Text
                   onPress={() => {
                     setSelectedMessage(item.message);
                     setModalMessage(true);
-                  }}
-                >
-                  <Text style={{ color: "blue", textDecorationLine: "underline" }}>
-                    {item.message.slice(0, 20) + "..."}
+                  }} style={{ color: "blue", textDecorationLine: "underline" }}>
+                    See More
                   </Text>
-                </TouchableOpacity>
+                </Text>
               ) : (
                 <Text style={{ flex: 1 }}>
                   {item.message}
@@ -4069,6 +4279,95 @@ const toggleReason = (reason: string) => {
           >
             History
           </Text>
+<TouchableOpacity
+  onPress={() => setDownloadModal(true)}
+  style={{
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 10,
+  }}
+>
+  <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
+    Download History Excel
+  </Text>
+</TouchableOpacity>
+  <Modal
+    visible={downloadModal}
+    transparent
+    animationType="fade"
+    onRequestClose={() => setDownloadModal(false)}
+  >
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+      }}
+    >
+      <View
+        style={{
+          backgroundColor: '#fff',
+          borderRadius: 10,
+          padding: 24,
+          width: '100%',
+          maxWidth: 400,
+          alignItems: 'center',
+        }}
+      >
+        <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>
+          Confirm Download
+        </Text>
+        <Text style={{ fontSize: 16, marginBottom: 24, textAlign: 'center' }}>
+          Are you sure you want to download the history?
+        </Text>
+
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            width: '100%',
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => setDownloadModal(false)}
+            style={{
+              backgroundColor: '#ccc',
+              paddingVertical: 10,
+              paddingHorizontal: 20,
+              borderRadius: 8,
+              flex: 1,
+              marginRight: 10,
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ fontSize: 16 }}>Cancel</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => {
+              setDownloadModal(false);
+              handleDownloadExcel(appointmentsPast);
+            }}
+            style={{
+              backgroundColor: '#007AFF',
+              paddingVertical: 10,
+              paddingHorizontal: 20,
+              borderRadius: 8,
+              flex: 1,
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ color: '#fff', fontSize: 16 }}>Download</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  </Modal>
 
           <FlatList
             data={appointmentsPast}
@@ -4125,22 +4424,30 @@ const toggleReason = (reason: string) => {
 
                 {/* Date & Time */}
                 <Text style={{ flex: 1 }}>
-                  {new Date(item.date_time).toLocaleString()}
+                  {`${new Date(item.date_time).toLocaleString(undefined, {
+                    year: "numeric",
+                    month: "numeric",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true,
+                  })}`}
                 </Text>
 
                 {/* Message */}
                 {item.message.length > 20 ? (
-                <TouchableOpacity
-                  style={{ flex: 1 }}
+                <Text style={{ textAlign: "left", flex: 1 }}>
+                  <Text style={{ color: "#000" }}>
+                    {item.message.slice(0, 20) + "..."}
+                  </Text>
+                  <Text
                   onPress={() => {
                     setSelectedMessage(item.message);
                     setModalMessage(true);
-                  }}
-                >
-                  <Text style={{ color: "blue", textDecorationLine: "underline" }}>
-                    {item.message.slice(0, 20) + "..."}
+                  }} style={{ color: "blue", textDecorationLine: "underline" }}>
+                    See More
                   </Text>
-                </TouchableOpacity>
+                </Text>
               ) : (
                 <Text style={{ flex: 1 }}>
                   {item.message}
