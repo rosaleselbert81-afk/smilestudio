@@ -17,6 +17,10 @@ export default function BirthdatePickerModal({ value, onChange }: Props) {
     : 'Select your birthdate';
 
   const handleConfirm = () => {
+    if (!tempDate) {
+      alert('Please select a valid birthdate.');
+      return;
+    }
     onChange(tempDate);
     setVisible(false);
   };
@@ -37,26 +41,39 @@ export default function BirthdatePickerModal({ value, onChange }: Props) {
       >
         <View style={styles.overlay}>
           <View style={styles.modalContent}>
-            <Text style={{textAlign: 'center', fontSize: 20, fontWeight: 'bold', color: '#1f5474ff', marginTop: 6, marginBottom: 5}}>Confirm your birthdate by tapping</Text>
-            <Text style={{textAlign: 'center', fontSize: 20, fontWeight: 'bold', color: '#1f744aff', marginTop: 6, marginBottom: 5}}>"Confirm"</Text>
+            <Text style={{textAlign: 'center', fontSize: 20, fontWeight: 'bold', color: '#1f5474ff', marginTop: 6, marginBottom: 5}}>
+              Confirm your birthdate by tapping
+            </Text>
+            <Text style={{textAlign: 'center', fontSize: 20, fontWeight: 'bold', color: '#1f744aff', marginTop: 6, marginBottom: 5}}>
+              "Confirm"
+            </Text>
+
             {Platform.OS === 'web' ? (
               <input
                 type="date"
-                value={tempDate.toISOString().split('T')[0]}
+                value={tempDate ? tempDate.toISOString().split('T')[0] : ''}
                 max={today.toISOString().split('T')[0]}
-                onChange={(e) => setTempDate(new Date(e.target.value))}
+                onChange={(e) => {
+                  const inputValue = e.target.value;
+                  const newDate = new Date(inputValue);
+                  if (inputValue === '') {
+                    setTempDate(null);
+                  } else if (!isNaN(newDate.getTime())) {
+                    setTempDate(newDate);
+                  }
+                }}
                 style={{ padding: 10, fontSize: 16 }}
               />
             ) : (
               <DateTimePicker
-                value={tempDate}
+                value={tempDate || today}
                 mode="date"
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 maximumDate={today}
                 onChange={(event, selectedDate) => {
                   if (selectedDate) setTempDate(selectedDate);
                 }}
-                themeVariant="light" // makes sure dark mode doesn't dim text
+                themeVariant="light"
                 textColor="black"
               />
             )}
@@ -65,9 +82,52 @@ export default function BirthdatePickerModal({ value, onChange }: Props) {
               <TouchableOpacity onPress={() => setVisible(false)} style={styles.cancel}>
                 <Text style={styles.btnText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleConfirm} style={styles.confirm}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (!tempDate) {
+                    alert('Please select a valid birthdate.');
+                    return;
+                  }
+
+                  const now = new Date();
+                  // Helper function to get date without time
+                  const stripTime = (date: Date) =>
+                    new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+                  const todayNoTime = stripTime(now);
+                  const birthdateNoTime = stripTime(tempDate);
+
+                  // Calculate 6 months ago safely
+                  const sixMonthsAgo = new Date(todayNoTime);
+                  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+                  if (birthdateNoTime > todayNoTime) {
+                    alert('Birthdate cannot be in the future.');
+                    return;
+                  }
+
+                  if (birthdateNoTime > sixMonthsAgo) {
+                    alert('You must be at least 6 months old.');
+                    return;
+                  }
+
+                  // Check if older than 100 years
+                  const hundredYearsAgo = new Date(todayNoTime);
+                  hundredYearsAgo.setFullYear(hundredYearsAgo.getFullYear() - 100);
+
+                  if (birthdateNoTime < hundredYearsAgo) {
+                    alert('Age cannot be more than 100 years.');
+                    return;
+                  }
+
+                  handleConfirm();
+                }}
+
+                style={styles.confirm}
+              >
                 <Text style={styles.btnText}>Confirm</Text>
               </TouchableOpacity>
+
             </View>
           </View>
         </View>

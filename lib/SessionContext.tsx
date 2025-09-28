@@ -269,17 +269,16 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
       .eq("id", user.id)
       .maybeSingle();
 
-    let role = ""; // default role
+      let role = "";
 
-    if (adminCheck.data?.role?.toLowerCase() === "admin") {
-      role = "admin";
-    }
-    if (clinicCheck.data?.role) {
-      role = "clinic";
-    }
-    if (patientCheck.data?.role) {
-      role = "patient";
-    }
+      if (adminCheck.data?.role?.toLowerCase() === "admin") {
+        role = "admin";
+      } else if (clinicCheck.data?.role) {
+        role = "clinic";
+      } else if (patientCheck.data?.role) {
+        role = "patient";
+      }
+
 
       // Optionally save role for later use
       await AsyncStorage.multiSet([

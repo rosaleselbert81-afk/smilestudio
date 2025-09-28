@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { View, Text, TextInput, TouchableOpacity, Modal, StyleSheet, ScrollView, useWindowDimensions, Image, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -6,6 +6,19 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { useSession } from '../../lib/SessionContext';  // Adjust path accordingly
+
+
+  type ErrorsType = {
+    clinicName?: string;
+    mobileNumber?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+    street?: string;
+    barangay?: string;
+    zipCode?: string;
+  };
+
 
 export default function SignupScreen() {
   const [email, setEmail] = useState('');
@@ -21,10 +34,37 @@ export default function SignupScreen() {
   const isMobile = width < 480;
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
 
   const { signUpClinic } = useSession();
   const [modalVisible, setModalVisible] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [street, setStreet] = useState('');
+  const [barangay, setBarangay] = useState('');
+  const [cityProvince, setCityProvince] = useState('San Jose Del Monte, Bulacan');
+  const [zipCode, setZipCode] = useState('');
+  const [errors, setErrors] = useState<ErrorsType>({});
+
+  const validateForm = () => {
+    const newErrors: ErrorsType = {};
+
+    if (!clinicName.trim()) newErrors.clinicName = 'Clinic name is required.';
+    if (!mobileNumber.trim()) newErrors.mobileNumber = 'Mobile number is required.';
+    if (!email.trim()) newErrors.email = 'Email is required.';
+    if (!password.trim()) newErrors.password = 'Password is required.';
+    if (!confirmPassword.trim()) newErrors.confirmPassword = 'Please confirm your password.';
+    if (password && confirmPassword && password !== confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match.';
+    }
+    if (!street.trim()) newErrors.street = 'Street address is required.';
+    if (!barangay.trim()) newErrors.barangay = 'Barangay is required.';
+    if (!zipCode.trim()) newErrors.zipCode = 'ZIP code is required.';
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
+
 
   const pickClinicPhoto = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -248,26 +288,38 @@ Scuba Scripter and Pixel Cowboy Team
 San Jose Del Monte, Bulacan, Philippine
 `;
 
+useEffect(() => {
+  const fullAddress = `${street}, ${barangay}, ${cityProvince}, ${zipCode}`;
+  setAddress(fullAddress);
+}, [street, barangay, cityProvince, zipCode]);
+
   return (
     <LinearGradient colors={['#003a3aff', '#2f4f2fff']} style={styles.container}>
       <View style={styles.container}>
         <Text style={{ ...styles.title, fontSize: 22, color: 'white' }}>SIGN UP</Text>
         <View style={{ ...styles.formBox, width: isMobile ? 350 : 600, height: isMobile ? 700 : 720 }}>
           <ScrollView style={{ flex: 1 }} automaticallyAdjustKeyboardInsets>
-            <Text style={styles.title}>(CLINIC)</Text>
+            <Text style={{ ...styles.title, color: '#003f30ff' }}>(CLINIC)</Text>
 
+            {/* CLINIC NAME */}
             <Text style={styles.label}>Clinic's Name</Text>
             <TextInput
-              style={styles.input}
-              placeholder="eg. Smile Studio Dental Clinic"
+              style={[styles.input, errors.clinicName && { borderColor: 'red' }]}
+              placeholder="e.g. Smile Studio Dental Clinic"
               placeholderTextColor="#555"
+              maxLength={150}
               value={clinicName}
-              onChangeText={setClinicName}
+              onChangeText={text => {
+                setClinicName(text);
+                if (errors.clinicName) setErrors(prev => ({ ...prev, clinicName: null }));
+              }}
             />
+            {errors.clinicName && <Text style={{ color: 'red', fontSize: 12 }}>{errors.clinicName}</Text>}
 
+            {/* MOBILE */}
             <Text style={styles.label}>Mobile Number</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.mobileNumber && { borderColor: 'red' }]}
               placeholder="eg. 09123456789"
               placeholderTextColor="#555"
               value={mobileNumber}
@@ -277,118 +329,166 @@ San Jose Del Monte, Bulacan, Philippine
               onChangeText={text => {
                 const digitsOnly = text.replace(/[^0-9]/g, '');
                 setMobileNumber(digitsOnly);
+                if (errors.mobileNumber) setErrors(prev => ({ ...prev, mobileNumber: null }));
               }}
             />
+            {errors.mobileNumber && <Text style={{ color: 'red', fontSize: 12 }}>{errors.mobileNumber}</Text>}
 
+            {/* EMAIL */}
             <Text style={styles.label}>Email</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.email && { borderColor: 'red' }]}
               placeholder="eg. SmileStudio@gmail.com"
               placeholderTextColor="#555"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={text => {
+                setEmail(text);
+                if (errors.email) setErrors(prev => ({ ...prev, email: null }));
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
             />
+            {errors.email && <Text style={{ color: 'red', fontSize: 12 }}>{errors.email}</Text>}
 
-            {/* Password */}
+            {/* PASSWORD */}
             <Text style={styles.label}>Password</Text>
             <View style={styles.passwordContainer}>
               <TextInput
-                style={[styles.input, { flex: 1, marginBottom: 0 }]}
+                style={[styles.input, { flex: 1, marginBottom: 0 }, errors.password && { borderColor: 'red' }]}
                 placeholder="Password"
                 placeholderTextColor="#555"
                 secureTextEntry={!showPassword}
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={text => {
+                  setPassword(text);
+                  if (errors.password) setErrors(prev => ({ ...prev, password: null }));
+                }}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
                 <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={22} color="#555" />
               </TouchableOpacity>
             </View>
+            {errors.password && <Text style={{ color: 'red', fontSize: 12 }}>{errors.password}</Text>}
 
-            {/* Confirm Password */}
+            {/* CONFIRM PASSWORD */}
             <Text style={styles.label}>Confirm Password</Text>
             <View style={styles.passwordContainer}>
               <TextInput
-                style={[styles.input, { flex: 1, marginBottom: 0 }]}
+                style={[styles.input, { flex: 1, marginBottom: 0 }, errors.confirmPassword && { borderColor: 'red' }]}
                 placeholder="Confirm Password"
                 placeholderTextColor="#555"
                 secureTextEntry={!showConfirmPassword}
                 value={confirmPassword}
-                onChangeText={setConfirmPassword}
+                onChangeText={text => {
+                  setConfirmPassword(text);
+                  if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: null }));
+                }}
               />
               <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeButton}>
                 <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={22} color="#555" />
               </TouchableOpacity>
             </View>
+            {errors.confirmPassword && <Text style={{ color: 'red', fontSize: 12 }}>{errors.confirmPassword}</Text>}
 
-            <Text style={styles.label}>Address</Text>
+            {/* STREET */}
+            <Text style={styles.label}>Street Number & Name</Text>
+            <TextInput
+              style={[styles.input, errors.street && { borderColor: 'red' }]}
+              placeholder="e.g. 123 Main Street"
+              placeholderTextColor="#555"
+              maxLength={150}
+              value={street}
+              onChangeText={text => {
+                setStreet(text);
+                if (errors.street) setErrors(prev => ({ ...prev, street: null }));
+              }}
+            />
+            {errors.street && <Text style={{ color: 'red', fontSize: 12 }}>{errors.street}</Text>}
+
+            {/* BARANGAY */}
+            <Text style={styles.label}>Barangay</Text>
+            <TextInput
+              style={[styles.input, errors.barangay && { borderColor: 'red' }]}
+              placeholder="e.g. Barangay Tungkong Mangga"
+              placeholderTextColor="#555"
+              maxLength={150}
+              value={barangay}
+              onChangeText={text => {
+                setBarangay(text);
+                if (errors.barangay) setErrors(prev => ({ ...prev, barangay: null }));
+              }}
+            />
+            {errors.barangay && <Text style={{ color: 'red', fontSize: 12 }}>{errors.barangay}</Text>}
+
+            {/* CITY (readonly) */}
+            <Text style={styles.label}>City, Province</Text>
+            <Text style={{ ...styles.label, fontStyle: 'italic', fontSize: 12 }}>
+              *only in the area of San Jose Del Monte, Bulacan
+            </Text>
             <TextInput
               style={styles.input}
-              placeholder="Address"
-              placeholderTextColor="#555"
-              value={address}
-              onChangeText={setAddress}
+              maxLength={150}
+              value="San Jose Del Monte, Bulacan"
+              editable={false}
+              selectTextOnFocus={false}
             />
 
-            {/* <Text style={styles.label}>Clinic's Photo</Text>
-            <TouchableOpacity style={styles.photoBox} onPress={pickClinicPhoto}>
-              {clinicPhoto ? (
-                <Image source={{ uri: clinicPhoto }} style={styles.photo} />
-              ) : (
-                <Text style={{ color: '#777' }}>
-                  {Platform.OS === 'web' ? 'Click or drag a photo here' : 'Tap to select a photo'}
-                </Text>
-              )}
-            </TouchableOpacity>
+            {/* ZIP CODE */}
+            <Text style={styles.label}>ZIP Code</Text>
+            <TextInput
+              style={[styles.input, errors.zipCode && { borderColor: 'red' }]}
+              placeholder="e.g. 1200"
+              placeholderTextColor="#555"
+              keyboardType="numeric"
+              maxLength={4}
+              value={zipCode}
+              onChangeText={text => {
+                // Remove any non-numeric characters
+                const numericText = text.replace(/[^0-9]/g, '');
+                setZipCode(numericText);
+                if (errors.zipCode) setErrors(prev => ({ ...prev, zipCode: null }));
+              }}
+            />
 
-            <Text style={styles.label}>DOH License</Text>
-            <TouchableOpacity style={styles.photoBox} onPress={pickLicensePhoto}>
-              {licensePhoto ? (
-                <Image source={{ uri: licensePhoto }} style={styles.photo} />
-              ) : (
-                <Text style={{ color: '#777' }}>
-                  {Platform.OS === 'web' ? 'Click or drag a photo here' : 'Tap to select a photo'}
-                </Text>
-              )}
-            </TouchableOpacity> */}
+            {errors.zipCode && <Text style={{ color: 'red', fontSize: 12 }}>{errors.zipCode}</Text>}
 
+            {/* Buttons */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 }}>
-              <TouchableOpacity style={{ ...styles.button, backgroundColor: '#b32020ff' }} onPress={() => router.push('/login')}>
+              <TouchableOpacity
+                style={{ ...styles.button, backgroundColor: '#b32020ff' }}
+                onPress={() => router.push('/login')}
+              >
                 <Text style={styles.buttonText}>BACK</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.button, { backgroundColor: 'rgba(16, 82, 51, 1)' }]} onPress={() => setModalVisible(true)}>
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: 'rgba(16, 82, 51, 1)' }]}
+                onPress={() => setModalVisible(true)}
+              >
                 <Text style={styles.buttonText}>SIGN UP</Text>
               </TouchableOpacity>
+
               <Modal visible={modalVisible} animationType="fade" transparent={true}>
-                <View
-                  style={{
-                    flex: 1,
-                    backgroundColor: 'rgba(0,0,0,0.6)',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  <View
-                    style={{
-                      backgroundColor: 'white',
-                      marginHorizontal: 20,
-                      borderRadius: 10,
-                      maxHeight: '80%',
-                      padding: 15,
-                      width: isMobile ? '80%' : '30%',
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 20,
-                        fontWeight: 'bold',
-                        marginBottom: 10,
-                        textAlign: 'center',
-                      }}
-                    >
+                <View style={{
+                  flex: 1,
+                  backgroundColor: 'rgba(0,0,0,0.6)',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}>
+                  <View style={{
+                    backgroundColor: 'white',
+                    marginHorizontal: 20,
+                    borderRadius: 10,
+                    maxHeight: '80%',
+                    padding: 15,
+                    width: isMobile ? '80%' : '30%',
+                  }}>
+                    <Text style={{
+                      fontSize: 20,
+                      fontWeight: 'bold',
+                      marginBottom: 10,
+                      textAlign: 'center',
+                    }}>
                       Terms of Use
                     </Text>
 
@@ -396,24 +496,21 @@ San Jose Del Monte, Bulacan, Philippine
                       <Text style={{ fontSize: 14, lineHeight: 20 }}>{termsText}</Text>
                     </ScrollView>
 
-                    {/* ✅ Checkbox */}
                     <TouchableOpacity
-                      onPress={() => setTermsAccepted((prev) => !prev)}
+                      onPress={() => setTermsAccepted(prev => !prev)}
                       style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
                     >
-                      <View
-                        style={{
-                          height: 20,
-                          width: 20,
-                          borderRadius: 4,
-                          borderWidth: 1,
-                          borderColor: '#888',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          marginRight: 10,
-                          backgroundColor: termsAccepted ? '#4CAF50' : '#fff',
-                        }}
-                      >
+                      <View style={{
+                        height: 20,
+                        width: 20,
+                        borderRadius: 4,
+                        borderWidth: 1,
+                        borderColor: '#888',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        marginRight: 10,
+                        backgroundColor: termsAccepted ? '#4CAF50' : '#fff',
+                      }}>
                         {termsAccepted && (
                           <View style={{ width: 10, height: 10, backgroundColor: '#fff' }} />
                         )}
@@ -431,7 +528,6 @@ San Jose Del Monte, Bulacan, Philippine
                           marginHorizontal: 5,
                           alignItems: 'center',
                           backgroundColor: '#b32020ff',
-                          justifyContent: 'center',
                         }}
                       >
                         <Text style={{ color: 'white', fontWeight: '600', textAlign: 'center' }}>
@@ -441,10 +537,11 @@ San Jose Del Monte, Bulacan, Philippine
 
                       <TouchableOpacity
                         onPress={() => {
-                          if (termsAccepted) {
+                          const isValid = validateForm();
+                          if (termsAccepted && isValid) {
                             signUpHandler();
-                            setModalVisible(false);
                           }
+                          setModalVisible(false);
                         }}
                         disabled={!termsAccepted}
                         style={{
@@ -454,7 +551,6 @@ San Jose Del Monte, Bulacan, Philippine
                           marginHorizontal: 5,
                           alignItems: 'center',
                           backgroundColor: termsAccepted ? '#4CAF50' : '#ccc',
-                          justifyContent: 'center',
                         }}
                       >
                         <Text style={{ color: 'white', fontWeight: '600', textAlign: 'center' }}>

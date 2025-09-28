@@ -642,20 +642,7 @@ useEffect(() => {
 
             <Text style={{fontWeight: 'bold', fontSize: 30, marginTop: -40, marginBottom: 30, color: 'white', textAlign: 'center', }}>SMILE STUDIO</Text>
             <View style={{ ...styles.container, width: '100%' }}>
-              <Text style={{fontWeight: 'bold', fontSize: 20, color: 'white', textAlign: 'center', marginBottom: 4}}>Welcome back Admin!</Text>
-                <Text
-                  style={{
-                    outlineWidth: 0,
-                    width: 215,
-                    fontWeight: 'bold',
-                    fontSize: 15, // initial font size
-                    color: '#ffd445ff',
-                    textAlign: 'center',
-                    marginBottom: 7,
-                  }}
-                  numberOfLines={1} // Only one line, don't wrap
-                  adjustsFontSizeToFit={true} // Automatically shrink to fit
-                >{session?.user?.email}</Text>
+              <Text style={{fontSize: 20, color: 'white', textAlign: 'center', marginBottom: 4}}>Welcome back Admin!</Text>
 
                 <TouchableOpacity
                   style={{
@@ -751,11 +738,11 @@ useEffect(() => {
 
                       {/* Rest of your profile content */}
                       <View>
-                        <Text style={{textAlign: 'center'}}>Username: {adminName}</Text>
-                        <Text style={{textAlign: 'center'}}>Bio: {website}</Text>
+                        <Text style={{fontWeight: "bold", fontStyle: "italic", fontSize: 16, textAlign: "center", color: "#003f30ff"}}>{adminName}</Text>
+                        <Text style={{fontStyle: "italic", fontSize: 16, textAlign: "center", color: "#003f30ff"}}>{website}</Text>
                       </View>
 
-                      <Text style={{textAlign: 'center', marginTop: 25, fontWeight: 'bold'}}>Bio</Text>
+                      <Text style={{fontWeight: "bold", fontSize: 16, textAlign: "center", color: "#003f30ff"}}>Bio</Text>
                       <TextInput
                         style={{
                           ...styles.contentsmenu,

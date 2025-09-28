@@ -58,6 +58,7 @@ type Appointment = {
   };
   isAccepted: boolean | null;
   rejection_note: string;
+  isAttended: boolean | null;
 };
 
 export default function Account() {
@@ -316,11 +317,43 @@ export default function Account() {
 
     fetchClinics();
   }, []);
+  
 
   useEffect(() => {
     fetchAppointments();
     getProfile();
   }, [session]);
+
+useEffect(() => {
+  if (!session?.user?.id) return;
+
+  // Initial fetch
+  fetchAppointments(); // This already triggers current + past
+  getProfile();
+
+  const channel = supabase
+    .channel("appointments-changes")
+    .on(
+      "postgres_changes",
+      {
+        event: "*", // "INSERT", "UPDATE", "DELETE"
+        schema: "public",
+        table: "appointments",
+      },
+      (payload) => {
+        console.log("🔄 Realtime appointment change:", payload);
+
+        // Re-fetch all derived data on change
+        fetchAppointments();
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [session?.user?.id]);
+
 
   useEffect(() => {
     async function loadUserCount() {
@@ -445,33 +478,53 @@ export default function Account() {
     return <Text>Loading...</Text>;
   }
 
-  const createAppointment = async (
-    client_id: string,
-    datetime: Date,
-    message: string
-  ) => {
-    const { data, error } = await supabase
-      .from("appointments")
-      .insert([
-        {
-          clinic_id: client_id, // must match an existing clinic_profiles.id
-          patient_id: session?.user.id, // must match an existing profiles.id
-          date_time: datetime.toISOString(),
-          message: message,
-        },
-      ])
-      .select(); // Add .select() to get the inserted data back
+const createAppointment = async (
+  client_id: string,
+  datetime: Date,
+  message: string
+) => {
+  // Step 1: Check if session user id is available
+  if (!session?.user?.id) {
+    console.error("No session user ID found");
+    return null;
+  }
 
-    if (error) {
-      console.error("Error inserting appointment:", error.message);
-      return null;
-    } else {
-      console.log("Inserted appointment:", data);
-      // Refresh appointments list after successful insert
-      await fetchAppointments();
-      return data;
-    }
-  };
+  // Step 2: Log the data being inserted for debugging
+  console.log("Creating appointment with:", {
+    clinic_id: client_id,
+    patient_id: session.user.id,
+    date_time: datetime.toISOString(),
+    message: message,
+  });
+
+  // Step 3: Attempt the insert with detailed logging of result
+  const result = await supabase
+    .from("appointments")
+    .insert([
+      {
+        clinic_id: client_id,      // Clinic ID must exist in clinic_profiles
+        patient_id: session.user.id,  // Patient ID from authenticated user
+        date_time: datetime.toISOString(),
+        message: message,
+      },
+    ])
+    .select();
+
+  // Step 4: Check for errors and log results
+  if (result.error) {
+    console.error("Error inserting appointment:", result.error.message);
+    return null;
+  }
+
+  console.log("Inserted appointment:", result.data);
+
+  // Step 5: Refresh appointments after successful insert (if applicable)
+  await fetchAppointments();
+
+  // Step 6: Return inserted data
+  return result.data;
+};
+
 
   const handleUploadAvatar = async (file: File | Blob | string) => {
     try {
@@ -819,13 +872,13 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
             >
               Hello! Welcome to Smile Studio!
             </Text>
-            <FontAwesome5 name="user-edit" size={isMobile ? 75 : 150} color="#ccc" />
+            <FontAwesome5 name="user-edit" size={isMobile ? 75 : 150} color="#bdbdbdff" />
             <Text
               style={{
                 fontSize: 16,
                 marginBottom: 20,
                 alignSelf: "center",
-                color: "#ccc",
+                color: "#bdbdbdff",
               }}
             >
               wanna edit/setup your information? let me guide you!
@@ -1322,7 +1375,6 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
               <View style={{ ...styles.container, width: "100%" }}>
                 <Text
                   style={{
-                    fontWeight: "bold",
                     fontSize: 20,
                     color: "white",
                     textAlign: "center",
@@ -1330,21 +1382,6 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                   }}
                 >
                   Welcome back Patient!
-                </Text>
-                <Text
-                  style={{
-                    outlineWidth: 0,
-                    width: 215,
-                    fontWeight: "bold",
-                    fontSize: 15, // initial font size
-                    color: "#ffd445ff",
-                    textAlign: "center",
-                    marginBottom: 7,
-                  }}
-                  numberOfLines={1} // Only one line, don't wrap
-                  adjustsFontSizeToFit={true} // Automatically shrink to fit
-                >
-                  {session?.user?.email}
                 </Text>
 
                 <TouchableOpacity
@@ -1455,24 +1492,12 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
 
                       {/* Rest of your profile content */}
                       <View>
-                        <Text style={{ textAlign: "center" }}>
-                          Username: {username}
-                        </Text>
-                        <Text style={{ textAlign: "center" }}>
-                          First Name: {firstname}
-                        </Text>
-                        <Text style={{ textAlign: "center" }}>
-                          Last Name: {lastname}
+                        <Text style={{fontWeight: "bold", fontStyle: "italic", fontSize: 16, textAlign: "center", color: "#003f30ff", marginBottom: 20}}>
+                          {firstname} {lastname}
                         </Text>
                       </View>
 
-                      <Text
-                        style={{
-                          textAlign: "center",
-                          marginTop: 25,
-                          fontWeight: "bold",
-                        }}
-                      >
+                      <Text style={{fontWeight: "bold", fontSize: 16, textAlign: "center", color: "#003f30ff"}}>
                         Nickname
                       </Text>
                       <TextInput
@@ -1486,13 +1511,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                         placeholderTextColor="black"
                         onChangeText={setUsername}
                       />
-                      <Text
-                        style={{
-                          textAlign: "center",
-                          marginTop: -10,
-                          fontWeight: "bold",
-                        }}
-                      >
+                      <Text style={{fontWeight: "bold", fontSize: 16, textAlign: "center", color: "#003f30ff"}}>
                         Bio
                       </Text>
                       <TextInput
@@ -1651,7 +1670,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                     <ActivityIndicator animating color={"black"} />
                   ) : (
                     <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Pendings
+                      Requests
                     </Text>
                   )}
                 </TouchableOpacity>
@@ -2084,7 +2103,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                     marginBottom: 10,
                   }}
                 >
-                  Pending
+                  Your Requests
                 </Text>
 
                 <FlatList
@@ -2118,7 +2137,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                       }}
                     >
                       <Text style={{ fontWeight: "bold" }}>Clinic Name :</Text>
-                      <Text>{`${e.item.clinic_profiles.clinic_name} ${e.item.profiles.last_name}`}</Text>
+                      <Text>{`${e.item.clinic_profiles.clinic_name}`}</Text>
 
                       <Text style={{ fontWeight: "bold" }}>
                         Date & Time of Appointment :
@@ -2184,13 +2203,16 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                     <Text
                       style={{ fontSize: 20, color: "gray", marginTop: 40 }}
                     >
-                      - No Appointments -
+                      - No Requests -
                     </Text>
                   }
                 />
                 {/* 👇 Show "view all" message only if mobile AND more than 3 */}
                 {isMobile && (appointmentsList?.length ?? 0) > 3 && (
                   <Text
+                  onPress={() => {
+                    setDashboardView("pending");
+                  }}
                     style={{
                       fontSize: 14,
                       color: "blue",
@@ -2198,7 +2220,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                       textAlign: "center",
                     }}
                   >
-                    ...navigate to pendings to view all
+                    ...navigate to requests to view all
                   </Text>
                 )}
               </View>
@@ -2343,6 +2365,16 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                         </View>
                       )}
 
+                      <Text style={{ fontWeight: "bold" }}>Attendance :</Text>
+                      {/* Attended Status Column */}
+                      <Text style={{ flex: 1 }}>
+                        {e.item.isAttended === true
+                          ? "Attended"
+                          : e.item.isAttended === false
+                          ? "Not Attended"
+                          : "Not Attended"}
+                      </Text>
+
                       <Text
                         style={{
                           textAlign: "right",
@@ -2373,6 +2405,9 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                 {/* 👇 Show "view all" message only if mobile AND more than 3 */}
                 {isMobile && (appointmentsPast?.length ?? 0) > 3 && (
                   <Text
+                    onPress={() => {
+                      setDashboardView("history");
+                    }}
                     style={{
                       fontSize: 14,
                       color: "blue",
@@ -2622,6 +2657,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
       chatWithClinic(clinic.id);
       setSelectedCI(clinic.introduction);
       setSelectedOffers(clinic.offers);
+      setOfferList(clinic.offers || []);
       setVerified(clinic.isVerified);
     }}
   >
@@ -4190,7 +4226,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
               color: "#003f30ff",
             }}
           >
-            Pending
+            Requests
           </Text>
           <FlatList
             data={appointmentsList}
@@ -4427,6 +4463,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                   Rejection Note
                 </Text>
                 <Text style={{ flex: 1, fontWeight: "700" }}>Created At</Text>
+                <Text style={{ flex: 1, fontWeight: "700" }}>Attendance</Text>
               </View>
             )}
             renderItem={({ item }) => (
@@ -4497,6 +4534,14 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                 {/* Created At */}
                 <Text style={{ flex: 1 }}>
                   {new Date(item.created_at || 0).toLocaleString()}
+                </Text>
+
+                <Text style={{ flex: 1 }}>
+                  {item.isAttended === true
+                    ? "Attended"
+                    : item.isAttended === false
+                    ? "Not Attended"
+                    : "Not Attended"}
                 </Text>
               </View>
             )}

@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import { useSession } from '@/lib/SessionContext';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import Fontisto from '@expo/vector-icons/Fontisto';
+import MaterialIcons1 from '@expo/vector-icons/MaterialIcons';
 
 import {
   AppState,
@@ -36,7 +37,6 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const { signIn } = useSession();
@@ -48,7 +48,7 @@ export default function Login() {
 
   // The new login handler
   const handleLogin = async () => {
-    if (!email || !password || !rememberMe) return;
+    if (!email || !password) return;
     //setLoading(true);
 
     signIn(email, password);
@@ -160,7 +160,7 @@ export default function Login() {
                 gap: 5,
               }}
             >
-              <MaterialIcons name="email" size={24} color="white" />
+              <MaterialIcons1 name="password" size={24} color="white" />
 
               <TextInput
                 style={{
@@ -185,30 +185,12 @@ export default function Login() {
                 />
               </TouchableOpacity>
             </View>
-            <View style={styles.checkboxRow}>
-              <Checkbox
-                value={rememberMe}
-                onValueChange={setRememberMe}
-                color={rememberMe ? '#003cffff' : undefined}
-              />
-              <Text
-                style={{
-                  fontSize: 15,
-                  fontWeight: 'bold',
-                  color: '#ffffffff',
-                  letterSpacing: 1,
-                  marginLeft: 8,
-                }}
-              >
-                Terms and Conditions
-              </Text>
-            </View>
 
             <View style={styles.verticallySpaced}>
               <TouchableOpacity
                 style={{
                   backgroundColor:
-                    email === '' || password === '' || !rememberMe
+                    email === '' || password === ''
                       ? 'rgba(143, 143, 143, 0)'
                       : 'rgba(25, 58, 119, 1)',
                   borderRadius: 10,
@@ -219,7 +201,7 @@ export default function Login() {
                   shadowRadius: 6,
                   shadowOffset: { width: 4, height: 4 },
                 }}
-                disabled={loading || !rememberMe || email === '' || password === ''}
+                disabled={loading || email === '' || password === ''}
                 onPress={handleLogin}
               >
                 <Text style={{ fontWeight: 'bold', color: 'rgba(255, 255, 255, 1)' }}>
