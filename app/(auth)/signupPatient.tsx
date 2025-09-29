@@ -68,7 +68,7 @@ const validateForm = () => {
   if (!mobileNumber.trim()) {
     newErrors.mobileNumber = "Mobile number is required";
   } else if (!/^09\d{9}$/.test(mobileNumber)) {
-    newErrors.mobileNumber = "Mobile number must be exactly 11 digits";
+    newErrors.mobileNumber = "Mobile number must be exactly 11 digits and start with 09";
   }
 
   if (!email.trim()) {
