@@ -37,6 +37,7 @@ import { saveAs } from 'file-saver';
 import RNFS from 'react-native-fs';
 import Share from 'react-native-share';
 import * as Sharing from 'expo-sharing';
+import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
 
 type Appointment = {
   id: string;
@@ -307,7 +308,27 @@ useEffect(() => {
   };
 
   loadAppointments();
+
+  // Calculate time until next midnight (in ms)
+  const now = new Date();
+  const nextMidnight = new Date();
+  nextMidnight.setHours(24, 0, 0, 0); // Set to next midnight
+  const timeUntilMidnight = nextMidnight.getTime() - now.getTime();
+
+  const midnightTimeout = setTimeout(() => {
+    setAppointmentsToday([]); // Reset state at midnight
+
+    // Optional: Fetch new day's appointments immediately after midnight
+    loadAppointments();
+
+    // Optional: setInterval to repeat daily if component stays mounted
+    // Or re-run this useEffect if date context changes
+  }, timeUntilMidnight);
+
+  return () => clearTimeout(midnightTimeout); // Cleanup on unmount
 }, []);
+
+
 
 
   const fetchAppointmentsPast = async () => {
@@ -1464,21 +1485,6 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
             }}
           >
 
-            <TouchableOpacity
-              style={{
-                backgroundColor: '#4CAF50',
-                padding: 10,
-                borderRadius: 5,
-                marginVertical: 5,
-                width: '100%',
-                alignItems: 'center',
-              }}
-              onPress={async () => {
-                setModalSignout(true)
-              }}
-            >
-              <Text style={{ color: 'white', fontWeight: 'bold' }}>Logout</Text>
-            </TouchableOpacity>
           </View>
           </View>
         </View>
@@ -1544,7 +1550,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
       {/* Glider Panel */}
       <View
         style={{
-          width: drawerWidth,
+          width: isMobile ? drawerWidth : "18%",
           left: 0,
           top: 0,
           flexDirection: "row",
@@ -1562,20 +1568,9 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
             top: 0,
             width: drawerWidth,
           }}
-          colors={["#003a3aff", "#2f4f2fff"]}
+          colors={['#80c4c4ff', '#009b84ff']}
         >
           <View style={{ flex: 1 }}>
-            <TouchableOpacity
-            onPress={() => setModalSignout(true)}
-            style={{alignSelf: 'flex-end', marginRight: isMobile ? -30 : -40}}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator animating color={"white"} />
-            ) : (
-              <MaterialIcons name="logout" size={24} color="white" />
-            )}
-          </TouchableOpacity>
           <Modal
             transparent
             animationType="fade"
@@ -1675,39 +1670,24 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 justifyContent: "center",
                 minHeight: "100%",
               }}
+              showsVerticalScrollIndicator={false}
             >
               <Image
                 source={require("../../assets/favicon.ico.png")}
                 style={styles.logo}
               />
 
-              <Text
-                style={{
-                  fontWeight: "bold",
-                  fontSize: 30,
-                  marginTop: -40,
-                  marginBottom: 30,
-                  color: "white",
-                  textAlign: "center",
-                }}
-              >
-                SMILE STUDIO
-              </Text>
+            <Text style={{fontWeight: 'bold', fontSize: 30, marginTop: -40, color: '#00505cff', textAlign: 'center', }}>SMILE STUDIO</Text>
+            <Text style={{fontSize: 12, color: '#00505cff', textAlign: 'center', marginBottom: 7, }}>GRIN CREATORS</Text>
+            <View style={{padding: 7, paddingLeft: 10, paddingRight: 10, backgroundColor: 'white', marginBottom: 30, borderRadius: 10}}>
+              <Text style={{fontSize: 12, color: '#00505cff', textAlign: 'center'}}>CLINIC</Text>
+            </View>
+
               <View style={{ ...styles.container, width: "100%" }}>
-                <Text
-                  style={{
-                    fontSize: 20,
-                    color: "white",
-                    textAlign: "center",
-                    marginBottom: 4,
-                  }}
-                >
-                  Welcome back Clinic!
-                </Text>
 
                 <TouchableOpacity
                   style={{
-                    backgroundColor: "#4CAF50",
+                    backgroundColor: '#00505cff',
                     borderRadius: 12,
                     marginTop: 0,
                     marginBottom: 12,
@@ -2165,181 +2145,320 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                   </View>
                 </Modal>
 
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("profile");
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Profile
-                    </Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("offers");
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Offers
-                    </Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("clinics");
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Clinics
-                    </Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("appointments");
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Appointments
-                    </Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("pending");
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Requests
-                    </Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("history");
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      History
-                    </Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("chats");
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Chats
-                    </Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("verify");
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Verification
-                    </Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("team");
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Others
-                    </Text>
-                  )}
-                </TouchableOpacity>
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("profile");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "profile" ? '#ffffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"black"} />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="user" size={24} color={dashboardView === "profile" ? '#00505cff' : '#ffffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "profile" ? '#00505cff' : '#ffffffff',
+        marginLeft: 8,
+      }}>
+        Profile
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("offers");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "offers" ? '#ffffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"black"} />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="tag" size={24} color={dashboardView === "offers" ? '#00505cff' : '#ffffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "offers" ? '#00505cff' : '#ffffffff',
+        marginLeft: 8,
+      }}>
+        Offers
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("clinics");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "clinics" ? '#ffffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"black"} />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="hospital-o" size={24} color={dashboardView === "clinics" ? '#00505cff' : '#ffffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "clinics" ? '#00505cff' : '#ffffffff',
+        marginLeft: 8,
+      }}>
+        Clinics
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("appointments");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "appointments" ? '#ffffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"black"} />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="calendar" size={24} color={dashboardView === "appointments" ? '#00505cff' : '#ffffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "appointments" ? '#00505cff' : '#ffffffff',
+        marginLeft: 8,
+      }}>
+        Appointments
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("pending");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "pending" ? '#ffffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"black"} />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="clock-o" size={24} color={dashboardView === "pending" ? '#00505cff' : '#ffffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "pending" ? '#00505cff' : '#ffffffff',
+        marginLeft: 8,
+      }}>
+        Requests
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("history");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "history" ? '#ffffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"black"} />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="history" size={24} color={dashboardView === "history" ? '#00505cff' : '#ffffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "history" ? '#00505cff' : '#ffffffff',
+        marginLeft: 8,
+      }}>
+        History
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("chats");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "chats" ? '#ffffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"black"} />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="comments" size={24} color={dashboardView === "chats" ? '#00505cff' : '#ffffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "chats" ? '#00505cff' : '#ffffffff',
+        marginLeft: 8,
+      }}>
+        Chats
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("verify");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "verify" ? '#ffffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"black"} />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="check-circle" size={24} color={dashboardView === "verify" ? '#00505cff' : '#ffffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "verify" ? '#00505cff' : '#ffffffff',
+        marginLeft: 8,
+      }}>
+        Verification
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("team");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "team" ? '#ffffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"black"} />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="users" size={24} color={dashboardView === "team" ? '#00505cff' : '#ffffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "team" ? '#00505cff' : '#ffffffff',
+        marginLeft: 8,
+      }}>
+        About Us
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
 
 
               </View>
             </ScrollView>
+<TouchableOpacity
+  onPress={() => setModalSignout(true)}
+  style={{
+    alignSelf: 'center',  // Align to left side
+    marginLeft: -35,  // Optional: some left margin
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 3,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"white"} />
+  ) : (
+    <>
+      <SimpleLineIcons name="logout" size={24} color="white" />
+      <Text style={{ color: 'white', fontSize: 16, marginLeft: 8 }}>
+        Logout
+      </Text>
+    </>
+  )}
+</TouchableOpacity>
           </View>
         </LinearGradient>
         {/* Toggle Button */}
@@ -2349,7 +2468,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               style={{
                 width: 50,
                 height: 50,
-                backgroundColor: "rgba(86, 187, 255, 1)",
+                backgroundColor: '#00505cff',
                 alignItems: "center",
                 justifyContent: "center",
                 borderRadius: 10,
@@ -2368,13 +2487,13 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 <MaterialIcons
                   name="keyboard-arrow-right"
                   size={34}
-                  color="black"
+                  color="white"
                 />
               ) : (
                 <MaterialIcons
                   name="keyboard-arrow-left"
                   size={34}
-                  color="black"
+                  color="white"
                 />
               )}
             </TouchableOpacity>
@@ -2385,7 +2504,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
       {/* Dashboard */}
       <LinearGradient
         style={{ flex: 1, position: "relative" }}
-        colors={["#87ffd9ff", "#bdeeffff"]}
+        colors={['#b9d7d3ff', '#00505cff']}
       >
         {/* Dashboard Profile --------------------------------------------------------------------------------------- */}
         <Modal
@@ -2496,6 +2615,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
             {
               width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
               right: dashboardView === "profile" ? 11 : 20000,
+              backgroundColor: '#f1f5f9',
             },
           ]}
         >
@@ -2506,7 +2626,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 fontWeight: "bold",
                 marginBottom: 20,
                 alignSelf: isMobile ? "center" : "flex-start",
-                color: "#003f30ff",
+                color: '#00505cff',
               }}
             >
               Profile
@@ -2521,9 +2641,9 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 style={{
                   width: 170,
                   height: 170,
-                  borderRadius: 60,
-                  borderWidth: 5,
-                  borderColor: "#d1d1d1ff",
+                  borderRadius: 100,
+                  borderWidth: 4,
+                  borderColor: '#cbd5e1',
                   backgroundColor: "#eaeaea",
                 }}
               />
@@ -2531,9 +2651,10 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 style={{
                   fontWeight: "bold",
                   fontSize: 20,
-                  color: "black",
+                  color: '#00505cff',
                   textAlign: "center",
                   marginBottom: 4,
+                  marginTop: 10
                 }}
               >
                 {clinicName}
@@ -2616,6 +2737,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                     fontWeight: "bold",
                     fontSize: 50,
                     textAlign: "center",
+                    color: '#00505cff',
                   }}
                 >
                   {userCount !== null ? userCount : "..."}
@@ -2625,9 +2747,10 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                     textAlign: "center",
                     marginTop: 6,
                     fontSize: isMobile ? 15 : 25,
+                    color: '#00505cff',
                   }}
                 >
-                  TOTAL PATIENTS
+                  Total Patients
                 </Text>
               </View>
               <View style={styles.card}>
@@ -2636,6 +2759,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                     fontWeight: "bold",
                     fontSize: 50,
                     textAlign: "center",
+                    color: '#00505cff',
                   }}
                 >
                   {
@@ -2648,9 +2772,10 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                     textAlign: "center",
                     marginTop: 6,
                     fontSize: isMobile ? 15 : 25,
+                    color: '#00505cff',
                   }}
                 >
-                  APPOINTMENTS TODAY
+                  Appointments Today
                 </Text>
               </View>
               <View style={styles.card}>
@@ -2661,20 +2786,22 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                         textAlign: "center",
                         marginTop: 6,
                         fontSize: isMobile ? 15 : 25,
+                        color: '#00505cff',
                       }}
                     >
-                      RUNNING APPOINTMENTS
+                      Running Appointments
                     </Text>
                   </View>
                   <View style={{ marginTop: 20, alignItems: "center" }}>
                     <TouchableOpacity
-                      style={styles.redButton}
+                      style={{...styles.redButton, backgroundColor: '#00505cff',}}
                       onPress={() => setModalVisible(true)}
                     >
                       <Text
                         style={{
                           ...styles.buttonText1,
                           fontSize: isMobile ? 10 : 25,
+                          color: '#ffffffff',
                         }}
                       >
                         Overview
@@ -2829,10 +2956,8 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 style={{
                   flex: 1,
                   padding: 16,
-                  backgroundColor: "#e6f7ff",
+                  backgroundColor: "#fff",
                   borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: "#b3e5fc",
                   minWidth: 330,
                    height: isMobile ? null : 400,
                 }}
@@ -2842,7 +2967,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                     alignSelf: "center",
                     fontWeight: "bold",
                     fontSize: 24,
-                    color: "#003f30ff",
+                    color: '#00505cff',
                     marginBottom: 10,
                   }}
                 >
@@ -2865,11 +2990,10 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                       style={{
                         width: "100%",
                         gap: 5,
-                        padding: 5,
+                        paddingHorizontal: 20,
+                        paddingVertical: 15,
                         backgroundColor: "#ffffd7ff",
                         borderRadius: 8,
-                        borderWidth: 1,
-                        borderColor: "#ffe680",
                       }}
                     >
                       <Text style={{ fontWeight: "bold" }}>Patient's Name :</Text>
@@ -2891,8 +3015,6 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                           padding: 8,
                           borderRadius: 6,
                           backgroundColor: "#fffce9ff", // light yellow background
-                          borderWidth: 1,
-                          borderColor: "#ffe680",
                         }}
                       >
                         <Text style={{ fontWeight: "bold" }}>Message :</Text>
@@ -3006,10 +3128,8 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                   flex: 1,
                   minWidth: 200,
                   padding: 16,
-                  backgroundColor: "#e6f7ff",
+                  backgroundColor: "#ffffffff",
                   borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: "#b3e5fc",
                   height: isMobile ? null : 400,
                 }}
               >
@@ -3018,7 +3138,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                     alignSelf: "center",
                     fontWeight: "bold",
                     fontSize: 24,
-                    color: "#003f30ff",
+                    color: '#00505cff',
                     marginBottom: 10,
                   }}
                 >
@@ -3040,11 +3160,11 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                       style={{
                         width: "100%",
                         gap: 5,
-                        padding: 5,
+                        paddingHorizontal: 20,
+                        paddingVertical: 15,
                         backgroundColor: e.item.isAccepted ? "#e4ffe0ff" : "#ffe0e0ff",
                         borderRadius: 8,
-                        borderWidth: 1,
-                        borderColor: !e.item.isAccepted ? "#ffcccc" : "#b6e4beff",
+
                       }}
                     >
                       <Text style={{ fontWeight: "bold" }}>Patient Name :</Text>
@@ -3782,6 +3902,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
       setMapView([clinic.longitude, clinic.latitude]);
       setSelectedCI(clinic.introduction);
       setSelectedOffers(clinic.offers);
+      setVerified(clinic.isVerified);
     }}
   >
     <Text style={{ color: "#fff", fontSize: isMobile ? 8 : 10 }}>View Clinic</Text>
@@ -5334,7 +5455,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               color: "#003f30ff",
             }}
           >
-            Others
+            About Us
           </Text>
           <ScrollView contentContainerStyle={{ padding: 20 }}>
           <View
@@ -5861,15 +5982,13 @@ const styles = StyleSheet.create({
     alignContent: "center",
   },
   mar2: {
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    marginTop: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 8,
     marginBottom: 0,
     width: "100%",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "center",
-    borderBottomColor: "#fff", // white line
-    borderBottomWidth: 1, // thickness of line
   },
   buttonText: {
     color: "#000000ff",
@@ -5915,7 +6034,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 8,
     height: 240,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#ffffffff",
     borderRadius: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },

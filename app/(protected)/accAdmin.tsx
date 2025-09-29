@@ -12,6 +12,8 @@ import { Calendar, Agenda } from 'react-native-calendars';
 import * as FileSystem from "expo-file-system";
 import MapPickerView from "../view/MapPickerView";
 import DayScheduleView from "../view/DayScheduleView";
+import { FontAwesome } from '@expo/vector-icons';
+import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
 
 export default function Account() {
   const { session, isLoading, signOut } = useSession();
@@ -520,23 +522,13 @@ useEffect(() => {
       }}
     > 
       {/* Glider Panel */}
-      <View style={{width: drawerWidth, left: 0, top: 0, flexDirection: 'row', height: '100%', position: 'absolute', zIndex: 1, transform: [{ translateX: isMobile ? mobbutoffset : offset }]}}>
+      <View style={{width: isMobile ? drawerWidth : "18%", left: 0, top: 0, flexDirection: 'row', height: '100%', position: 'absolute', zIndex: 1, transform: [{ translateX: isMobile ? mobbutoffset : offset }]}}>
         <LinearGradient
             style={{ ...styles.glider,  bottom: 0, left: 0, top: 0, width: drawerWidth }}
-            colors={['#003a3aff', '#2f4f2fff']}
+            colors={['#80c4c4ff', '#009b84ff']}
           >
           <View style={{flex: 1}}>
-            <TouchableOpacity
-            onPress={() => setModalSignout(true)}
-            style={{alignSelf: 'flex-end', marginRight: isMobile ? -30 : -40}}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator animating color={"white"} />
-            ) : (
-              <MaterialIcons name="logout" size={24} color="white" />
-            )}
-          </TouchableOpacity>
+
           <Modal
             transparent
             animationType="fade"
@@ -629,24 +621,30 @@ useEffect(() => {
               </View>
             </View>
           </Modal>
-            <ScrollView contentContainerStyle={{   
-              flexGrow: 1,
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '100%',
-              paddingBottom: 60, }}> 
+            <ScrollView 
+              contentContainerStyle={{   
+                flexGrow: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '100%',
+                paddingBottom: 60, }}
+              showsVerticalScrollIndicator={false}
+              > 
             <Image
               source={require('../../assets/favicon.ico.png')}
               style={styles.logo}
             />
 
-            <Text style={{fontWeight: 'bold', fontSize: 30, marginTop: -40, marginBottom: 30, color: 'white', textAlign: 'center', }}>SMILE STUDIO</Text>
+            <Text style={{fontWeight: 'bold', fontSize: 30, marginTop: -40, color: '#00505cff', textAlign: 'center', }}>SMILE STUDIO</Text>
+            <Text style={{fontSize: 12, color: '#00505cff', textAlign: 'center', marginBottom: 7, }}>GRIN CREATORS</Text>
+            <View style={{padding: 7, paddingLeft: 10, paddingRight: 10, backgroundColor: 'white', marginBottom: 30, borderRadius: 10}}>
+              <Text style={{fontSize: 12, color: '#00505cff', textAlign: 'center'}}>ADMIN</Text>
+            </View>
             <View style={{ ...styles.container, width: '100%' }}>
-              <Text style={{fontSize: 20, color: 'white', textAlign: 'center', marginBottom: 4}}>Welcome back Admin!</Text>
 
                 <TouchableOpacity
                   style={{
-                    backgroundColor: "#4CAF50",
+                    backgroundColor: '#00505cff',
                     borderRadius: 12,
                     marginTop: 0,
                     marginBottom: 12,
@@ -824,119 +822,254 @@ useEffect(() => {
                   </View>
                 </Modal>
 
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("profile")
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {
-                    loading ? <ActivityIndicator animating color={"black"}/> : <Text style={{...styles.buttonText, color: "#ffff"}}>Profile</Text>
-                  }
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("clinics")
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {
-                    loading ? <ActivityIndicator animating color={"black"}/> : <Text style={{...styles.buttonText, color: "#ffff"}}>Clinics</Text>
-                  }
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("authusers")
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{...styles.buttonText, color: "#ffff"}}>Auth Users</Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("authclinics")
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{...styles.buttonText, color: "#ffff"}}>Auth Clinics</Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("ar");
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Verify Clinics
-                    </Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  onPress={() => {
-                    setDashboardView("chats")
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2} 
-                  disabled={loading}>
-                  {loading ? <ActivityIndicator animating color={'black'} /> : <Text style={{...styles.buttonText, color: "#ffff"}}>Support</Text>}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("team")
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {
-                    loading ? <ActivityIndicator animating color={"black"}/> : <Text style={{...styles.buttonText, color: "#ffff"}}>Others</Text>
-                  }
-                </TouchableOpacity>
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("profile");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "profile" ? '#ffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"black"} />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="user" size={24} color={dashboardView === "profile" ? '#00505cff' : '#ffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "profile" ? '#00505cff' : '#ffffff',
+        marginLeft: 8,
+      }}>
+        Profile
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("clinics");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "clinics" ? '#ffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"black"} />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="hospital-o" size={24} color={dashboardView === "clinics" ? '#00505cff' : '#ffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "clinics" ? '#00505cff' : '#ffffff',
+        marginLeft: 8,
+      }}>
+        Clinics
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("authusers");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "authusers" ? '#ffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"black"} />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="users" size={24} color={dashboardView === "authusers" ? '#00505cff' : '#ffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "authusers" ? '#00505cff' : '#ffffff',
+        marginLeft: 8,
+      }}>
+        Auth Users
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("authclinics");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "authclinics" ? '#ffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"black"} />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="hospital-o" size={24} color={dashboardView === "authclinics" ? '#00505cff' : '#ffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "authclinics" ? '#00505cff' : '#ffffff',
+        marginLeft: 8,
+      }}>
+        Auth Clinics
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("ar");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "ar" ? '#ffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"black"} />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="check-circle" size={24} color={dashboardView === "ar" ? '#00505cff' : '#ffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "ar" ? '#00505cff' : '#ffffff',
+        marginLeft: 8,
+      }}>
+        Verify Clinics
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("chats");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "chats" ? '#ffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"black"} />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="comments" size={24} color={dashboardView === "chats" ? '#00505cff' : '#ffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "chats" ? '#00505cff' : '#ffffff',
+        marginLeft: 8,
+      }}>
+        Support
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("team");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "team" ? '#ffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"black"} />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="cogs" size={24} color={dashboardView === "team" ? '#00505cff' : '#ffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "team" ? '#00505cff' : '#ffffff',
+        marginLeft: 8,
+      }}>
+        About Us
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
 
             </View>
             </ScrollView>
+<TouchableOpacity
+  onPress={() => setModalSignout(true)}
+  style={{
+    alignSelf: 'center',  // Align to left side
+    marginLeft: -35,  // Optional: some left margin
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 3,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"white"} />
+  ) : (
+    <>
+      <SimpleLineIcons name="logout" size={24} color="white" />
+      <Text style={{ color: 'white', fontSize: 16, marginLeft: 8 }}>
+        Logout
+      </Text>
+    </>
+  )}
+</TouchableOpacity>
           </View>
           </LinearGradient>
                                            {/* Toggle Button */}
@@ -946,7 +1079,7 @@ useEffect(() => {
                 style={{
                   width: 50,
                   height: 50,
-                  backgroundColor: "rgba(86, 187, 255, 1)",
+                  backgroundColor: '#00505cff',
                   alignItems: "center",
                   justifyContent: "center",
                   borderRadius: 10,
@@ -962,9 +1095,9 @@ useEffect(() => {
                 disabled={loading}
               >
                 {moved ? (
-                  <MaterialIcons name="keyboard-arrow-right" size={34} color="black" />
+                  <MaterialIcons name="keyboard-arrow-right" size={34} color="white" />
                 ) : (
-                  <MaterialIcons name="keyboard-arrow-left" size={34} color="black" />
+                  <MaterialIcons name="keyboard-arrow-left" size={34} color="white" />
                 )}
               </TouchableOpacity>
             </View>
@@ -974,14 +1107,14 @@ useEffect(() => {
      
 
       {/* Dashboard */}
-      <LinearGradient style={{ flex: 1, position: 'relative' }} colors={['#87ffd9ff', '#bdeeffff']}>
+      <LinearGradient style={{ flex: 1, position: 'relative' }} colors={['#b9d7d3ff', '#00505cff']}>
 
     
           {/* Dashboard Profile --------------------------------------------------------------------------------------- */}
     
 
-        <View style={[styles.dashboard, { width: !isDesktop ? '95%' : expanded ? '80%' : '95%', right: dashboardView === 'profile' ? 11 : 20000}]}>
-          <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, alignSelf: isMobile ? 'center' : 'flex-start', color: '#003f30ff'}}>
+        <View style={[styles.dashboard, { width: !isDesktop ? '95%' : expanded ? '80%' : '95%', right: dashboardView === 'profile' ? 11 : 20000, backgroundColor: '#f1f5f9',}]}>
+          <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, alignSelf: isMobile ? 'center' : 'flex-start', color: '#00505cff'}}>
             Profile
           </Text>
                     <View style={styles.proinfo}>
@@ -994,9 +1127,9 @@ useEffect(() => {
                           style={{
                             width: 170,
                             height: 170,
-                            borderRadius: 60,
-                            borderWidth: 5,
-                            borderColor: "#d1d1d1ff",
+                            borderRadius: 100,
+                            borderWidth: 3,
+                            borderColor: '#cbd5e1',
                             backgroundColor: "#eaeaea",
                           }}
                         />
@@ -1004,9 +1137,10 @@ useEffect(() => {
                         style={{
                           fontWeight: "bold",
                           fontSize: 20,
-                          color: "black",
+                          color: '#00505cff',
                           textAlign: "center",
                           marginBottom: 4,
+                          marginTop: 10,
                         }}
                       >
                         {adminName}
@@ -1035,34 +1169,34 @@ useEffect(() => {
                     </View>
               <View style={styles.cardRow}>
                 <View style={styles.card}>
-                    <Text style={{ fontWeight: 'bold', fontSize: 50, textAlign: 'center'}}>
+                    <Text style={{color: '#00505cff', fontWeight: 'bold', fontSize: 50, textAlign: 'center'}}>
                       {userCount !== null ? userCount : '...'}
                     </Text>
-                    <Text style={{ textAlign: 'center', marginTop: 6, fontSize: isMobile ? 15 : 25 }}>
-                      TOTAL PATIENTS
+                    <Text style={{color: '#00505cff', textAlign: 'center', marginTop: 6, fontSize: isMobile ? 15 : 25 }}>
+                      Total Patients
                     </Text>
                 </View>
                 <View style={styles.card}>
-                    <Text style={{ fontWeight: 'bold', fontSize: 50, textAlign: 'center'}}>
+                    <Text style={{color: '#00505cff', fontWeight: 'bold', fontSize: 50, textAlign: 'center'}}>
                       {clinicCount !== null ? clinicCount : '...'}
                     </Text>
-                    <Text style={{ textAlign: 'center', marginTop: 6, fontSize: isMobile ? 15 : 25 }}>
-                      SJDM CLINICS
+                    <Text style={{color: '#00505cff', textAlign: 'center', marginTop: 6, fontSize: isMobile ? 15 : 25 }}>
+                      SJDM Registered Clinics
                     </Text>
                 </View>
                 <View style={styles.card}>
                   <View style={{flexDirection: 'column',}}>
                   <View>
-                      <Text style={{ textAlign: 'center', marginTop: 6, fontSize: isMobile ? 15 : 25 }}>
+                      <Text style={{color: '#00505cff', textAlign: 'center', marginTop: 6, fontSize: isMobile ? 15 : 25 }}>
                         (Not Finished)
                       </Text>
                     </View>
                     <View style={{ marginTop: 20, alignItems: 'center' }}>
                       <TouchableOpacity
-                        style={styles.redButton}
+                        style={{...styles.redButton, backgroundColor: '#00505cff'}}
                         onPress={() => setModalVisible(true)}
                       >
-                        <Text style={{...styles.buttonText1, fontSize: isMobile ? 10 : 25 }}>Overview</Text>
+                        <Text style={{...styles.buttonText1, color: '#ffffffff', fontSize: isMobile ? 10 : 25 }}>Overview</Text>
                       </TouchableOpacity>
                     </View>
 
@@ -2497,7 +2631,7 @@ useEffect(() => {
               color: "#003f30ff",
             }}
           >
-            Others
+            About Us
           </Text>
           <ScrollView contentContainerStyle={{ padding: 20 }}>
           <View
@@ -3297,15 +3431,13 @@ const styles = StyleSheet.create({
     alignContent: 'center',
   },
   mar2: {
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    marginTop: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 8,
     marginBottom: 0,
     width: "100%",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "center",
-    borderBottomColor: "#fff", // white line
-    borderBottomWidth: 1,      // thickness of line
   },
   buttonText: {
     color: '#000000ff',
@@ -3352,7 +3484,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 8,
     height: 240,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: '#ffffffff',
     borderRadius: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },

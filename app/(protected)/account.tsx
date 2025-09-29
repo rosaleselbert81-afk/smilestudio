@@ -41,6 +41,8 @@ import { saveAs } from 'file-saver';
 import RNFS from 'react-native-fs';
 import Share from 'react-native-share';
 import * as Sharing from 'expo-sharing';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
 
 type Appointment = {
   id: string;
@@ -145,11 +147,46 @@ export default function Account() {
   const [showTooCloseModal, setShowTooCloseModal] = useState(false);
   const [verified, setVerified] = useState(false);
   const [offerList, setOfferList] = useState<string>("");
+  const COOLDOWN_KEY = "last_appointment_time";
+  const [lastAppointmentTime, setLastAppointmentTime] = useState<Date | null>(null);
+  const [cooldownModalVisible, setCooldownModalVisible] = useState(false);
+  const [remainingCooldownTime, setRemainingCooldownTime] = useState(0); // In seconds
+
   const offersArray = typeof offerList === "string"
     ? offerList.split("?")
     : Array.isArray(offerList)
     ? offerList
     : [];
+
+// Load cooldown from storage when modal opens
+useEffect(() => {
+  if (!modalAppoint) return;
+
+  (async () => {
+    const storedTime = await AsyncStorage.getItem(COOLDOWN_KEY);
+    if (storedTime) {
+      setLastAppointmentTime(new Date(storedTime));
+    }
+  })();
+}, [modalAppoint]);
+
+// Live countdown effect for cooldown modal
+useEffect(() => {
+  if (!cooldownModalVisible || remainingCooldownTime <= 0) return;
+
+  const interval = setInterval(() => {
+    setRemainingCooldownTime((prev) => {
+      if (prev <= 1) {
+        clearInterval(interval);
+        setCooldownModalVisible(false);
+        return 0;
+      }
+      return prev - 1;
+    });
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, [cooldownModalVisible]);
 
   const [mapView, setMapView] = useState<
     [number | undefined, number | undefined]
@@ -1222,7 +1259,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
       {/* Glider Panel */}
       <View
         style={{
-          width: drawerWidth,
+          width: isMobile ? drawerWidth : "18%",
           left: 0,
           top: 0,
           flexDirection: "row",
@@ -1240,20 +1277,9 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
             top: 0,
             width: drawerWidth,
           }}
-          colors={["#003a3aff", "#2f4f2fff"]}
+          colors={['#80c4c4ff', '#009b84ff']}
         >
           <View style={{ flex: 1 }}>
-                <TouchableOpacity
-                  onPress={() => setModalSignout(true)}
-                  style={{alignSelf: 'flex-end', marginRight: isMobile ? -30 : -40}}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"white"} />
-                  ) : (
-                    <MaterialIcons name="logout" size={24} color="white" />
-                  )}
-                </TouchableOpacity>
                 <Modal
                   transparent
                   animationType="fade"
@@ -1352,43 +1378,28 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                 alignItems: "center",
                 justifyContent: "center",
                 minHeight: "100%",
-                paddingBottom: 60,
+                marginTop: -25,
+                paddingBottom: 5,
               }}
+              showsVerticalScrollIndicator={false}
             >
               <Image
                 source={require("../../assets/favicon.ico.png")}
                 style={styles.logo}
               />
 
-              <Text
-                style={{
-                  fontWeight: "bold",
-                  fontSize: 30,
-                  marginTop: -40,
-                  marginBottom: 30,
-                  color: "white",
-                  textAlign: "center",
-                }}
-              >
-                SMILE STUDIO
-              </Text>
+            <Text style={{fontWeight: 'bold', fontSize: 30, marginTop: -40, color: '#00505cff', textAlign: 'center', }}>SMILE STUDIO</Text>
+            <Text style={{fontSize: 12, color: '#00505cff', textAlign: 'center', marginBottom: 7, }}>GRIN CREATORS</Text>
+            <View style={{padding: 7, paddingLeft: 10, paddingRight: 10, backgroundColor: 'white', marginBottom: 30, borderRadius: 10}}>
+              <Text style={{fontSize: 12, color: '#00505cff', textAlign: 'center'}}>PATIENT</Text>
+            </View>
               <View style={{ ...styles.container, width: "100%" }}>
-                <Text
-                  style={{
-                    fontSize: 20,
-                    color: "white",
-                    textAlign: "center",
-                    marginBottom: 4,
-                  }}
-                >
-                  Welcome back Patient!
-                </Text>
 
                 <TouchableOpacity
                   style={{
-                    backgroundColor: "#4CAF50",
+                    backgroundColor: '#00505cff',
                     borderRadius: 12,
-                    marginTop: 0,
+                    marginTop:0,
                     marginBottom: 12,
                     alignItems: "center",
                     justifyContent: "center",
@@ -1418,7 +1429,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                         textAlign: "center",
                       }}
                     >
-                      Edit Information
+                      Change Photo
                     </Text>
                   )}
                 </TouchableOpacity>
@@ -1440,7 +1451,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                   >
                     <View
                       style={{
-                        backgroundColor: "white",
+                        backgroundColor: '#f1f5f9',
                         borderRadius: 12,
                         padding: 20,
                         alignItems: "center",
@@ -1492,48 +1503,10 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
 
                       {/* Rest of your profile content */}
                       <View>
-                        <Text style={{fontWeight: "bold", fontStyle: "italic", fontSize: 16, textAlign: "center", color: "#003f30ff", marginBottom: 20}}>
+                        <Text style={{fontWeight: "bold", fontStyle: "italic", fontSize: 16, textAlign: "center", color: '#00505cff', marginBottom: 20}}>
                           {firstname} {lastname}
                         </Text>
                       </View>
-
-                      <Text style={{fontWeight: "bold", fontSize: 16, textAlign: "center", color: "#003f30ff"}}>
-                        Nickname
-                      </Text>
-                      <TextInput
-                        style={{
-                          ...styles.contentsmenu,
-                          outlineWidth: 0,
-                          width: "80%",
-                        }}
-                        placeholder="add nickname..."
-                        value={username}
-                        placeholderTextColor="black"
-                        onChangeText={setUsername}
-                      />
-                      <Text style={{fontWeight: "bold", fontSize: 16, textAlign: "center", color: "#003f30ff"}}>
-                        Bio
-                      </Text>
-                      <TextInput
-                        style={{
-                          ...styles.contentsmenu,
-                          outlineWidth: 0,
-                          width: "80%",
-                        }}
-                        placeholder="add bio..."
-                        placeholderTextColor="black"
-                        value={website}
-                        onChangeText={setWebsite}
-                      />
-                      <Text
-                        style={{
-                          fontSize: 18,
-                          marginBottom: 20,
-                          textAlign: "center",
-                        }}
-                      >
-                        Do you wanna update it?
-                      </Text>
 
                       <View
                         style={{
@@ -1546,7 +1519,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                         <TouchableOpacity
                           style={{
                             flex: 1,
-                            backgroundColor: "#b32020",
+                            backgroundColor: '#00505cff',
                             paddingVertical: 12,
                             borderRadius: 8,
                             marginRight: 8,
@@ -1555,42 +1528,12 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                         >
                           <Text
                             style={{
-                              color: "white",
+                              color: '#ffffffff',
                               fontWeight: "bold",
                               textAlign: "center",
                             }}
                           >
-                            Cancel
-                          </Text>
-                        </TouchableOpacity>
-
-                        {/* SIGNOUT BUTTON */}
-                        <TouchableOpacity
-                          style={{
-                            flex: 1,
-                            backgroundColor: "#2e7dccff",
-                            paddingVertical: 12,
-                            borderRadius: 8,
-                            marginLeft: 8,
-                          }}
-                          onPress={() => {
-                            console.log("Updating...");
-                            setModalUpdate(false);
-                            updateProfile({
-                              username,
-                              website,
-                              avatar_url: avatarUrl,
-                            });
-                          }}
-                        >
-                          <Text
-                            style={{
-                              color: "white",
-                              fontWeight: "bold",
-                              textAlign: "center",
-                            }}
-                          >
-                            Update
+                            Close
                           </Text>
                         </TouchableOpacity>
                       </View>
@@ -1598,160 +1541,286 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                   </View>
                 </Modal>
 
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("profile");
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Profile
-                    </Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("clinics");
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Clinics
-                    </Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("appointments");
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Appointments
-                    </Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("pending");
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Requests
-                    </Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("history");
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      History
-                    </Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("chats");
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Chats
-                    </Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("team");
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Others
-                    </Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setDashboardView("ar");
-                    if (isMobile) {
-                      setMoved((prev) => !prev);
-                      setExpanded((prev) => !prev);
-                    }
-                  }}
-                  style={styles.mar2}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator animating color={"black"} />
-                  ) : (
-                    <Text style={{ ...styles.buttonText, color: "#ffff" }}>
-                      Augmented Reality
-                    </Text>
-                  )}
-                </TouchableOpacity>
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("profile");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "profile" ? '#ffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color="black" />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="user" size={24} color={dashboardView === "profile" ? '#00505cff' : '#ffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "profile" ? '#00505cff' : '#ffffff',
+        marginLeft: 8,
+      }}>
+        Profile
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("clinics");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "clinics" ? '#ffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color="black" />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="hospital-o" size={24} color={dashboardView === "clinics" ? '#00505cff' : '#ffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "clinics" ? '#00505cff' : '#ffffff',
+        marginLeft: 8,
+      }}>
+        Clinics
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("appointments");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "appointments" ? '#ffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color="black" />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="calendar" size={24} color={dashboardView === "appointments" ? '#00505cff' : '#ffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "appointments" ? '#00505cff' : '#ffffff',
+        marginLeft: 8,
+      }}>
+        Appointments
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("pending");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "pending" ? '#ffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color="black" />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="clock-o" size={24} color={dashboardView === "pending" ? '#00505cff' : '#ffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "pending" ? '#00505cff' : '#ffffff',
+        marginLeft: 8,
+      }}>
+        Requests
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("history");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "history" ? '#ffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color="black" />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="history" size={24} color={dashboardView === "history" ? '#00505cff' : '#ffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "history" ? '#00505cff' : '#ffffff',
+        marginLeft: 8,
+      }}>
+        History
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("chats");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "chats" ? '#ffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color="black" />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="comments" size={24} color={dashboardView === "chats" ? '#00505cff' : '#ffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "chats" ? '#00505cff' : '#ffffff',
+        marginLeft: 8,
+      }}>
+        Chats
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("team");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "team" ? '#ffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color="black" />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="users" size={24} color={dashboardView === "team" ? '#00505cff' : '#ffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "team" ? '#00505cff' : '#ffffff',
+        marginLeft: 8,
+      }}>
+        About Us
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
+    setDashboardView("ar");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "ar" ? '#ffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color="black" />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="cube" size={24} color={dashboardView === "ar" ? '#00505cff' : '#ffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "ar" ? '#00505cff' : '#ffffff',
+        marginLeft: 8,
+      }}>
+        Augmented Reality
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
               </View>
             </ScrollView>
+<TouchableOpacity
+  onPress={() => setModalSignout(true)}
+  style={{
+    alignSelf: 'center',  // Align to left side
+    marginLeft: -35,  // Optional: some left margin
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 3,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"white"} />
+  ) : (
+    <>
+      <SimpleLineIcons name="logout" size={24} color="white" />
+      <Text style={{ color: 'white', fontSize: 16, marginLeft: 8 }}>
+        Logout
+      </Text>
+    </>
+  )}
+</TouchableOpacity>
           </View>
         </LinearGradient>
 
@@ -1762,7 +1831,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
               style={{
                 width: 50,
                 height: 50,
-                backgroundColor: "rgba(86, 187, 255, 1)",
+                backgroundColor: '#00505cff',
                 alignItems: "center",
                 justifyContent: "center",
                 borderRadius: 10,
@@ -1781,13 +1850,13 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                 <MaterialIcons
                   name="keyboard-arrow-right"
                   size={34}
-                  color="black"
+                  color="white"
                 />
               ) : (
                 <MaterialIcons
                   name="keyboard-arrow-left"
                   size={34}
-                  color="black"
+                  color="white"
                 />
               )}
             </TouchableOpacity>
@@ -1798,7 +1867,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
       {/* Dashboard Profile */}
       <LinearGradient
         style={{ flex: 1, position: "relative" }}
-        colors={["#87ffd9ff", "#bdeeffff"]}
+        colors={['#b9d7d3ff', '#00505cff']}
       >
         {/* Dashboard Profile --------------------------------------------------------------------------------------- */}
 
@@ -1809,6 +1878,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
             {
               width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
               right: dashboardView === "profile" ? 11 : 20000,
+              backgroundColor: '#f1f5f9',
             },
           ]}
         >
@@ -1819,7 +1889,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                 fontWeight: "bold",
                 marginBottom: 20,
                 alignSelf: isMobile ? "center" : "flex-start",
-                color: "#003f30ff",
+                color: '#00505cff',
               }}
             >
               Profile
@@ -1834,30 +1904,20 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                 style={{
                   width: 170,
                   height: 170,
-                  borderRadius: 60,
-                  borderWidth: 5,
-                  borderColor: "#d1d1d1ff",
+                  borderRadius: 100,
+                  borderWidth: 3,
+                  borderColor: '#cbd5e1',
                   backgroundColor: "#eaeaea",
                 }}
               />
               <Text
                 style={{
                   fontWeight: "bold",
-                  fontSize: 16,
-                  color: "#384e8bff",
-                  textAlign: "center",
-                  marginBottom: 4,
-                }}
-              >
-                {username}
-              </Text>
-              <Text
-                style={{
-                  fontWeight: "bold",
                   fontSize: 20,
-                  color: "black",
+                  color: '#00505cff',
                   textAlign: "center",
                   marginBottom: 4,
+                  marginTop: 10,
                 }}
               >
                 {firstname} {lastname}
@@ -1872,17 +1932,6 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
               >
                 {session?.user?.email}
               </Text>
-              <Text
-                style={{
-                  fontSize: 15,
-                  color: "#416e5dff",
-                  fontStyle: "italic",
-                  textAlign: "center",
-                  marginBottom: 4,
-                }}
-              >
-                {website}
-              </Text>
             </View>
             {/* mymap */}
             <View style={styles.cardRow}>
@@ -1892,6 +1941,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                     fontWeight: "bold",
                     fontSize: 50,
                     textAlign: "center",
+                    color: '#00505cff',
                   }}
                 >
                   {clinicCount !== null ? clinicCount : "..."}
@@ -1901,9 +1951,10 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                     textAlign: "center",
                     marginTop: 6,
                     fontSize: isMobile ? 15 : 25,
+                    color: '#00505cff',
                   }}
                 >
-                  SJDM CLINICS
+                  SJDM Clinics
                 </Text>
               </View>
               <View style={styles.card}>
@@ -1914,20 +1965,22 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                         textAlign: "center",
                         marginTop: 6,
                         fontSize: isMobile ? 15 : 25,
+                        color: '#00505cff',
                       }}
                     >
-                      RUNNING APPOINTMENTS
+                      Running Appointments
                     </Text>
                   </View>
                   <View style={{ marginTop: 20, alignItems: "center" }}>
                     <TouchableOpacity
-                      style={styles.redButton}
+                      style={{...styles.redButton, backgroundColor: '#00505cff'}}
                       onPress={() => setModalVisible(true)}
                     >
                       <Text
                         style={{
                           ...styles.buttonText1,
                           fontSize: isMobile ? 10 : 25,
+                          color: "#fff"
                         }}
                       >
                         Overview
@@ -2086,10 +2139,8 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                 style={{
                   flex: 1,
                   padding: 16,
-                  backgroundColor: "#e6f7ff",
+                  backgroundColor: "#ffffffff",
                   borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: "#b3e5fc",
                   minWidth: 330,
                   height: isMobile ? null : 400,
                 }}
@@ -2099,7 +2150,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                     alignSelf: "center",
                     fontWeight: "bold",
                     fontSize: 24,
-                    color: "#003f30ff",
+                    color: '#00505cff',
                     marginBottom: 10,
                   }}
                 >
@@ -2129,11 +2180,10 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                       style={{
                         width: "100%",
                         gap: 5,
-                        padding: 5,
+                        paddingHorizontal: 20,
+                        paddingVertical: 15,
                         backgroundColor: "#ffffd7ff",
                         borderRadius: 8,
-                        borderWidth: 1,
-                        borderColor: "#ffe680",
                       }}
                     >
                       <Text style={{ fontWeight: "bold" }}>Clinic Name :</Text>
@@ -2228,10 +2278,8 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                 style={{
                   flex: 1,
                   padding: 16,
-                  backgroundColor: "#e6f7ff",
+                  backgroundColor: "#ffffffff",
                   borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: "#b3e5fc",
                   minWidth: 200,
                   height: isMobile ? null : 400,
                 }}
@@ -2241,7 +2289,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                     alignSelf: "center",
                     fontWeight: "bold",
                     fontSize: 24,
-                    color: "#003f30ff",
+                    color: '#00505cff',
                     marginBottom: 10,
                   }}
                 >
@@ -2276,10 +2324,8 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                           ? "#e4ffe0ff"
                           : "#ffe0e0ff",
                         borderRadius: 8,
-                        borderWidth: 1,
-                        borderColor: !e.item.isAccepted
-                          ? "#ffcccc"
-                          : "#b6e4beff",
+                        paddingHorizontal: 20,
+                        paddingVertical: 15,
                       }}
                     >
                       <Text style={{ fontWeight: "bold" }}>Clinic Name :</Text>
@@ -2297,7 +2343,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                         })}`}
                        </Text>
 
-                      <View
+                      <View //borderfix
                         style={{
                           marginTop: 10,
                           padding: 8,
@@ -3701,6 +3747,20 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                                     }
 
                                     const now = new Date();
+
+                                    // ✅ Check cooldown (2 minutes = 120000 ms)
+                                    if (
+                                      lastAppointmentTime &&
+                                      now.getTime() - lastAppointmentTime.getTime() < 2 * 60 * 1000
+                                    ) {
+                                      const remainingMs = 2 * 60 * 1000 - (now.getTime() - lastAppointmentTime.getTime());
+                                      const remainingSec = Math.ceil(remainingMs / 1000);
+
+                                      setRemainingCooldownTime(remainingSec);
+                                      setCooldownModalVisible(true);
+                                      return;
+                                    }
+
                                     if (appointmentDate < now) {
                                       setShowInvalidTimeModal(true);
                                       return;
@@ -3736,8 +3796,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                                       setShowOutOfScheduleModal(true);
                                       return;
                                     }
-                                    
-                                    // Get weekday index: 0 (Sunday) to 6 (Saturday)
+
                                     const dayIndex = appointmentDate.getDay();
                                     const daySchedule = schedules[dayIndex];
 
@@ -3749,8 +3808,14 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                                       }
                                     }
 
+                                    // ✅ Create the appointment
+                                    await createAppointment(selectedClinicId, appointmentDate, messageToClinic);
 
-                                    createAppointment(selectedClinicId, appointmentDate, messageToClinic);
+                                    // ✅ Save cooldown time
+                                    await AsyncStorage.setItem(COOLDOWN_KEY, now.toISOString());
+                                    setLastAppointmentTime(now);
+
+                                    // ✅ Reset UI
                                     setModalAppoint(false);
                                     setaIndicator(true);
                                     setMessageToClinic("");
@@ -3758,6 +3823,8 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                                     setTempMessage("");
                                     setSelectedReasons([]);
                                   }}
+
+
                                 >
                                   <Text
                                     style={{
@@ -3774,6 +3841,71 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                           </View>
                         </View>
                       </Modal>
+
+                      {/* cooldown modal */}
+                      <Modal
+                        transparent
+                        animationType="fade"
+                        visible={cooldownModalVisible}
+                        onRequestClose={() => setCooldownModalVisible(false)}
+                      >
+                        <View
+                          style={{
+                            flex: 1,
+                            justifyContent: "center",
+                            alignItems: "center",
+                            padding: 20,
+                          }}
+                        >
+                          <View
+                            style={{
+                              backgroundColor: "white",
+                              padding: 20,
+                              borderRadius: 10,
+                              alignItems: "center",
+                              width: isMobile ? "80%" : "30%",
+                              borderWidth: 1,
+                              borderColor: "#ccc",
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 18,
+                                fontWeight: "bold",
+                                marginBottom: 10,
+                                color: "#b32020",
+                                textAlign: "center",
+                              }}
+                            >
+                              Please wait
+                            </Text>
+
+                            <Text
+                              style={{
+                                fontSize: 16,
+                                textAlign: "center",
+                                marginBottom: 20,
+                              }}
+                            >
+                              You can't make another appointment right now. Please wait{" "}
+                              <Text style={{ fontWeight: "bold" }}>{remainingCooldownTime}</Text> seconds.
+                            </Text>
+
+                            <TouchableOpacity
+                              onPress={() => setCooldownModalVisible(false)}
+                              style={{
+                                backgroundColor: "#2e7dccff",
+                                paddingVertical: 10,
+                                paddingHorizontal: 20,
+                                borderRadius: 6,
+                              }}
+                            >
+                              <Text style={{ color: "white", fontWeight: "bold" }}>OK</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      </Modal>
+
 
                       {/* Closing Time Modal */}
                       <Modal
@@ -4112,7 +4244,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
               fontWeight: "bold",
               marginBottom: 20,
               alignSelf: isMobile ? "center" : "flex-start",
-              color: "#003f30ff",
+              color: '#f1f5f9',
             }}
           >
             Appointments
@@ -4595,7 +4727,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
               color: "#003f30ff",
             }}
           >
-            Others
+            About Us
           </Text>
           <ScrollView contentContainerStyle={{ padding: 20 }}>
           <View
@@ -5173,15 +5305,13 @@ const styles = StyleSheet.create({
     alignContent: "center",
   },
   mar2: {
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    marginTop: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 8,
     marginBottom: 0,
     width: "100%",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "center",
-    borderBottomColor: "#fff", // white line
-    borderBottomWidth: 1, // thickness of line
   },
   
   buttonText: {
@@ -5228,7 +5358,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 8,
     height: 240,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#ffffffff",
     borderRadius: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },

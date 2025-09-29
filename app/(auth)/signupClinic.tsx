@@ -105,6 +105,8 @@ const validateForm = (): boolean => {
     newErrors.zipCode = "Zip code is required";
   } else if (!/^\d{4}$/.test(zipCode)) {
     newErrors.zipCode = "Zip code must be exactly 4 digits";
+  } else if (zipCode !== "3023" && zipCode !== "3024") {
+    newErrors.zipCode = "Zip code must be 3023 or 3024";
   }
 
   if (!password) {
@@ -325,7 +327,7 @@ useEffect(() => {
 }, [street, barangay, cityProvince, zipCode]);
 
 return (
-  <LinearGradient colors={['#003a3aff', '#2f4f2fff']} style={styles.container}>
+  <LinearGradient colors={['#80c4c4ff', '#009b84ff']} style={styles.container}>
     <View style={styles.container}>
       <View
         style={{
@@ -529,7 +531,7 @@ return (
                   errors.zipCode && { borderColor: 'red' },
                   { marginBottom: 8 },
                 ]}
-                placeholder="e.g. 1000"
+                placeholder="e.g. 3023 or 3024"
                 placeholderTextColor="#555"
                 keyboardType="numeric"
                 maxLength={4}
@@ -748,7 +750,7 @@ return (
           }}
         >
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: 'rgba(16, 82, 51, 1)' }]}
+            style={[styles.button, { backgroundColor: '#4CAF50' }]}
             onPress={() => setModalVisible(true)}
           >
             <Text style={styles.buttonText}>SIGN UP</Text>
@@ -850,7 +852,7 @@ const styles = StyleSheet.create({
   welcome: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#003f30ff',
+    color: '#00505cff',
     alignSelf: 'center',
     marginBottom: 10,
     letterSpacing: 1,
@@ -858,9 +860,9 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#003f30ff',   // matching the title's greenish tone
+    color: '#00505cff',   // matching the title's greenish tone
     marginBottom: -5,
-    borderBottomColor: '#004d33',
+    borderBottomColor: '#00505cff',
     paddingBottom: 6,
     textTransform: 'uppercase',
     letterSpacing: 1,

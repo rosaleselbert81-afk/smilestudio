@@ -61,7 +61,7 @@ export default function Index() {
   return (
     <ScrollView style={styles.container} ref={scrollRef}>
       {/* Header */}
-      <LinearGradient colors={['#009b9bff', '#559255ff']} style={{...styles.header}}>
+      <LinearGradient colors={['#80c4c4ff', '#009b84ff']} style={{...styles.header}}>
         
         <Text style={styles.logo}> Smile Studio</Text>
         {!isMobile && (
@@ -258,7 +258,7 @@ export default function Index() {
       </View>
 
       {/* Footer */}
-      <LinearGradient colors={['#009b9bff', '#559255ff']} style={styles.footer}>
+      <LinearGradient colors={['#80c4c4ff', '#009b84ff']} style={styles.footer}>
         <Text style={styles.footerText}>© SmileStudio 2025</Text>
         <Text style={styles.footerText}>smilestudiohub@gmail.com</Text>
         <Text style={styles.footerText}>09218881835</Text>
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff5f7',
   },
   header: {
-    padding: 30,
+    padding: 38,
     paddingHorizontal: 24,
     flexDirection: 'row',
     justifyContent: 'space-between',

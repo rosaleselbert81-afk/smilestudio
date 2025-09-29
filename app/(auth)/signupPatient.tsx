@@ -277,7 +277,7 @@ San Jose Del Monte, Bulacan, Philippine
 `;
 
   return (
-    <LinearGradient colors={['#003a3aff', '#2f4f2fff']} style={styles.container}>
+    <LinearGradient colors={['#80c4c4ff', '#009b84ff']} style={styles.container}>
       <View style={styles.container}>
     <View
       style={{
@@ -293,7 +293,7 @@ San Jose Del Monte, Bulacan, Philippine
       onPress={() => router.push('/login')}
       style={{ position: 'absolute', top: 10, left: 0, zIndex: 10}}
     >
-      <Ionicons name="arrow-back" size={36} color='#003f30ff'/>
+      <Ionicons name="arrow-back" size={36} color='#00505cff'/>
     </TouchableOpacity>
     <Image
       source={require('../../assets/favicon.ico.png')}
@@ -605,7 +605,7 @@ San Jose Del Monte, Bulacan, Philippine
       }}
     >
       <TouchableOpacity
-        style={[styles.button, { backgroundColor: 'rgba(16, 82, 51, 1)' }]}
+        style={[styles.button, { backgroundColor: '#4CAF50' }]}
         onPress={() => setModalVisible(true)}
       >
         <Text style={styles.buttonText}>SIGN UP</Text>
@@ -708,7 +708,7 @@ const styles = StyleSheet.create({
   welcome: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#003f30ff',
+    color: '#00505cff',
     alignSelf: 'center',
     marginBottom: 10,
     letterSpacing: 1,
@@ -716,9 +716,9 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#003f30ff',   // matching the title's greenish tone
+    color: '#00505cff',   // matching the title's greenish tone
     marginBottom: -5,
-    borderBottomColor: '#004d33',
+    borderBottomColor: '#00505cff',
     paddingBottom: 6,
     textTransform: 'uppercase',
     letterSpacing: 1,

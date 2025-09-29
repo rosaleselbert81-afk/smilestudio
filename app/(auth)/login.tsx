@@ -77,12 +77,16 @@ export default function Login() {
   }
 
   return (
-    <LinearGradient colors={['#009b9bff', '#559255ff']} style={[styles.container]}>
-      <ScrollView style={{ flex: 1 }} automaticallyAdjustKeyboardInsets>
+    <LinearGradient colors={['#80c4c4ff', '#009b84ff']} style={[styles.container]}>
+      <ScrollView style={{ flex: 1 }} 
+      automaticallyAdjustKeyboardInsets
+      showsVerticalScrollIndicator={false}
+      >
         <View
           style={{
             width: '100%',
             maxWidth: 500,
+            marginTop: 30,
             marginHorizontal: 'auto',
           }}
         >
@@ -135,7 +139,7 @@ export default function Login() {
                 onChangeText={(text) => setEmail(text)}
                 placeholder="JuanDelaCruz@address.com"
                 autoCapitalize={'none'}
-                placeholderTextColor={'rgba(192, 192, 192, 1)'}
+                placeholderTextColor={'rgba(218, 218, 218, 1)'}
               />
             </View>
 
@@ -174,7 +178,7 @@ export default function Login() {
                 secureTextEntry={!showPassword}
                 placeholder="Password"
                 autoCapitalize="none"
-                placeholderTextColor='rgba(192, 192, 192, 1)'
+                placeholderTextColor='rgba(218, 218, 218, 1)'
               />
 
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
@@ -191,8 +195,8 @@ export default function Login() {
                 style={{
                   backgroundColor:
                     email === '' || password === ''
-                      ? 'rgba(143, 143, 143, 0)'
-                      : 'rgba(25, 58, 119, 1)',
+                      ? 'rgba(0, 0, 0, 0.1)'
+                      : '#ffffffff',
                   borderRadius: 10,
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -204,7 +208,12 @@ export default function Login() {
                 disabled={loading || email === '' || password === ''}
                 onPress={handleLogin}
               >
-                <Text style={{ fontWeight: 'bold', color: 'rgba(255, 255, 255, 1)' }}>
+                <Text style={{ fontWeight: 'bold', 
+                  color:                     
+                    email === '' || password === ''
+                        ? '#ffffffff'
+                        : '#00505cff',
+                  }}>
                   {loading ? 'Signing In...' : 'SIGN IN'}
                 </Text>
               </TouchableOpacity>
@@ -234,7 +243,7 @@ export default function Login() {
             <View style={styles.verticallySpaced}>
               <TouchableOpacity
                 style={{
-                  backgroundColor: 'rgba(25, 58, 119, 1)',
+                  backgroundColor: '#00505cff',
                   borderRadius: 10,
                   alignItems: 'center',
                   justifyContent: 'center',
