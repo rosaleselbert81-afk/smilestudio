@@ -67,7 +67,7 @@ const validateForm = () => {
 
   if (!mobileNumber.trim()) {
     newErrors.mobileNumber = "Mobile number is required";
-  } else if (!/^\d{11}$/.test(mobileNumber)) {
+  } else if (!/^09\d{9}$/.test(mobileNumber)) {
     newErrors.mobileNumber = "Mobile number must be exactly 11 digits";
   }
 
@@ -79,8 +79,8 @@ const validateForm = () => {
 
   if (!password) {
     newErrors.password = "Password is required";
-  } else if (password.length < 6) {
-    newErrors.password = "Password must be at least 6 characters";
+  } else if (password.length < 8) {
+    newErrors.password = "Password must be at least 8 characters";
   }
 
   if (!confirmPassword) {
@@ -279,272 +279,340 @@ San Jose Del Monte, Bulacan, Philippine
   return (
     <LinearGradient colors={['#003a3aff', '#2f4f2fff']} style={styles.container}>
       <View style={styles.container}>
-        <Text style={{ ...styles.title, fontSize: 22, color: 'white' }}>SIGN UP</Text>
-        <View style={{ ...styles.formBox, width: isMobile ? 350 : 600, height: isMobile ? 600 : 720 }}>
-          <ScrollView style={{ flex: 1 }} automaticallyAdjustKeyboardInsets>
-            <Text style={{...styles.title, color: '#003f30ff'}}>(PATIENT)</Text>
+    <View
+      style={{
+        ...styles.formBox,
+        width: isMobile ? 360 : 900,  // increased width on web
+        height: isMobile ? 650 : 740,
+        padding: 40,
+      }}
+    >
+  <ScrollView style={{ flex: 1 }} automaticallyAdjustKeyboardInsets>
+    {/* Form Title */}
+    <TouchableOpacity
+      onPress={() => router.push('/login')}
+      style={{ position: 'absolute', top: 10, left: 0, zIndex: 10}}
+    >
+      <Ionicons name="arrow-back" size={36} color='#003f30ff'/>
+    </TouchableOpacity>
+    <Image
+      source={require('../../assets/favicon.ico.png')}
+      style={styles.logo}
+    />
+    <Text style={styles.welcome}>SMILE STUDIO</Text>
+    <Text
+      style={{
+        ...styles.welcome,
+        fontSize: 15,
+        marginTop: -10,
+        fontWeight: '300',
+        marginBottom: 20,
+      }}
+    >
+      Grin Creators
+    </Text>
+    <Text style={{...styles.sectionHeader, fontSize: 21, borderBottomWidth: 2, marginTop: 32, marginBottom: 36}}>PATIENT SIGN UP</Text>
 
-            {/* First Name */}
-            <Text style={styles.label}>First Name</Text>
-            <TextInput
-              style={[styles.input, errors.firstName && { borderColor: 'red' }]}
-              placeholder="eg. Juan"
-              maxLength={150}
-              placeholderTextColor="#555"
-              value={firstName}
-              onChangeText={text => {
-                setFirstName(text);
-                if (errors.firstName) setErrors(prev => ({ ...prev, firstName: undefined }));
-              }}
-            />
-            {errors.firstName && <Text style={styles.errorText}>{errors.firstName}</Text>}
+    <View
+      style={{
+        flexDirection: isMobile ? 'column' : 'row', // row ONLY on web
+        justifyContent: 'space-between',
+        marginBottom: 20,
+      }}
+    >
+      {/* Personal Information Section */}
+      <View style={{ flex: 1, marginRight: isMobile ? 0 : 10, marginBottom: isMobile ? 15 : 0 }}>
+        <Text style={styles.sectionHeader}>Personal Information</Text>
 
-            {/* Last Name */}
-            <Text style={styles.label}>Last Name</Text>
-            <TextInput
-              style={[styles.input, errors.lastName && { borderColor: 'red' }]}
-              placeholder="eg. Dela Cruz"
-              maxLength={150}
-              placeholderTextColor="#555"
-              value={lastName}
-              onChangeText={text => {
-                setLastName(text);
-                if (errors.lastName) setErrors(prev => ({ ...prev, lastName: undefined }));
-              }}
-            />
-            {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
+        {/* First Name */}
+        <Text style={[styles.label, { marginBottom: 4 }]}>First Name</Text>
+        <TextInput
+          style={[styles.input, errors.firstName && { borderColor: 'red' }, { marginBottom: 8 }]}
+          placeholder="e.g. Juan"
+          maxLength={20}
+          placeholderTextColor="#555"
+          value={firstName}
+          onChangeText={text => {
+            setFirstName(text);
+            if (errors.firstName) setErrors(prev => ({ ...prev, firstName: undefined }));
+          }}
+        />
+        {errors.firstName && <Text style={styles.errorText}>{errors.firstName}</Text>}
 
-            {/* Gender */}
-            <Text style={styles.label}>Gender</Text>
-            <View style={[errors.gender && { borderColor: 'red', borderWidth: 1 }]}>
-              <Picker
-                selectedValue={gender}
-                style={{ height: isMobile ? (Platform.OS === 'ios' ? 230 : 50) : 40, color: 'black' }}
-                itemStyle={{ color: 'black', fontSize: 16 }}
-                onValueChange={(itemValue) => {
-                  setGender(itemValue);
-                  if (errors.gender) setErrors(prev => ({ ...prev, gender: undefined }));
-                }}
-              >
-                <Picker.Item label="- Choose a Gender -" value="" />
-                <Picker.Item label="Male" value="Male" />
-                <Picker.Item label="Female" value="Female" />
-              </Picker>
-            </View>
-            {errors.gender && <Text style={styles.errorText}>{errors.gender}</Text>}
+        {/* Last Name */}
+        <Text style={[styles.label, { marginBottom: 4 }]}>Last Name</Text>
+        <TextInput
+          style={[styles.input, errors.lastName && { borderColor: 'red' }, { marginBottom: 8 }]}
+          placeholder="e.g. Dela Cruz"
+          maxLength={20}
+          placeholderTextColor="#555"
+          value={lastName}
+          onChangeText={text => {
+            setLastName(text);
+            if (errors.lastName) setErrors(prev => ({ ...prev, lastName: undefined }));
+          }}
+        />
+        {errors.lastName && <Text style={styles.errorText}>{errors.lastName}</Text>}
 
-            {/* Birthdate */}
-            <Text style={styles.label}>Birthdate</Text>
-            <View style={[
-              { height: 47, borderRadius: 8, justifyContent: 'center' },
-              errors.birthdate && { borderColor: 'red', borderWidth: 1 }
-            ]}>
-              <BirthdatePicker
-                value={birthdate}
-                onChange={(date) => {
-                  setBirthdate(date);
-                  if (errors.birthdate) setErrors(prev => ({ ...prev, birthdate: undefined }));
-                }}
-              />
-            </View>
-            {errors.birthdate && <Text style={styles.errorText}>{errors.birthdate}</Text>}
-
-
-            {/* Mobile Number */}
-            <Text style={styles.label}>Mobile Number</Text>
-            <TextInput
-              style={[styles.input, errors.mobileNumber && { borderColor: 'red' }]}
-              placeholder="eg. 09123456789"
-              placeholderTextColor="#555"
-              value={mobileNumber}
-              keyboardType="phone-pad"
-              maxLength={11}
-              autoComplete="tel"
-              onChangeText={(text) => {
-                const digitsOnly = text.replace(/[^0-9]/g, '');
-                setMobileNumber(digitsOnly);
-                if (errors.mobileNumber) setErrors(prev => ({ ...prev, mobileNumber: undefined }));
-              }}
-            />
-            {errors.mobileNumber && <Text style={styles.errorText}>{errors.mobileNumber}</Text>}
-
-            {/* Email */}
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={[styles.input, errors.email && { borderColor: 'red' }]}
-              placeholder="eg. JuanDelaCruz@gmail.com"
-              placeholderTextColor="#555"
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
-              }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
-
-            {/* Password */}
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={[styles.input, { flex: 1, marginBottom: 0 }, errors.password && { borderColor: 'red' }]}
-                placeholder="Password"
-                placeholderTextColor="#555"
-                secureTextEntry={!showPassword}
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  if (errors.password) setErrors(prev => ({ ...prev, password: undefined }));
-                }}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
-                <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={22} color="#555" />
-              </TouchableOpacity> 
-            </View>
-            {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-
-            {/* Confirm Password */}
-            <Text style={styles.label}>Confirm Password</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={[styles.input, { flex: 1, marginBottom: 0 }, errors.confirmPassword && { borderColor: 'red' }]}
-                placeholder="Confirm Password"
-                placeholderTextColor="#555"
-                secureTextEntry={!showConfirmPassword}
-                value={confirmPassword}
-                onChangeText={(text) => {
-                  setConfirmPassword(text);
-                  if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: undefined }));
-                }}
-              />
-              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeButton}>
-                <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={22} color="#555" />
-              </TouchableOpacity>
-            </View>
-            {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
-
-            {/* Buttons */}
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 }}>
-              <TouchableOpacity
-                style={{ ...styles.button, backgroundColor: '#b32020ff' }}
-                onPress={() => router.push('/login')}
-              >
-                <Text style={styles.buttonText}>BACK</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, { backgroundColor: 'rgba(16, 82, 51, 1)' }]}
-                onPress={() => setModalVisible(true)}
-              >
-                <Text style={styles.buttonText}>SIGN UP</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Terms Modal */}
-            <Modal visible={modalVisible} animationType="fade" transparent={true}>
-              <View
-                style={{
-                  flex: 1,
-                  backgroundColor: 'rgba(0,0,0,0.6)',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <View
-                  style={{
-                    backgroundColor: 'white',
-                    marginHorizontal: 20,
-                    borderRadius: 10,
-                    maxHeight: '80%',
-                    padding: 15,
-                    width: isMobile ? '80%' : '30%',
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 20,
-                      fontWeight: 'bold',
-                      marginBottom: 10,
-                      textAlign: 'center',
-                    }}
-                  >
-                    Terms of Use
-                  </Text>
-
-                  <ScrollView style={{ marginBottom: 15 }}>
-                    <Text style={{ fontSize: 14, lineHeight: 20 }}>{termsText}</Text>
-                  </ScrollView>
-
-                  {/* Checkbox */}
-                  <TouchableOpacity
-                    onPress={() => setTermsAccepted((prev) => !prev)}
-                    style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
-                  >
-                    <View
-                      style={{
-                        height: 20,
-                        width: 20,
-                        borderRadius: 4,
-                        borderWidth: 1,
-                        borderColor: '#888',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        marginRight: 10,
-                        backgroundColor: termsAccepted ? '#4CAF50' : '#fff',
-                      }}
-                    >
-                      {termsAccepted && (
-                        <View style={{ width: 10, height: 10, backgroundColor: '#fff' }} />
-                      )}
-                    </View>
-                    <Text>I agree to the terms of use</Text>
-                  </TouchableOpacity>
-
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <TouchableOpacity
-                      onPress={() => setModalVisible(false)}
-                      style={{
-                        flex: 1,
-                        paddingVertical: 12,
-                        borderRadius: 5,
-                        marginHorizontal: 5,
-                        alignItems: 'center',
-                        backgroundColor: '#b32020ff',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Text style={{ color: 'white', fontWeight: '600', textAlign: 'center' }}>
-                        Reject Terms and Close
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => {
-                        if (termsAccepted) {
-                          handleSignup();
-                        }
-                      }}
-                      disabled={!termsAccepted}
-                      style={{
-                        flex: 1,
-                        paddingVertical: 12,
-                        borderRadius: 5,
-                        marginHorizontal: 5,
-                        alignItems: 'center',
-                        backgroundColor: termsAccepted ? '#4CAF50' : '#ccc',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Text style={{ color: 'white', fontWeight: '600', textAlign: 'center' }}>
-                        Accept Terms and SignUp
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            </Modal>
-          </ScrollView>
+        {/* Gender */}
+        <Text style={[styles.label, { marginBottom: 4 }]}>Gender</Text>
+        <View
+          style={[
+            styles.pickerContainer,
+            errors.gender && { borderColor: 'red', borderWidth: 1 },
+            { marginBottom: 8 },
+          ]}
+        >
+          <Picker
+            selectedValue={gender}
+            style={{ height: isMobile ? (Platform.OS === 'ios' ? 230 : 50) : 45, color: 'black' }}
+            itemStyle={{ color: 'black', fontSize: 16 }}
+            onValueChange={(itemValue) => {
+              setGender(itemValue);
+              if (errors.gender) setErrors(prev => ({ ...prev, gender: undefined }));
+            }}
+          >
+            <Picker.Item label="- Choose a Gender -" value="" />
+            <Picker.Item label="Male" value="Male" />
+            <Picker.Item label="Female" value="Female" />
+          </Picker>
         </View>
+        {errors.gender && <Text style={styles.errorText}>{errors.gender}</Text>}
+
+        {/* Birthdate */}
+        <Text style={[styles.label, { marginBottom: 4 }]}>Birthdate</Text>
+        <View
+          style={[
+            { height: 50, borderRadius: 8, justifyContent: 'center', marginBottom: 8 },
+            errors.birthdate && { borderColor: 'red', borderWidth: 1, height: 47},
+          ]}
+        >
+          <BirthdatePicker
+            value={birthdate}
+            onChange={(date) => {
+              setBirthdate(date);
+              if (errors.birthdate) setErrors(prev => ({ ...prev, birthdate: undefined }));
+            }}
+          />
+        </View>
+        {errors.birthdate && <Text style={styles.errorText}>{errors.birthdate}</Text>}
+      </View>
+
+      {/* Contact Information Section */}
+      <View style={{ flex: 1, marginLeft: isMobile ? 0 : 10 }}>
+        <Text style={styles.sectionHeader}>Contact Information</Text>
+
+        {/* Mobile Number */}
+        <Text style={[styles.label, { marginBottom: 4 }]}>Mobile Number</Text>
+        <TextInput
+          style={[styles.input, errors.mobileNumber && { borderColor: 'red' }, { marginBottom: 8 }]}
+          placeholder="e.g. 09123456789"
+          placeholderTextColor="#555"
+          value={mobileNumber}
+          keyboardType="phone-pad"
+          maxLength={11}
+          autoComplete="tel"
+          onChangeText={(text) => {
+            const digitsOnly = text.replace(/[^0-9]/g, '');
+            setMobileNumber(digitsOnly);
+            if (errors.mobileNumber) setErrors(prev => ({ ...prev, mobileNumber: undefined }));
+          }}
+        />
+        {errors.mobileNumber && <Text style={styles.errorText}>{errors.mobileNumber}</Text>}
+
+        {/* Email */}
+        <Text style={[styles.label, { marginBottom: 4 }]}>Email</Text>
+        <TextInput
+          style={[styles.input, errors.email && { borderColor: 'red' }, { marginBottom: 8 }]}
+          placeholder="e.g. JuanDelaCruz@gmail.com"
+          placeholderTextColor="#555"
+          maxLength={40}
+          value={email}
+          onChangeText={(text) => {
+            setEmail(text);
+            if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
+          }}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+      </View>
+    </View>
+
+    {/* === Password Setup Section === */}
+    <View style={{ marginBottom: 30}}>
+      <Text style={{ ...styles.sectionHeader}}>Set Password</Text>
+
+      {/* Password */}
+      <Text style={styles.label}>Password</Text>
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={[styles.input, { flex: 1, marginBottom: 0 }, errors.password && { borderColor: 'red' }]}
+          placeholder="Password"
+          placeholderTextColor="#555"
+          secureTextEntry={!showPassword}
+          maxLength={20}
+          value={password}
+          onChangeText={(text) => {
+            setPassword(text);
+            if (errors.password) setErrors(prev => ({ ...prev, password: undefined }));
+          }}
+        />
+        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
+          <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={22} color="#555" />
+        </TouchableOpacity>
+      </View>
+      {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+
+      {/* Confirm Password */}
+      <Text style={styles.label}>Confirm Password</Text>
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={[styles.input, { flex: 1, marginBottom: 0 }, errors.confirmPassword && { borderColor: 'red' }]}
+          placeholder="Confirm Password"
+          placeholderTextColor="#555"
+          secureTextEntry={!showConfirmPassword}
+          maxLength={20}
+          value={confirmPassword}
+          onChangeText={(text) => {
+            setConfirmPassword(text);
+            if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: undefined }));
+          }}
+        />
+        <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeButton}>
+          <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={22} color="#555" />
+        </TouchableOpacity>
+      </View>
+      {errors.confirmPassword && <Text style={{...styles.errorText, marginBottom: 20}}>{errors.confirmPassword}</Text>}
+    </View>
+
+    {/* === Terms Modal === */}
+    <Modal visible={modalVisible} animationType="fade" transparent={true}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: 'white',
+            marginHorizontal: 20,
+            borderRadius: 10,
+            maxHeight: '80%',
+            padding: 20,
+            width: isMobile ? '80%' : '35%',
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 22,
+              fontWeight: 'bold',
+              marginBottom: 15,
+              textAlign: 'center',
+              color: '#004d33',
+            }}
+          >
+            Terms of Use
+          </Text>
+
+          <ScrollView style={{ marginBottom: 20 }}>
+            <Text style={{ fontSize: 15, lineHeight: 22 }}>{termsText}</Text>
+          </ScrollView>
+
+          {/* Checkbox */}
+          <TouchableOpacity
+            onPress={() => setTermsAccepted((prev) => !prev)}
+            style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}
+          >
+            <View
+              style={{
+                height: 22,
+                width: 22,
+                borderRadius: 5,
+                borderWidth: 1,
+                borderColor: '#888',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginRight: 12,
+                backgroundColor: termsAccepted ? '#4CAF50' : '#fff',
+              }}
+            >
+              {termsAccepted && <View style={{ width: 12, height: 12, backgroundColor: '#fff' }} />}
+            </View>
+            <Text style={{ fontSize: 16 }}>I agree to the terms of use</Text>
+          </TouchableOpacity>
+
+          {/* Modal Buttons */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <TouchableOpacity
+              onPress={() => setModalVisible(false)}
+              style={{
+                flex: 1,
+                paddingVertical: 14,
+                borderRadius: 6,
+                marginRight: 10,
+                alignItems: 'center',
+                backgroundColor: '#b32020ff',
+                justifyContent: 'center',
+                padding: isMobile ? 8 : null,
+              }}
+            >
+              <Text style={{ color: 'white', fontWeight: '600', textAlign: 'center' }}>
+                Reject Terms and Close
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                if (termsAccepted) {
+                  handleSignup();
+                }
+              }}
+              disabled={!termsAccepted}
+              style={{
+                flex: 1,
+                paddingVertical: 14,
+                borderRadius: 6,
+                marginLeft: 10,
+                alignItems: 'center',
+                backgroundColor: termsAccepted ? '#4CAF50' : '#ccc',
+                justifyContent: 'center',
+                padding: isMobile ? 8 : null,
+              }}
+            >
+              <Text style={{ color: 'white', fontWeight: '600', textAlign: 'center' }}>
+                Accept Terms and Sign Up
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  </ScrollView>
+    {/* === Action Buttons === */}
+    <View
+      style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        padding: 20,
+        backgroundColor: '#fff',
+        borderRadius: 16,
+      }}
+    >
+      <TouchableOpacity
+        style={[styles.button, { backgroundColor: 'rgba(16, 82, 51, 1)' }]}
+        onPress={() => setModalVisible(true)}
+      >
+        <Text style={styles.buttonText}>SIGN UP</Text>
+      </TouchableOpacity>
+    </View>
+    </View>
+
       </View>
     </LinearGradient>
   );
@@ -576,11 +644,11 @@ const styles = StyleSheet.create({
   },
   label: {
     marginLeft: 4,
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 16,
     color: '#1f5474ff',
     marginTop: 6,
     marginBottom: 5,
+    fontStyle: 'italic',
   },
   passwordContainer: {
     flexDirection: 'row',
@@ -629,5 +697,30 @@ const styles = StyleSheet.create({
     color: 'red',
     fontSize: 12,
     marginBottom: 5,
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    alignSelf: 'center',
+    resizeMode: 'contain',
+    marginTop: 50,
+  },
+  welcome: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#003f30ff',
+    alignSelf: 'center',
+    marginBottom: 10,
+    letterSpacing: 1,
+  },
+  sectionHeader: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#003f30ff',   // matching the title's greenish tone
+    marginBottom: -5,
+    borderBottomColor: '#004d33',
+    paddingBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
 });

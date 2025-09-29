@@ -45,25 +45,9 @@ export default function SignupScreen() {
   const [zipCode, setZipCode] = useState('');
   const [errors, setErrors] = useState<ErrorsType>({});
 
-  const validateForm = () => {
-    const newErrors: ErrorsType = {};
 
-    if (!clinicName.trim()) newErrors.clinicName = 'Clinic name is required.';
-    if (!mobileNumber.trim()) newErrors.mobileNumber = 'Mobile number is required.';
-    if (!email.trim()) newErrors.email = 'Email is required.';
-    if (!password.trim()) newErrors.password = 'Password is required.';
-    if (!confirmPassword.trim()) newErrors.confirmPassword = 'Please confirm your password.';
-    if (password && confirmPassword && password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match.';
-    }
-    if (!street.trim()) newErrors.street = 'Street address is required.';
-    if (!barangay.trim()) newErrors.barangay = 'Barangay is required.';
-    if (!zipCode.trim()) newErrors.zipCode = 'ZIP code is required.';
 
-    setErrors(newErrors);
 
-    return Object.keys(newErrors).length === 0;
-  };
 
 
   const pickClinicPhoto = async () => {
@@ -90,47 +74,94 @@ export default function SignupScreen() {
     }
   };
 
-  const signUpHandler = async () => {
-    if (password !== confirmPassword) {
-      alert('Passwords do not match');
-      return;
+const validateForm = (): boolean => {
+  const newErrors: ErrorsType = {};
+
+  if (!clinicName?.trim()) {
+    newErrors.clinicName = "Clinic name is required";
+  }
+
+  if (!mobileNumber?.trim()) {
+    newErrors.mobileNumber = "Mobile number is required";
+  } else if (!/^09\d{9}$/.test(mobileNumber)) {
+    newErrors.mobileNumber = "Mobile number must be exactly 11 digits and start with 09";
+  }
+
+  if (!email?.trim()) {
+    newErrors.email = "Email is required";
+  } else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
+    newErrors.email = "Invalid email format";
+  }
+
+  if (!street?.trim()) {
+    newErrors.street = "Street is required";
+  }
+
+  if (!barangay?.trim()) {
+    newErrors.barangay = "Barangay is required";
+  }
+
+  if (!zipCode?.trim()) {
+    newErrors.zipCode = "Zip code is required";
+  } else if (!/^\d{4}$/.test(zipCode)) {
+    newErrors.zipCode = "Zip code must be exactly 4 digits";
+  }
+
+  if (!password) {
+    newErrors.password = "Password is required";
+  } else if (password.length < 8) {
+    newErrors.password = "Password must be at least 8 characters";
+  }
+
+  if (!confirmPassword) {
+    newErrors.confirmPassword = "Please confirm your password";
+  } else if (confirmPassword !== password) {
+    newErrors.confirmPassword = "Passwords do not match";
+  }
+
+  setErrors(newErrors);
+
+  return Object.keys(newErrors).length === 0;
+};
+
+const signUpHandler = async () => {
+  if (!validateForm()) {
+    // Validation failed, errors are set, so just return here
+    return;
+  }
+
+  try {
+    // Upload photos first and get URLs
+    let clinicPhotoUrl = null;
+    let licensePhotoUrl = null;
+
+    if (clinicPhoto) {
+      clinicPhotoUrl = await uploadPhoto(clinicPhoto, 'clinic-photos');
     }
-    if (!clinicName || !mobileNumber || !email || !password || !address) {
-      alert('Please fill in all required fields');
-      return;
+    if (licensePhoto) {
+      licensePhotoUrl = await uploadPhoto(licensePhoto, 'license-photos');
     }
 
-    try {
-      // Upload photos first and get URLs
-      let clinicPhotoUrl = null;
-      let licensePhotoUrl = null;
+    // Prepare clinic profile with photo URLs
+    const clinicProfile = {
+      clinic_name: clinicName,
+      mobile_number: mobileNumber,
+      address: address,
+      clinic_photo_url: clinicPhotoUrl || undefined,
+      license_photo_url: licensePhotoUrl || undefined,
+    };
 
-      if (clinicPhoto) {
-        clinicPhotoUrl = await uploadPhoto(clinicPhoto, 'clinic-photos');
-      }
-      if (licensePhoto) {
-        licensePhotoUrl = await uploadPhoto(licensePhoto, 'license-photos');
-      }
+    // Call signUpClinic from context
+    await signUpClinic(email, password, clinicProfile);
 
-      // Prepare clinic profile with photo URLs
-      const clinicProfile = {
-        clinic_name: clinicName,
-        mobile_number: mobileNumber,
-        address: address,
-        clinic_photo_url: clinicPhotoUrl || undefined,
-        license_photo_url: licensePhotoUrl || undefined,
-      };
-
-      // Call signUpClinic from context
-      await signUpClinic(email, password, clinicProfile);
-
-      alert("Clinic account created. Please verify your email. If you did not receive a verification, try to use other email.");
-      router.push('/login');
-    } catch (error: any) {
-      Alert.alert('Signup failed', error.message || 'Unknown error');
-    }
-  };
-
+    alert(
+      "Clinic account created. Please verify your email. If you did not receive a verification, try using another email."
+    );
+    router.push('/login');
+  } catch (error: any) {
+    Alert.alert('Signup failed', error.message || 'Unknown error');
+  }
+};
   // Upload image to Supabase Storage and return public URL
   const uploadPhoto = async (uri: string, folder: string) => {
     try {
@@ -293,280 +324,442 @@ useEffect(() => {
   setAddress(fullAddress);
 }, [street, barangay, cityProvince, zipCode]);
 
-  return (
-    <LinearGradient colors={['#003a3aff', '#2f4f2fff']} style={styles.container}>
-      <View style={styles.container}>
-        <Text style={{ ...styles.title, fontSize: 22, color: 'white' }}>SIGN UP</Text>
-        <View style={{ ...styles.formBox, width: isMobile ? 350 : 600, height: isMobile ? 700 : 720 }}>
-          <ScrollView style={{ flex: 1 }} automaticallyAdjustKeyboardInsets>
-            <Text style={{ ...styles.title, color: '#003f30ff' }}>(CLINIC)</Text>
+return (
+  <LinearGradient colors={['#003a3aff', '#2f4f2fff']} style={styles.container}>
+    <View style={styles.container}>
+      <View
+        style={{
+          ...styles.formBox,
+          width: isMobile ? 360 : 900,
+          height: isMobile ? 650 : 740,
+          padding: 40,
+        }}
+      >
+        <ScrollView style={{ flex: 1 }} automaticallyAdjustKeyboardInsets>
+          {/* Back Button */}
+          <TouchableOpacity
+            onPress={() => router.push('/login')}
+            style={{ position: 'absolute', top: 10, left: 0, zIndex: 10 }}
+          >
+            <Ionicons name="arrow-back" size={36} color="#003f30ff" />
+          </TouchableOpacity>
 
-            {/* CLINIC NAME */}
-            <Text style={styles.label}>Clinic's Name</Text>
+          {/* Logo & Titles */}
+          <Image
+            source={require('../../assets/favicon.ico.png')}
+            style={styles.logo}
+          />
+          <Text style={styles.welcome}>SMILE STUDIO</Text>
+          <Text
+            style={{
+              ...styles.welcome,
+              fontSize: 15,
+              marginTop: -10,
+              fontWeight: '300',
+              marginBottom: 20,
+            }}
+          >
+            Grin Creators
+          </Text>
+
+          {/* Main Form Title */}
+          <Text
+            style={{
+              ...styles.sectionHeader,
+              fontSize: 21,
+              borderBottomWidth: 2,
+              marginTop: 32,
+              marginBottom: 36,
+            }}
+          >
+            CLINIC SIGN UP
+          </Text>
+
+          <View
+            style={{
+              flexDirection: isMobile ? 'column' : 'row',
+              gap: isMobile ? 0 : 24, // space between columns only on desktop
+              marginBottom: 30,
+            }}
+          >
+                      {/* Clinic Information Section */}
+          <View style={{ marginBottom: 30, flex : 1 }}>
+            <Text style={styles.sectionHeader}>Clinic Information</Text>
+
+            {/* Clinic Name */}
+            <Text style={[styles.label, { marginBottom: 4 }]}>Clinic Name</Text>
             <TextInput
-              style={[styles.input, errors.clinicName && { borderColor: 'red' }]}
-              placeholder="e.g. Smile Studio Dental Clinic"
+              style={[
+                styles.input,
+                errors.clinicName && { borderColor: 'red' },
+                { marginBottom: 8 },
+              ]}
+              placeholder="e.g. Smile Studio"
+              maxLength={40}
               placeholderTextColor="#555"
-              maxLength={150}
               value={clinicName}
-              onChangeText={text => {
+              onChangeText={(text) => {
                 setClinicName(text);
-                if (errors.clinicName) setErrors(prev => ({ ...prev, clinicName: null }));
+                if (errors.clinicName)
+                  setErrors((prev) => ({ ...prev, clinicName: undefined }));
               }}
             />
-            {errors.clinicName && <Text style={{ color: 'red', fontSize: 12 }}>{errors.clinicName}</Text>}
+            {errors.clinicName && (
+              <Text style={styles.errorText}>{errors.clinicName}</Text>
+            )}
 
-            {/* MOBILE */}
-            <Text style={styles.label}>Mobile Number</Text>
+            {/* Email */}
+            <Text style={[styles.label, { marginBottom: 4 }]}>Email</Text>
             <TextInput
-              style={[styles.input, errors.mobileNumber && { borderColor: 'red' }]}
-              placeholder="eg. 09123456789"
+              style={[
+                styles.input,
+                errors.email && { borderColor: 'red' },
+                { marginBottom: 8 },
+              ]}
+              placeholder="e.g. clinic@example.com"
+              placeholderTextColor="#555"
+              maxLength={40}
+              value={email}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (errors.email)
+                  setErrors((prev) => ({ ...prev, email: undefined }));
+              }}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            {errors.email && (
+              <Text style={styles.errorText}>{errors.email}</Text>
+            )}
+
+            {/* Mobile Number */}
+            <Text style={[styles.label, { marginBottom: 4 }]}>Mobile Number</Text>
+            <TextInput
+              style={[
+                styles.input,
+                errors.mobileNumber && { borderColor: 'red' },
+                { marginBottom: 8 },
+              ]}
+              placeholder="e.g. 09123456789"
               placeholderTextColor="#555"
               value={mobileNumber}
               keyboardType="phone-pad"
               maxLength={11}
               autoComplete="tel"
-              onChangeText={text => {
+              onChangeText={(text) => {
                 const digitsOnly = text.replace(/[^0-9]/g, '');
                 setMobileNumber(digitsOnly);
-                if (errors.mobileNumber) setErrors(prev => ({ ...prev, mobileNumber: null }));
+                if (errors.mobileNumber)
+                  setErrors((prev) => ({ ...prev, mobileNumber: undefined }));
               }}
             />
-            {errors.mobileNumber && <Text style={{ color: 'red', fontSize: 12 }}>{errors.mobileNumber}</Text>}
+            {errors.mobileNumber && (
+              <Text style={styles.errorText}>{errors.mobileNumber}</Text>
+            )}
+            </View>
 
-            {/* EMAIL */}
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={[styles.input, errors.email && { borderColor: 'red' }]}
-              placeholder="eg. SmileStudio@gmail.com"
-              placeholderTextColor="#555"
-              value={email}
-              onChangeText={text => {
-                setEmail(text);
-                if (errors.email) setErrors(prev => ({ ...prev, email: null }));
-              }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            {errors.email && <Text style={{ color: 'red', fontSize: 12 }}>{errors.email}</Text>}
+            {/* Clinic Location Section */}
+            <View style={{ marginBottom: 30, flex : 1 }}>
+              <Text style={styles.sectionHeader}>Clinic Location</Text>
 
-            {/* PASSWORD */}
+              {/* Street */}
+              <Text style={[styles.label, { marginBottom: 4 }]}>Street</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  errors.street && { borderColor: 'red' },
+                  { marginBottom: 8 },
+                ]}
+                placeholder="e.g. 123 Main St"
+                placeholderTextColor="#555"
+                maxLength={30}
+                value={street}
+                onChangeText={(text) => {
+                  setStreet(text);
+                  if (errors.street)
+                    setErrors((prev) => ({ ...prev, street: undefined }));
+                }}
+              />
+              {errors.street && (
+                <Text style={styles.errorText}>{errors.street}</Text>
+              )}
+
+              {/* Barangay */}
+              <Text style={[styles.label, { marginBottom: 4 }]}>Barangay</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  errors.barangay && { borderColor: 'red' },
+                  { marginBottom: 8 },
+                ]}
+                placeholder="e.g. Barangay Tungkong Mangga"
+                placeholderTextColor="#555"
+                maxLength={30}
+                value={barangay}
+                onChangeText={(text) => {
+                  setBarangay(text);
+                  if (errors.barangay)
+                    setErrors((prev) => ({ ...prev, barangay: undefined }));
+                }}
+              />
+              {errors.barangay && (
+                <Text style={styles.errorText}>{errors.barangay}</Text>
+              )}
+
+              {/* City / Province */}
+              <Text style={[styles.label, { marginBottom: 4 }]}>City / Province</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                ]}
+                placeholder="e.g. Manila"
+                placeholderTextColor="#555"
+                value={cityProvince}
+                readOnly
+                onChangeText={(text) => {
+                  setCityProvince(text);
+                }}
+              />
+
+              {/* Zip Code */}
+              <Text style={[styles.label, { marginBottom: 4 }]}>Zip Code</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  errors.zipCode && { borderColor: 'red' },
+                  { marginBottom: 8 },
+                ]}
+                placeholder="e.g. 1000"
+                placeholderTextColor="#555"
+                keyboardType="numeric"
+                maxLength={4}
+                value={zipCode}
+                onChangeText={(text) => {
+                  const digitsOnly = text.replace(/[^0-9]/g, '');
+                  setZipCode(digitsOnly);
+                  if (errors.zipCode)
+                    setErrors((prev) => ({ ...prev, zipCode: undefined }));
+                }}
+              />
+              {errors.zipCode && (
+                <Text style={styles.errorText}>{errors.zipCode}</Text>
+              )}
+
+              {/* You can optionally show combined address here for user confirmation */}
+              <Text style={{ marginTop: 10, fontStyle: 'italic', color: '#333' }}>
+                Full Address: {address}
+              </Text>
+            </View>
+          </View>
+
+          {/* Password Setup Section */}
+          <View style={{ marginBottom: 30 }}>
+            <Text style={{ ...styles.sectionHeader }}>Set Password</Text>
+
+            {/* Password */}
             <Text style={styles.label}>Password</Text>
             <View style={styles.passwordContainer}>
               <TextInput
-                style={[styles.input, { flex: 1, marginBottom: 0 }, errors.password && { borderColor: 'red' }]}
+                style={[
+                  styles.input,
+                  { flex: 1, marginBottom: 0 },
+                  errors.password && { borderColor: 'red' },
+                ]}
                 placeholder="Password"
                 placeholderTextColor="#555"
                 secureTextEntry={!showPassword}
                 value={password}
-                onChangeText={text => {
+                onChangeText={(text) => {
                   setPassword(text);
-                  if (errors.password) setErrors(prev => ({ ...prev, password: null }));
+                  if (errors.password)
+                    setErrors((prev) => ({ ...prev, password: undefined }));
                 }}
               />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
-                <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={22} color="#555" />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeButton}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off' : 'eye'}
+                  size={22}
+                  color="#555"
+                />
               </TouchableOpacity>
             </View>
-            {errors.password && <Text style={{ color: 'red', fontSize: 12 }}>{errors.password}</Text>}
+            {errors.password && (
+              <Text style={styles.errorText}>{errors.password}</Text>
+            )}
 
-            {/* CONFIRM PASSWORD */}
+            {/* Confirm Password */}
             <Text style={styles.label}>Confirm Password</Text>
             <View style={styles.passwordContainer}>
               <TextInput
-                style={[styles.input, { flex: 1, marginBottom: 0 }, errors.confirmPassword && { borderColor: 'red' }]}
+                style={[
+                  styles.input,
+                  { flex: 1, marginBottom: 0 },
+                  errors.confirmPassword && { borderColor: 'red' },
+                ]}
                 placeholder="Confirm Password"
                 placeholderTextColor="#555"
                 secureTextEntry={!showConfirmPassword}
                 value={confirmPassword}
-                onChangeText={text => {
+                onChangeText={(text) => {
                   setConfirmPassword(text);
-                  if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: null }));
+                  if (errors.confirmPassword)
+                    setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
                 }}
               />
-              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeButton}>
-                <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={22} color="#555" />
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={styles.eyeButton}
+              >
+                <Ionicons
+                  name={showConfirmPassword ? 'eye-off' : 'eye'}
+                  size={22}
+                  color="#555"
+                />
               </TouchableOpacity>
             </View>
-            {errors.confirmPassword && <Text style={{ color: 'red', fontSize: 12 }}>{errors.confirmPassword}</Text>}
+            {errors.confirmPassword && (
+              <Text style={{ ...styles.errorText, marginBottom: 20 }}>
+                {errors.confirmPassword}
+              </Text>
+            )}
+          </View>
 
-            {/* STREET */}
-            <Text style={styles.label}>Street Number & Name</Text>
-            <TextInput
-              style={[styles.input, errors.street && { borderColor: 'red' }]}
-              placeholder="e.g. 123 Main Street"
-              placeholderTextColor="#555"
-              maxLength={150}
-              value={street}
-              onChangeText={text => {
-                setStreet(text);
-                if (errors.street) setErrors(prev => ({ ...prev, street: null }));
+          {/* Terms Modal */}
+          <Modal visible={modalVisible} animationType="fade" transparent={true}>
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: 'rgba(0,0,0,0.6)',
+                justifyContent: 'center',
+                alignItems: 'center',
               }}
-            />
-            {errors.street && <Text style={{ color: 'red', fontSize: 12 }}>{errors.street}</Text>}
-
-            {/* BARANGAY */}
-            <Text style={styles.label}>Barangay</Text>
-            <TextInput
-              style={[styles.input, errors.barangay && { borderColor: 'red' }]}
-              placeholder="e.g. Barangay Tungkong Mangga"
-              placeholderTextColor="#555"
-              maxLength={150}
-              value={barangay}
-              onChangeText={text => {
-                setBarangay(text);
-                if (errors.barangay) setErrors(prev => ({ ...prev, barangay: null }));
-              }}
-            />
-            {errors.barangay && <Text style={{ color: 'red', fontSize: 12 }}>{errors.barangay}</Text>}
-
-            {/* CITY (readonly) */}
-            <Text style={styles.label}>City, Province</Text>
-            <Text style={{ ...styles.label, fontStyle: 'italic', fontSize: 12 }}>
-              *only in the area of San Jose Del Monte, Bulacan
-            </Text>
-            <TextInput
-              style={styles.input}
-              maxLength={150}
-              value="San Jose Del Monte, Bulacan"
-              editable={false}
-              selectTextOnFocus={false}
-            />
-
-            {/* ZIP CODE */}
-            <Text style={styles.label}>ZIP Code</Text>
-            <TextInput
-              style={[styles.input, errors.zipCode && { borderColor: 'red' }]}
-              placeholder="e.g. 1200"
-              placeholderTextColor="#555"
-              keyboardType="numeric"
-              maxLength={4}
-              value={zipCode}
-              onChangeText={text => {
-                // Remove any non-numeric characters
-                const numericText = text.replace(/[^0-9]/g, '');
-                setZipCode(numericText);
-                if (errors.zipCode) setErrors(prev => ({ ...prev, zipCode: null }));
-              }}
-            />
-
-            {errors.zipCode && <Text style={{ color: 'red', fontSize: 12 }}>{errors.zipCode}</Text>}
-
-            {/* Buttons */}
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 }}>
-              <TouchableOpacity
-                style={{ ...styles.button, backgroundColor: '#b32020ff' }}
-                onPress={() => router.push('/login')}
+            >
+              <View
+                style={{
+                  backgroundColor: 'white',
+                  marginHorizontal: 20,
+                  borderRadius: 10,
+                  maxHeight: '80%',
+                  padding: 20,
+                  width: isMobile ? '80%' : '35%',
+                }}
               >
-                <Text style={styles.buttonText}>BACK</Text>
-              </TouchableOpacity>
+                <Text
+                  style={{
+                    fontSize: 22,
+                    fontWeight: 'bold',
+                    marginBottom: 15,
+                    textAlign: 'center',
+                    color: '#004d33',
+                  }}
+                >
+                  Terms of Use
+                </Text>
 
-              <TouchableOpacity
-                style={[styles.button, { backgroundColor: 'rgba(16, 82, 51, 1)' }]}
-                onPress={() => setModalVisible(true)}
-              >
-                <Text style={styles.buttonText}>SIGN UP</Text>
-              </TouchableOpacity>
+                <ScrollView style={{ marginBottom: 20 }}>
+                  <Text style={{ fontSize: 15, lineHeight: 22 }}>{termsText}</Text>
+                </ScrollView>
 
-              <Modal visible={modalVisible} animationType="fade" transparent={true}>
-                <View style={{
-                  flex: 1,
-                  backgroundColor: 'rgba(0,0,0,0.6)',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}>
-                  <View style={{
-                    backgroundColor: 'white',
-                    marginHorizontal: 20,
-                    borderRadius: 10,
-                    maxHeight: '80%',
-                    padding: 15,
-                    width: isMobile ? '80%' : '30%',
-                  }}>
-                    <Text style={{
-                      fontSize: 20,
-                      fontWeight: 'bold',
-                      marginBottom: 10,
-                      textAlign: 'center',
-                    }}>
-                      Terms of Use
-                    </Text>
-
-                    <ScrollView style={{ marginBottom: 15 }}>
-                      <Text style={{ fontSize: 14, lineHeight: 20 }}>{termsText}</Text>
-                    </ScrollView>
-
-                    <TouchableOpacity
-                      onPress={() => setTermsAccepted(prev => !prev)}
-                      style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}
-                    >
-                      <View style={{
-                        height: 20,
-                        width: 20,
-                        borderRadius: 4,
-                        borderWidth: 1,
-                        borderColor: '#888',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        marginRight: 10,
-                        backgroundColor: termsAccepted ? '#4CAF50' : '#fff',
-                      }}>
-                        {termsAccepted && (
-                          <View style={{ width: 10, height: 10, backgroundColor: '#fff' }} />
-                        )}
-                      </View>
-                      <Text>I agree to the terms of use</Text>
-                    </TouchableOpacity>
-
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                      <TouchableOpacity
-                        onPress={() => setModalVisible(false)}
-                        style={{
-                          flex: 1,
-                          paddingVertical: 12,
-                          borderRadius: 5,
-                          marginHorizontal: 5,
-                          alignItems: 'center',
-                          backgroundColor: '#b32020ff',
-                        }}
-                      >
-                        <Text style={{ color: 'white', fontWeight: '600', textAlign: 'center' }}>
-                          Reject Terms and Close
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        onPress={() => {
-                          const isValid = validateForm();
-                          if (termsAccepted && isValid) {
-                            signUpHandler();
-                          }
-                          setModalVisible(false);
-                        }}
-                        disabled={!termsAccepted}
-                        style={{
-                          flex: 1,
-                          paddingVertical: 12,
-                          borderRadius: 5,
-                          marginHorizontal: 5,
-                          alignItems: 'center',
-                          backgroundColor: termsAccepted ? '#4CAF50' : '#ccc',
-                        }}
-                      >
-                        <Text style={{ color: 'white', fontWeight: '600', textAlign: 'center' }}>
-                          Proceed and SignUp
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
+                {/* Checkbox */}
+                <TouchableOpacity
+                  onPress={() => setTermsAccepted((prev) => !prev)}
+                  style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}
+                >
+                  <View
+                    style={{
+                      height: 22,
+                      width: 22,
+                      borderRadius: 5,
+                      borderWidth: 1,
+                      borderColor: '#888',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      marginRight: 12,
+                      backgroundColor: termsAccepted ? '#4CAF50' : '#fff',
+                    }}
+                  >
+                    {termsAccepted && <View style={{ width: 12, height: 12, backgroundColor: '#fff' }} />}
                   </View>
+                  <Text style={{ fontSize: 16 }}>I agree to the terms of use</Text>
+                </TouchableOpacity>
+
+                {/* Modal Buttons */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <TouchableOpacity
+                    onPress={() => setModalVisible(false)}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 14,
+                      borderRadius: 6,
+                      marginRight: 10,
+                      alignItems: 'center',
+                      backgroundColor: '#b32020ff',
+                      justifyContent: 'center',
+                      padding: isMobile ? 8 : null,
+                    }}
+                  >
+                    <Text style={{ color: 'white', fontWeight: '600', textAlign: 'center' }}>
+                      Reject Terms and Close
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (termsAccepted) {
+                        signUpHandler();
+                      }
+                      setModalVisible(false);
+                    }}
+                    disabled={!termsAccepted}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 14,
+                      borderRadius: 6,
+                      marginLeft: 10,
+                      alignItems: 'center',
+                      backgroundColor: termsAccepted ? '#4CAF50' : '#ccc',
+                      justifyContent: 'center',
+                      padding: isMobile ? 8 : null,
+                    }}
+                  >
+                    <Text style={{ color: 'white', fontWeight: '600', textAlign: 'center' }}>
+                      Accept Terms and Sign Up
+                    </Text>
+                  </TouchableOpacity>
                 </View>
-              </Modal>
+              </View>
             </View>
-          </ScrollView>
+          </Modal>
+        </ScrollView>
+
+        {/* Action Button */}
+        <View
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: 20,
+            backgroundColor: '#fff',
+            borderRadius: 16,
+          }}
+        >
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: 'rgba(16, 82, 51, 1)' }]}
+            onPress={() => setModalVisible(true)}
+          >
+            <Text style={styles.buttonText}>SIGN UP</Text>
+          </TouchableOpacity>
         </View>
       </View>
-    </LinearGradient>
-  );
+    </View>
+  </LinearGradient>
+);
+
+
 }
 
 const styles = StyleSheet.create({
@@ -595,11 +788,11 @@ const styles = StyleSheet.create({
   },
   label: {
     marginLeft: 4,
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 16,
     color: '#1f5474ff',
     marginTop: 6,
     marginBottom: 5,
+    fontStyle: 'italic',
   },
   input: {
     borderWidth: 1.5,
@@ -646,5 +839,35 @@ const styles = StyleSheet.create({
   eyeButton: {
     position: 'absolute',
     right: 10,
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    alignSelf: 'center',
+    resizeMode: 'contain',
+    marginTop: 50,
+  },
+  welcome: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#003f30ff',
+    alignSelf: 'center',
+    marginBottom: 10,
+    letterSpacing: 1,
+  },
+  sectionHeader: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#003f30ff',   // matching the title's greenish tone
+    marginBottom: -5,
+    borderBottomColor: '#004d33',
+    paddingBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginBottom: 5,
   },
 });

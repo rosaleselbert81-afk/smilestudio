@@ -1116,6 +1116,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
   }
 };
 
+
   return (
     <LinearGradient
       colors={["#ffffffff", "#6ce2ffff"]}
@@ -1139,7 +1140,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               flex: 1,
               justifyContent: 'center',
               alignItems: 'center',
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              backgroundColor: 'rgba(0, 0, 0, 0.1)',
             }}
           >
             <View
