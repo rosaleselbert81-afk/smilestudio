@@ -2179,6 +2179,38 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
 
 <TouchableOpacity
   onPress={() => {
+    setDashboardView("schedule");
+    if (isMobile) {
+      setMoved((prev) => !prev);
+      setExpanded((prev) => !prev);
+    }
+  }}
+  style={{
+    ...styles.mar2,
+    backgroundColor: dashboardView === "schedule" ? '#ffffffff' : 'transparent',
+    borderRadius: 15,
+    padding: 10,
+  }}
+  disabled={loading}
+>
+  {loading ? (
+    <ActivityIndicator animating color={"black"} />
+  ) : (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
+      <FontAwesome name="calendar-check-o" size={24} color={dashboardView === "schedule" ? '#00505cff' : '#ffffffff'} />
+      <Text style={{
+        ...styles.buttonText,
+        color: dashboardView === "schedule" ? '#00505cff' : '#ffffffff',
+        marginLeft: 8,
+      }}>
+        Schedule
+      </Text>
+    </View>
+  )}
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={() => {
     setDashboardView("offers");
     if (isMobile) {
       setMoved((prev) => !prev);
@@ -3332,6 +3364,33 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               </View>
             </View>
           </ScrollView>
+        </View>
+        )}
+
+        {/* Dashboard Schedule --------------------------------------------------------------------------------------- */}
+
+        {dashboardView === "schedule" && (
+        <View
+          style={[
+            styles.dashboard,
+            {
+              width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
+              right: dashboardView === "schedule" ? 11 : 20000,
+            },
+          ]}
+        >
+          <Text
+            style={{
+              fontSize: 24,
+              fontWeight: 'bold',
+              marginBottom: 20,
+              alignSelf: isMobile ? 'center' : 'flex-start',
+              color: '#003f30ff',
+            }}
+          >
+            Schedule
+          </Text>  
+          
         </View>
         )}
 
