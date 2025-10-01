@@ -44,23 +44,30 @@ export default function Login() {
   const isMobile = width < 480;
   const [modalVisible, setModalVisible] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [loginError, setLoginError] = useState('');
+
+  
 
 
-  // The new login handler
-  const handleLogin = async () => {
-    if (!email || !password) return;
-    //setLoading(true);
+const handleLogin = async () => {
+  if (!email || !password) return;
 
-    signIn(email, password);
-    //setLoading(false);
-    //if (!role) return;
+  setLoading(true);
+  setLoginError(''); // Clear previous error
 
-    //setIsRedirecting(true);
-  };
-
-  if (isRedirecting) {
-    return null; // or <ActivityIndicator /> if you want a loading spinner here
+  try {
+    const { error } = await signIn(email, password); // Assuming this returns an object with error
+    if (error) {
+      setLoginError('Wrong email or password.');
+    }
+  } catch (err) {
+    setLoginError('An unexpected error occurred.');
+    console.error(err);
+  } finally {
+    setLoading(false);
   }
+};
+
 
   async function signUpWithEmail() {
     setLoading(true);
@@ -189,6 +196,25 @@ export default function Login() {
                 />
               </TouchableOpacity>
             </View>
+            {loginError !== '' && (
+              <View
+                style={{
+                  backgroundColor: '#ffd0d0ff',
+                  padding: 12,
+                  borderRadius: 8,
+                  marginBottom: 10,
+                  alignSelf: 'stretch',
+                }}
+              >
+                <Text style={{ color: '#00505cff', fontWeight: 'bold', fontSize: 16, textAlign: 'center' }}>
+                  Wrong Credentials
+                </Text>
+                <Text style={{ color: '#00505cff', fontSize: 14, textAlign: 'center' }}>
+                  Invalid email or password
+                </Text>
+              </View>
+            )}
+
 
             <View style={styles.verticallySpaced}>
               <TouchableOpacity

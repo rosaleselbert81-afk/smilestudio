@@ -294,7 +294,7 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
     } catch (err: any) {
       console.error("Sign-in error:", err?.message || err);
       if (err?.message?.toLowerCase().includes("invalid login credentials")) {
-        alert("❌ Invalid email or password.");
+        
       } else {
         alert("⚠️ An error occurred while signing in.");
       }
