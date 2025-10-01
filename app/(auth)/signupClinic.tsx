@@ -947,6 +947,7 @@ return (
                       if (termsAccepted) {
                         signUpHandler();
                       }
+                      setModalVisible(false);
                     }}
                     disabled={!termsAccepted}
                     style={{
