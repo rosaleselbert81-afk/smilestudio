@@ -1,3 +1,13 @@
+export type WorkPeriod = {
+  type: "work" | "break";
+  start: string; // e.g. "09:00"
+  end: string;   // e.g. "12:00"
+};
+
+export type WeeklySchedule = {
+  [day: string]: WorkPeriod[];
+};
+
 export type ClockScheduleType = {
   hour: number;
   minute: number;
@@ -46,3 +56,9 @@ export interface ChatRoom {
     clinic_photo_url?: string;
   } | any;
 }
+
+export type Dentist = {
+  name: string;
+  specialty: string;
+  weeklySchedule: WeeklySchedule;
+};

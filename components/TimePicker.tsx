@@ -90,9 +90,9 @@ const TimePicker = (props: Props) => {
           }}
           label='Minute' selected={minute} items={minutes} 
           onSelect={(value) => {
-  setMinute(value);
-  props.onTimeSelected(hour, value, atomicTime); // ✅ use updated `hour` + new minute
-}} />
+            setMinute(value);
+            props.onTimeSelected(hour, value, atomicTime);
+          }} />
         <Dropdown
           style={{
             ...(width > 720
@@ -145,10 +145,13 @@ const Dropdown = ({ label, selected, onSelect, items, disabled, style }: DropDow
         onPress={() => setVisible(!visible)}
         style={{
           height: 48,
-          backgroundColor: disabled ? '#DDD' : '#EEE',
+          backgroundColor: '#fff', // changed to white background
           borderRadius: 5,
           paddingHorizontal: 10,
-          flexDirection: 'row', alignItems: 'center'
+          flexDirection: 'row', 
+          alignItems: 'center',
+          borderWidth: 1,
+          borderColor: '#ccc', // optional: border for clarity
         }}
       >
         <Text style={{ flex: 1, fontSize: 14, color: disabled ? '#888' : 'black' }}>
@@ -169,9 +172,11 @@ const Dropdown = ({ label, selected, onSelect, items, disabled, style }: DropDow
               top: position.y,
               left: position.x,
               width: position.width,
-              backgroundColor: '#FFF',
+              backgroundColor: '#FFF', // dropdown list background stays white
               borderRadius: 5,
               maxHeight: 200,
+              borderWidth: 1,
+              borderColor: '#ccc',
             }}
           >
             <FlatList
@@ -237,8 +242,5 @@ const gstyles = StyleSheet.create({
         fontFamily: "poppins-bold"
     },
 })
-
-
-
 
 export default TimePicker
