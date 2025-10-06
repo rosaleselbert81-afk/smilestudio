@@ -774,7 +774,6 @@ async function getProfile() {
       setUsername(data.username);
       setWebsite(data.website);
       setAvatarUrl(data.avatar_url);
-      setviewFirstShow(data.isFirst);
 
     }
   } catch (error) {
@@ -793,7 +792,7 @@ async function getProfile() {
       const { data, error, status } = await supabase
         .from("clinic_profiles")
         .select(
-          `clinic_name, mobile_number, address, clinic_photo_url, license_photo_url, isDentistAvailable, introduction, offers, request_verification, isVerified, denied_verification_reason, isWarn, isBan, notif_message`
+          `clinic_name, mobile_number, address, clinic_photo_url, license_photo_url, isDentistAvailable, introduction, offers, request_verification, isVerified, denied_verification_reason, isWarn, isBan, notif_message, isFirst`
         )
         .eq("id", session?.user.id)
         .single();
@@ -813,6 +812,7 @@ async function getProfile() {
         setVerified(data.isVerified ?? false);
         setDenialReason(data.denied_verification_reason ?? "");
         setNotifMessage(data.notif_message ?? "");
+        setviewFirstShow(data.isFirst);
         if (data.isWarn !== warn) {
           setWarn(true);
         }
@@ -1282,7 +1282,7 @@ type Appointment = {
   isAccepted: boolean | null;
   rejection_note: string;
   isAttended: boolean | null;
-  request: string;
+  request: string; // 👈 Added this back in
 };
 
 const base64ArrayBuffer = (arrayBuffer: ArrayBuffer) => {
@@ -1315,9 +1315,21 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
   const dataToExport = appointmentsPast.map(item => ({
     'Clinic Name': item.clinic_profiles?.clinic_name || '',
     Patient: item.profiles?.last_name || '',
+    Request: (() => {
+      try {
+        return JSON.parse(item.request).join(', ');
+      } catch {
+        return item.request || 'No request data';
+      }
+    })(),
     'Request Date & Time': new Date(item.date_time).toLocaleString(),
     Message: item.message,
-    Status: item.isAccepted ? 'Accepted' : 'Rejected',
+    Status:
+      item.isAccepted === true
+        ? 'Accepted'
+        : item.isAccepted === false
+        ? 'Rejected'
+        : 'Pending',
     'Rejection Note':
       item.isAccepted === false
         ? item.rejection_note || 'No rejection note'
@@ -1332,14 +1344,12 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
   const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
 
   if (Platform.OS === 'web') {
-    // dynamically import file-saver only here
     const { saveAs } = await import('file-saver');
     const blob = new Blob([wbout], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
     saveAs(blob, 'history.xlsx');
   } else {
-    // Mobile (Expo / bare RN)
     try {
       const base64 = base64ArrayBuffer(wbout.buffer || wbout);
       const fileUri = FileSystem.documentDirectory + 'history.xlsx';
@@ -1367,6 +1377,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
 };
 
 
+
   return (
     <LinearGradient
       colors={["#ffffffff", "#6ce2ffff"]}
@@ -1374,16 +1385,15 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
         flex: 1,
         justifyContent: "center",
         flexDirection: isMobile ? "column" : "row",
-        width: isMobile ? "100%" : isTablet ? "100%" : "100%",
+        width: "100%",
         position: "relative",
       }}
     >
-      {viewFirstShow && (
         <Modal
-          visible={viewFirst}
+          visible={viewFirstShow}
           transparent
           animationType="fade"
-          onRequestClose={() => setviewFirst(false)}
+          onRequestClose={() => setviewFirstShow(false)}
         >
           <View
             style={{
@@ -1396,7 +1406,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
             <View
               style={{
                 width: isMobile ? '90%' : '40%',
-                backgroundColor: 'white',
+                backgroundColor: '#f1f5f9',
                 padding: 20,
                 borderRadius: 10,
                 alignItems: 'center',
@@ -1408,17 +1418,18 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                   fontWeight: "bold",
                   marginBottom: 20,
                   alignSelf: "center",
-                  color: "#003f30ff",
+                  color: "#00505cff",
                 }}
               >
                 Hello! Welcome to Smile Studio!
               </Text>
-              <FontAwesome5 name="user-edit" size={isMobile ? 75 : 150} color="#bdbdbdff" />
+              <FontAwesome5 name="user-edit" size={isMobile ? 75 : 150} color="#59819aff" />
               <Text
                 style={{
                   fontSize: 16,
                   alignSelf: "center",
-                  color: "#bdbdbdff",
+                  color: "#1f5474ff",
+                  textAlign: 'center',
                 }}
               >
                 Wanna edit/setup your information? let me guide you!
@@ -1427,7 +1438,8 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 style={{
                   fontSize: 16,
                   alignSelf: "center",
-                  color: "#bdbdbdff",
+                  color: "#1f5474ff",
+                  textAlign: 'center',
                 }}
               >
                 You can pin your location in our map!
@@ -1437,7 +1449,9 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                   fontSize: 16,
                   marginBottom: 20,
                   alignSelf: "center",
-                  color:"#bdbdbdff",
+                  color:"#1f5474ff",
+                  marginTop: 8,
+                  textAlign: 'center',
                 }}
               >
                 Verify your clinic to access schedule and pin map.
@@ -1453,7 +1467,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               >
                 <TouchableOpacity
                   style={{
-                    backgroundColor: '#2196F3',
+                    backgroundColor: '#fff',
                     padding: 10,
                     borderRadius: 5,
                     marginVertical: 5,
@@ -1481,19 +1495,19 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                       }
 
                       // Close modal
-                      setviewFirst(false);
+                      setviewFirstShow(false);
                     } catch (err) {
                       console.error('Unexpected error:', err);
                       Alert.alert('Error', 'Something went wrong.');
                     }
                   }}
                 >
-                  <Text style={{ color: 'white', fontWeight: 'bold' }}>I'll pass</Text>
+                  <Text style={{ color: '#00505cff', fontWeight: 'bold' }}>I'll pass</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={{
-                    backgroundColor: '#4CAF50',
+                    backgroundColor: '#00505cff',
                     padding: 10,
                     borderRadius: 5,
                     marginVertical: 5,
@@ -1521,7 +1535,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                       }
 
                       // Close the modal locally
-                      setviewFirst(false);
+                      setviewFirstShow(false);
                       setModalUpdate(true);
                     } catch (err) {
                       console.error('Unexpected error:', err);
@@ -1529,15 +1543,12 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                     }
                   }}
                 >
-                  <Text style={{ color: 'white', fontWeight: 'bold' }}>Sure, take me there!</Text>
+                  <Text style={{ color: 'white', fontWeight: 'bold' }}>Sure!</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
         </Modal>
-      )}
-
-      
       <Modal
         visible={warn}
         transparent
@@ -1555,7 +1566,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
           <View
             style={{
               width: isMobile ? '90%' : '40%',
-              backgroundColor: 'white',
+              backgroundColor: '#f1f5f9',
               padding: 20,
               borderRadius: 10,
               alignItems: 'center',
@@ -1567,18 +1578,19 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 fontWeight: "bold",
                 marginBottom: 20,
                 alignSelf: "center",
-                color: "#003f30ff",
+                color: "#00505cff",
               }}
             >
               WARNING!
             </Text>
-            <Entypo name="warning" size={isMobile? 75 : 150} color="black" />
+            <Entypo name="warning" size={isMobile? 75 : 150} color="#d7c41aff" />
             <Text
               style={{
                 fontSize: 16,
                 alignSelf: "center",
-                color: "#000000ff",
+                color: "#00505cff",
                 fontWeight: "bold",
+                textAlign: 'center',
               }}
             >
               The reason why you are seeing this is that you have violated our community guidelines.
@@ -1588,7 +1600,8 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 fontSize: 16,
                 marginBottom: 30,
                 alignSelf: "center",
-                color: "#000000ff",
+                color: "#1f5474ff",
+                textAlign: 'center',
               }}
             >
               Admin: {notifMessage}
@@ -1597,7 +1610,8 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               style={{
                 fontSize: 16,
                 alignSelf: "center",
-                color: "#000000ff",
+                color: "#1f5474ff",
+                textAlign: 'center',
               }}
             >
               Please read our term of use and privacy policy to avoid getting banned.
@@ -1625,7 +1639,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
 
             <TouchableOpacity
               style={{
-                backgroundColor: '#4CAF50',
+                backgroundColor: '#00505cff',
                 padding: 10,
                 borderRadius: 5,
                 marginVertical: 5,
@@ -1641,7 +1655,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                   setWarn(false);
               }}
             >
-              <Text style={{ color: 'white', fontWeight: 'bold' }}>Understood and Close</Text>
+              <Text style={{ color: 'white', fontWeight: 'bold', textAlign: 'center', }}>Understood and Close</Text>
             </TouchableOpacity>
           </View>
           </View>
@@ -1664,7 +1678,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
           <View
             style={{
               width: isMobile ? '90%' : '40%',
-              backgroundColor: 'white',
+              backgroundColor: '#f1f5f9',
               padding: 20,
               borderRadius: 10,
               alignItems: 'center',
@@ -1676,18 +1690,20 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 fontWeight: "bold",
                 marginBottom: 20,
                 alignSelf: "center",
-                color: "#003f30ff",
+                color: "#00505cff",
+                textAlign: 'center',
               }}
             >
               Your account has been banned!
             </Text>
-            <FontAwesome name="ban" size={isMobile ? 75 : 150} color="black" />
+            <FontAwesome name="ban" size={isMobile ? 75 : 150} color="#a31b0cff" />
             <Text
               style={{
                 fontSize: 16,
                 alignSelf: "center",
-                color: "#000000ff",
+                color: "#00505cff",
                 fontWeight: "bold",
+                textAlign: 'center',
               }}
             >
               The reason why you are seeing this is that you have violated our community guidelines.
@@ -1697,7 +1713,8 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 fontSize: 16,
                 marginBottom: 30,
                 alignSelf: "center",
-                color: "#000000ff",
+                color: "#1f5474ff",
+                textAlign: 'center',
               }}
             >
               Admin: {notifMessage}
@@ -1714,6 +1731,21 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
             }}
           >
 
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#00505cff',
+                padding: 10,
+                borderRadius: 5,
+                marginVertical: 5,
+                width: '100%',
+                alignItems: 'center',
+              }}
+              onPress={async () => {
+                setModalSignout(true)
+              }}
+            >
+              <Text style={{ color: 'white', fontWeight: 'bold' }}>Logout</Text>
+            </TouchableOpacity>
           </View>
           </View>
         </View>
@@ -1737,7 +1769,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 padding: 20,
                 borderRadius: 10,
                 borderWidth: 1,
-                borderColor: "#ccc",
+                borderColor: "#f1f5f9",
                 width: "80%",
                 maxWidth: 500,
               }}
@@ -1747,7 +1779,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                   fontSize: 18,
                   fontWeight: "bold",
                   marginBottom: 10,
-                  color: "#003f30ff",
+                  color: "#00505cff",
                 }}
               >
                 Message
@@ -1765,7 +1797,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 onPress={() => setModalMessage(false)}
                 style={{
                   alignSelf: "flex-end",
-                  backgroundColor: "#003f30",
+                  backgroundColor: "#00505cff",
                   paddingVertical: 8,
                   paddingHorizontal: 16,
                   borderRadius: 5,
@@ -1795,11 +1827,10 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
             bottom: 0,
             left: 0,
             top: 0,
-            width: drawerWidth,
           }}
           colors={['#80c4c4ff', '#009b84ff']}
         >
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, width: "100%" }}>
           <Modal
             transparent
             animationType="fade"
@@ -1892,28 +1923,42 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               </View>
             </View>
           </Modal>
-            <ScrollView
-              contentContainerStyle={{
-                flexGrow: 1,
-                alignItems: "center",
-                justifyContent: "center",
-                minHeight: "100%",
-              }}
-              showsVerticalScrollIndicator={false}
-            >
-              <Image
-                source={require("../../assets/favicon.ico.png")}
-                style={styles.logo}
-              />
+          {(isMobile) && (
+            <View style={[{ height: 60}]}>
+              <TouchableOpacity
+                style={{
+                  width: 50,
+                  height: 50,
+                  backgroundColor: 'transparent',
+                  alignSelf: 'flex-end',
+                  left: 60,
+                  borderRadius: 10,
+                  zIndex: 9999,
+                }}
+                onPress={() => {
+                  setMoved((prev) => !prev);
+                  setExpanded((prev) => !prev);
+                }}
+                disabled={loading}
+              >
+                {moved ? (
+                  <MaterialIcons name="keyboard-arrow-right" size={34} color="#00505cff" />
+                ) : (
+                  <MaterialIcons name="keyboard-arrow-left" size={34} color="#00505cff" />
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+            <Image
+              source={require("../../assets/favicon.ico.png")}
+              style={{...styles.logo, marginTop: isMobile ? -50  : null}}
+            />
 
-            <Text style={{fontWeight: 'bold', fontSize: 30, marginTop: -40, color: '#00505cff', textAlign: 'center', }}>SMILE STUDIO</Text>
+            <Text style={{fontWeight: 'bold', fontSize: 20, marginTop: -40, color: '#00505cff', textAlign: 'center', }}>SMILE STUDIO</Text>
             <Text style={{fontSize: 12, color: '#00505cff', textAlign: 'center', marginBottom: 7, }}>GRIN CREATORS</Text>
-            <View style={{padding: 7, paddingLeft: 10, paddingRight: 10, backgroundColor: 'white', marginBottom: 30, borderRadius: 10}}>
+            <View style={{padding: 7, marginLeft: 40, marginRight: 40, backgroundColor: 'white', marginBottom: 30, borderRadius: 10}}>
               <Text style={{fontSize: 12, color: '#00505cff', textAlign: 'center'}}>CLINIC</Text>
             </View>
-
-              <View style={{ ...styles.container, width: "100%" }}>
-
                 <TouchableOpacity
                   style={{
                     backgroundColor: '#00505cff',
@@ -1952,7 +1997,6 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                     </Text>
                   )}
                 </TouchableOpacity>
-
                 {/*Modal : Edit Info */}
                 <Modal
                   transparent
@@ -2287,6 +2331,16 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                     </View>
                   </View>
                 </Modal>
+            <ScrollView
+              contentContainerStyle={{
+                flexGrow: 1,
+                alignItems: "center",
+                marginTop: 12,
+              }}
+              showsVerticalScrollIndicator={false}
+            >
+
+              <View style={{ ...styles.container, width: "100%" }}>
 
                 <Modal
                   transparent
@@ -2360,7 +2414,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     ...styles.mar2,
     backgroundColor: dashboardView === "profile" ? '#ffffffff' : 'transparent',
     borderRadius: 15,
-    padding: 10,
+    padding: 5,
   }}
   disabled={loading}
 >
@@ -2368,7 +2422,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     <ActivityIndicator animating color={"black"} />
   ) : (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
-      <FontAwesome name="user" size={24} color={dashboardView === "profile" ? '#00505cff' : '#ffffffff'} />
+      <FontAwesome name="user" size={22} color={dashboardView === "profile" ? '#00505cff' : '#ffffffff'} />
       <Text style={{
         ...styles.buttonText,
         color: dashboardView === "profile" ? '#00505cff' : '#ffffffff',
@@ -2392,7 +2446,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     ...styles.mar2,
     backgroundColor: dashboardView === "schedule" ? '#ffffffff' : 'transparent',
     borderRadius: 15,
-    padding: 10,
+    padding: 5,
   }}
   disabled={loading}
 >
@@ -2400,7 +2454,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     <ActivityIndicator animating color={"black"} />
   ) : (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
-      <FontAwesome name="calendar-check-o" size={24} color={dashboardView === "schedule" ? '#00505cff' : '#ffffffff'} />
+      <FontAwesome name="calendar-check-o" size={22} color={dashboardView === "schedule" ? '#00505cff' : '#ffffffff'} />
       <Text style={{
         ...styles.buttonText,
         color: dashboardView === "schedule" ? '#00505cff' : '#ffffffff',
@@ -2424,7 +2478,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     ...styles.mar2,
     backgroundColor: dashboardView === "offers" ? '#ffffffff' : 'transparent',
     borderRadius: 15,
-    padding: 10,
+    padding: 5,
   }}
   disabled={loading}
 >
@@ -2432,7 +2486,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     <ActivityIndicator animating color={"black"} />
   ) : (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
-      <FontAwesome name="tag" size={24} color={dashboardView === "offers" ? '#00505cff' : '#ffffffff'} />
+      <FontAwesome name="tag" size={22} color={dashboardView === "offers" ? '#00505cff' : '#ffffffff'} />
       <Text style={{
         ...styles.buttonText,
         color: dashboardView === "offers" ? '#00505cff' : '#ffffffff',
@@ -2456,7 +2510,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     ...styles.mar2,
     backgroundColor: dashboardView === "clinics" ? '#ffffffff' : 'transparent',
     borderRadius: 15,
-    padding: 10,
+    padding: 5,
   }}
   disabled={loading}
 >
@@ -2464,7 +2518,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     <ActivityIndicator animating color={"black"} />
   ) : (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
-      <FontAwesome name="hospital-o" size={24} color={dashboardView === "clinics" ? '#00505cff' : '#ffffffff'} />
+      <FontAwesome name="hospital-o" size={22} color={dashboardView === "clinics" ? '#00505cff' : '#ffffffff'} />
       <Text style={{
         ...styles.buttonText,
         color: dashboardView === "clinics" ? '#00505cff' : '#ffffffff',
@@ -2488,7 +2542,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     ...styles.mar2,
     backgroundColor: dashboardView === "appointments" ? '#ffffffff' : 'transparent',
     borderRadius: 15,
-    padding: 10,
+    padding: 5,
   }}
   disabled={loading}
 >
@@ -2496,7 +2550,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     <ActivityIndicator animating color={"black"} />
   ) : (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
-      <FontAwesome name="calendar" size={24} color={dashboardView === "appointments" ? '#00505cff' : '#ffffffff'} />
+      <FontAwesome name="calendar" size={22} color={dashboardView === "appointments" ? '#00505cff' : '#ffffffff'} />
       <Text style={{
         ...styles.buttonText,
         color: dashboardView === "appointments" ? '#00505cff' : '#ffffffff',
@@ -2520,7 +2574,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     ...styles.mar2,
     backgroundColor: dashboardView === "pending" ? '#ffffffff' : 'transparent',
     borderRadius: 15,
-    padding: 10,
+    padding: 5,
   }}
   disabled={loading}
 >
@@ -2528,7 +2582,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     <ActivityIndicator animating color={"black"} />
   ) : (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
-      <FontAwesome name="clock-o" size={24} color={dashboardView === "pending" ? '#00505cff' : '#ffffffff'} />
+      <FontAwesome name="clock-o" size={22} color={dashboardView === "pending" ? '#00505cff' : '#ffffffff'} />
       <Text style={{
         ...styles.buttonText,
         color: dashboardView === "pending" ? '#00505cff' : '#ffffffff',
@@ -2552,7 +2606,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     ...styles.mar2,
     backgroundColor: dashboardView === "history" ? '#ffffffff' : 'transparent',
     borderRadius: 15,
-    padding: 10,
+    padding: 5,
   }}
   disabled={loading}
 >
@@ -2560,7 +2614,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     <ActivityIndicator animating color={"black"} />
   ) : (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
-      <FontAwesome name="history" size={24} color={dashboardView === "history" ? '#00505cff' : '#ffffffff'} />
+      <FontAwesome name="history" size={22} color={dashboardView === "history" ? '#00505cff' : '#ffffffff'} />
       <Text style={{
         ...styles.buttonText,
         color: dashboardView === "history" ? '#00505cff' : '#ffffffff',
@@ -2584,7 +2638,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     ...styles.mar2,
     backgroundColor: dashboardView === "chats" ? '#ffffffff' : 'transparent',
     borderRadius: 15,
-    padding: 10,
+    padding: 5,
   }}
   disabled={loading}
 >
@@ -2592,7 +2646,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     <ActivityIndicator animating color={"black"} />
   ) : (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
-      <FontAwesome name="comments" size={24} color={dashboardView === "chats" ? '#00505cff' : '#ffffffff'} />
+      <FontAwesome name="comments" size={22} color={dashboardView === "chats" ? '#00505cff' : '#ffffffff'} />
       <Text style={{
         ...styles.buttonText,
         color: dashboardView === "chats" ? '#00505cff' : '#ffffffff',
@@ -2616,7 +2670,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     ...styles.mar2,
     backgroundColor: dashboardView === "verify" ? '#ffffffff' : 'transparent',
     borderRadius: 15,
-    padding: 10,
+    padding: 5,
   }}
   disabled={loading}
 >
@@ -2624,7 +2678,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     <ActivityIndicator animating color={"black"} />
   ) : (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
-      <FontAwesome name="check-circle" size={24} color={dashboardView === "verify" ? '#00505cff' : '#ffffffff'} />
+      <FontAwesome name="check-circle" size={22} color={dashboardView === "verify" ? '#00505cff' : '#ffffffff'} />
       <Text style={{
         ...styles.buttonText,
         color: dashboardView === "verify" ? '#00505cff' : '#ffffffff',
@@ -2648,7 +2702,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     ...styles.mar2,
     backgroundColor: dashboardView === "team" ? '#ffffffff' : 'transparent',
     borderRadius: 15,
-    padding: 10,
+    padding: 5,
   }}
   disabled={loading}
 >
@@ -2656,7 +2710,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     <ActivityIndicator animating color={"black"} />
   ) : (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 10 }}>
-      <FontAwesome name="users" size={24} color={dashboardView === "team" ? '#00505cff' : '#ffffffff'} />
+      <FontAwesome name="users" size={22} color={dashboardView === "team" ? '#00505cff' : '#ffffffff'} />
       <Text style={{
         ...styles.buttonText,
         color: dashboardView === "team" ? '#00505cff' : '#ffffffff',
@@ -2667,8 +2721,6 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
     </View>
   )}
 </TouchableOpacity>
-
-
 
               </View>
             </ScrollView>
@@ -2697,43 +2749,35 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
           </View>
         </LinearGradient>
         {/* Toggle Button */}
-        {(Platform.OS === "android" || Platform.OS === "ios") && (
-          <View style={[styles.toggleButtonWrapper, { height: 60 }]}>
-            <TouchableOpacity
-              style={{
-                width: 50,
-                height: 50,
-                backgroundColor: '#00505cff',
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: 10,
-                zIndex: 9999,
-                shadowColor: "#00000045",
-                shadowRadius: 2,
-                shadowOffset: { width: 2, height: 2 },
-              }}
-              onPress={() => {
-                setMoved((prev) => !prev);
-                setExpanded((prev) => !prev);
-              }}
-              disabled={loading}
-            >
-              {moved ? (
-                <MaterialIcons
-                  name="keyboard-arrow-right"
-                  size={34}
-                  color="white"
-                />
-              ) : (
-                <MaterialIcons
-                  name="keyboard-arrow-left"
-                  size={34}
-                  color="white"
-                />
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
+          {(isMobile) && (
+            <View style={[styles.toggleButtonWrapper, { height: 60 }]}>
+                <TouchableOpacity
+                  style={{
+                    width: 50,
+                    height: 50,
+                    backgroundColor: !moved ? 'transparent' : '#00505cff',
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 10,
+                    zIndex: 9999,
+                    shadowColor: !moved ? "transparent" : "#00000045",
+                    shadowRadius: !moved ? null : 2,
+                    shadowOffset: !moved ? null : { width: 2, height: 2 },
+                  }}
+                  onPress={() => {
+                    setMoved((prev) => !prev);
+                    setExpanded((prev) => !prev);
+                  }}
+                  disabled={loading}
+                >
+                  {moved ? (
+                    <MaterialIcons name="keyboard-arrow-right" size={34} color= {!moved ? 'transparent' : 'white'} />
+                  ) : (
+                    <MaterialIcons name="keyboard-arrow-left" size={34} color= {!moved ? 'transparent' : 'white'} />
+                  )}
+                </TouchableOpacity>
+            </View>
+          )}
       </View>
 
       {/* Dashboard */}
@@ -2975,28 +3019,6 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                     color: '#00505cff',
                   }}
                 >
-                  {userCount !== null ? userCount : "..."}
-                </Text>
-                <Text
-                  style={{
-                    textAlign: "center",
-                    marginTop: 6,
-                    fontSize: isMobile ? 15 : 25,
-                    color: '#00505cff',
-                  }}
-                >
-                  Total Patients
-                </Text>
-              </View>
-              <View style={styles.card}>
-                <Text
-                  style={{
-                    fontWeight: "bold",
-                    fontSize: 50,
-                    textAlign: "center",
-                    color: '#00505cff',
-                  }}
-                >
                   {
                     // You might want to store the length in state for reactivity
                     appointmentsToday.length // Assuming you've fetched and stored it
@@ -3010,7 +3032,16 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                     color: '#00505cff',
                   }}
                 >
-                  Appointments Today
+                  Appointments
+                </Text>
+                <Text
+                  style={{
+                    textAlign: "center",
+                    fontSize: isMobile ? 15 : 25,
+                    color: '#00505cff',
+                  }}
+                >
+                  Today
                 </Text>
               </View>
               <View style={styles.card}>
@@ -3044,149 +3075,170 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                     </TouchableOpacity>
                   </View>
 
-                  <Modal
-                    animationType="fade"
-                    transparent={true}
-                    visible={modalVisible}
-                    onRequestClose={() => setModalVisible(false)} // for Android back button
-                  >
-                    <View style={styles.modalBackground}>
-                      <View
-                        style={{
-                          ...styles.modalContent,
-                          width: isMobile ? 350 : "20%",
-                          maxHeight: "70%",
-                          minWidth: 350,
-                        }}
-                      >
-                        <ScrollView>
-                          <Text style={{ 
-                            fontSize: 24,
-                            fontWeight: "bold",
-                            marginBottom: 20,
-                            alignSelf: isMobile ? "center" : "flex-start",
-                            color: "#003f30ff",
-                           }}>
-                            Appointments
-                          </Text>
-                          <View style={{ padding: 20 }}>
-                            {/* Appointment Section */}
-                            <FlatList
-                              data={appointmentsCurrentList}
-                              keyExtractor={(e) => e.id}
-                              renderItem={(e) => (
-                              <View
-                                style={{
-                                  width: isMobile ? null : 300,
-                                  borderWidth: 1,
-                                  borderColor: "#ccc",
-                                  borderRadius: 10,
-                                  padding: 15,
-                                  backgroundColor: "#f1f1f1",
-                                  marginBottom: 5,
-                                }}
-                              >
-                                  <Text style={{ fontWeight: "600", marginBottom: 8 }}>
-                                    {`${e.item.profiles.first_name} ${e.item.profiles.last_name}`}
-                                  </Text>
+<Modal
+  animationType="fade"
+  transparent={true}
+  visible={modalVisible}
+  onRequestClose={() => setModalVisible(false)} // for Android back button
+>
+  <View style={styles.modalBackground}>
+    <View
+      style={{
+        ...styles.modalContent,
+        width: isMobile ? "90%" : "20%",
+        maxHeight: "70%",
+        backgroundColor: '#f1f5f9',
+        paddingHorizontal: isMobile ? null : 200,
+      }}
+    >
+      {/* Top-right "X" Close Button */}
+      <TouchableOpacity
+        style={{
+          position: "absolute",
+          top: 10,
+          right: 10,
+          zIndex: 10,
+          backgroundColor: "#00505cff",
+          padding: 8,
+          borderRadius: 50,
+        }}
+        onPress={() => setModalVisible(false)}
+      >
+        <Text style={{ fontWeight: "bold", color: "white" }}>X</Text>
+      </TouchableOpacity>
 
-                                  <Text style={{ fontWeight: "600" }}>
-                                    Requested Dentists/Staff :
-                                  </Text>
-                                  <Text>
-                                    {(() => {
-                                      try {
-                                        return JSON.parse(e.item.request).join("\n");
-                                      } catch {
-                                        return e.item.request; // fallback: just show raw string if parsing fails
-                                      }
-                                    })()}
-                                  </Text>
-                                  {e.item.message.length > 20 ? (
-                                    <Text style={{ textAlign: "left", flex: 1 }}>
-                                      <Text style={{ color: "#000" }}>
-                                        {e.item.message.slice(0, 20) + "..."}
-                                      </Text>
-                                      <Text
-                                      onPress={() => {
-                                        setSelectedMessage(e.item.message);
-                                        setModalMessage(true);
-                                        setModalVisible(false);
-                                      }} style={{ color: "blue", textDecorationLine: "underline" }}>
-                                        See More
-                                      </Text>
-                                    </Text>
-                                  ) : (
-                                    <Text style={{ flex: 1 }}>
-                                      {e.item.message}
-                                    </Text>
-                                  )}
-                                  <View
-                                    style={{
-                                      backgroundColor: "#fff",
-                                      padding: 10,
-                                      borderRadius: 8,
-                                      borderWidth: 1,
-                                      borderColor: "#ccc",
-                                      marginBottom: 10,
-                                      marginTop: 15
-                                    }}
-                                  >
-                                  <Text style={{ color: "#000000ff" }}>
-                                    {`Date/Time Request : \n${new Date(e.item.date_time).toLocaleString(undefined, {
-                                      year: "numeric",
-                                      month: "numeric",
-                                      day: "numeric",
-                                      hour: "numeric",
-                                      minute: "2-digit",
-                                      hour12: true,
-                                    })}`}
-                                  </Text>
-                                  </View>
-                                  <Text style={{ color: "#767676ff", fontSize: 9, alignSelf: "flex-end"}}>{`Created at : ${new Date(
-                                    e.item.created_at || 0
-                                  ).toLocaleString()}`}</Text>
-                                </View>
-                              )}
-                              ListEmptyComponent={() => (
-                                <View
-                                  style={{
-                                    borderWidth: 1,
-                                    borderColor: "#ccc",
-                                    borderRadius: 10,
-                                    padding: 15,
-                                    backgroundColor: "#f1f1f1",
-                                    marginBottom: 5,
-                                  }}
-                                >
-                                  <Text style={{ fontWeight: "600" }}>
-                                    - NO APPOINTMENTS -
-                                  </Text>
-                                </View>
-                              )}
-                            />
-                          </View>
-                          <TouchableOpacity
-                            style={{
-                              ...styles.closeButton,
-                              width: "60%",
-                              alignSelf: "center",
-                            }}
-                            onPress={() => setModalVisible(false)}
-                          >
-                            <Text
-                              style={{
-                                ...styles.closeButtonText,
-                                textAlign: "center",
-                              }}
-                            >
-                              Close
-                            </Text>
-                          </TouchableOpacity>
-                        </ScrollView>
-                      </View>
-                    </View>
-                  </Modal>
+        <Text
+          style={{
+            fontSize: 24,
+            fontWeight: "bold",
+            marginBottom: 20,
+            alignSelf: "center",
+            color: "#00505cff",
+          }}
+        >
+          Appointments
+        </Text>
+
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
+          alignItems: "center",
+          width: "100%",
+        }}
+      >
+        <View style={{ padding: 20 }}>
+          {/* Appointment Section */}
+          <FlatList
+            data={appointmentsCurrentList}
+            keyExtractor={(e) => e.id}
+            renderItem={(e) => (
+              <View
+                style={{
+                  width: isMobile ? null : 300,
+                  borderRadius: 10,
+                  padding: 15,
+                  backgroundColor: "#ffffffff",
+                  marginBottom: 5,
+                }}
+              >
+                <Text style={{ fontWeight: "600", marginBottom: 8 }}>
+                  {`${e.item.profiles.first_name} ${e.item.profiles.last_name}`}
+                </Text>
+
+                <Text style={{ fontWeight: "600" }}>
+                  Requested Dentists/Staff :
+                </Text>
+                <Text>
+                  {(() => {
+                    try {
+                      return JSON.parse(e.item.request).join("\n");
+                    } catch {
+                      return e.item.request;
+                    }
+                  })()}
+                </Text>
+
+                {e.item.message.length > 20 ? (
+                  <Text style={{ textAlign: "left", flex: 1 }}>
+                    <Text style={{ color: "#000" }}>
+                      {e.item.message.slice(0, 20) + "..."}
+                    </Text>
+                    <Text
+                      onPress={() => {
+                        setSelectedMessage(e.item.message);
+                        setModalMessage(true);
+                        setModalVisible(false);
+                      }}
+                      style={{
+                        color: "blue",
+                        textDecorationLine: "underline",
+                      }}
+                    >
+                      See More
+                    </Text>
+                  </Text>
+                ) : (
+                  <Text style={{ flex: 1 }}>{e.item.message}</Text>
+                )}
+
+                <View
+                  style={{
+                    backgroundColor: "#fff",
+                    padding: 10,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: "#ccc",
+                    marginBottom: 10,
+                    marginTop: 15,
+                  }}
+                >
+                  <Text style={{ color: "#000000ff" }}>
+                    {`Date/Time Request : \n${new Date(e.item.date_time).toLocaleString(undefined, {
+                      year: "numeric",
+                      month: "numeric",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                      hour12: true,
+                    })}`}
+                  </Text>
+                </View>
+                <Text
+                  style={{
+                    color: "#767676ff",
+                    fontSize: 9,
+                    alignSelf: "flex-end",
+                  }}
+                >
+                  {`Created at : ${new Date(
+                    e.item.created_at || 0
+                  ).toLocaleString()}`}
+                </Text>
+              </View>
+            )}
+            ListEmptyComponent={() => (
+              <View
+                style={{
+                  borderWidth: 1,
+                  borderColor: "#ccc",
+                  borderRadius: 10,
+                  padding: 15,
+                  backgroundColor: "#f1f1f1",
+                  marginBottom: 5,
+                }}
+              >
+                <Text style={{ fontWeight: "600" }}>
+                  - NO APPOINTMENTS -
+                </Text>
+              </View>
+            )}
+          />
+        </View>
+      </ScrollView>
+    </View>
+  </View>
+</Modal>
+
                 </View>
               </View>
             </View>
@@ -3276,6 +3328,8 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                           padding: 8,
                           borderRadius: 6,
                           backgroundColor: "#fffce9ff", // light yellow background
+                          borderWidth: 1,
+                          borderColor: "#ffe680",
                         }}
                       >
                         <Text style={{ fontWeight: "bold" }}>Message :</Text>
@@ -3630,12 +3684,24 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
         style={{
           fontSize: 24,
           fontWeight: "bold",
-          marginBottom: 20,
           alignSelf: isMobile ? "center" : "flex-start",
-          color: "#003f30ff",
+          color: '#00505cff',
+          textAlign: isMobile ? "center" : "left",
         }}
       >
-        Clinic's Schedule & Dentist's Schedule
+        Clinic's Schedule &
+      </Text>
+      <Text
+        style={{
+          fontSize: 24,
+          fontWeight: "bold",
+          marginBottom: 20,
+          alignSelf: isMobile ? "center" : "flex-start",
+          color: '#00505cff',
+          textAlign: isMobile ? "center" : "left",
+        }}
+      >
+        Dentist's Schedule
       </Text>
 
       <View
@@ -3748,7 +3814,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
         fontSize: 20,
         fontWeight: "bold",
         marginBottom: 15,
-        color: "#003f30ff",
+        color: '#00505cff',
       }}
     >
       Dentists & Schedule
@@ -3825,7 +3891,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
           <TouchableOpacity
             onPress={addDentist}
             style={{
-              backgroundColor: "#003f30ff",
+              backgroundColor: '#00505cff',
               paddingVertical: 10,
               paddingHorizontal: 16,
               borderRadius: 8,
@@ -3847,12 +3913,13 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
             marginBottom: 20,
           }}
         >
+          <ScrollView>
           <Text
             style={{
               fontSize: 16,
               fontWeight: "bold",
               marginBottom: 15,
-              color: "#003f30ff",
+              color: '#00505cff',
             }}
           >
             Current Dentists:
@@ -3915,14 +3982,10 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               - dentists have not yet been set -
             </Text>
           )}
-        </View>
-      </ScrollView>
-
+          </ScrollView>
       {/* 🔒 Fixed Reset Button */}
       <View
         style={{
-          position: "absolute",
-          bottom: 20,
           left: 0,
           right: 0,
           alignItems: "center",
@@ -3931,10 +3994,11 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
         <TouchableOpacity
           onPress={() => setResetDentistConfirmModalVisible(true)}
           style={{
-            backgroundColor: "#ff4444",
+            backgroundColor: '#b32020ff',
             paddingVertical: 12,
-            paddingHorizontal: 25,
+            paddingHorizontal: 10,
             borderRadius: 8,
+            marginBottom: 6,
           }}
         >
           <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
@@ -3942,6 +4006,8 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
           </Text>
         </TouchableOpacity>
       </View>
+        </View>
+      </ScrollView>
     </View>
     )}
   </View>
@@ -4112,7 +4178,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 fontWeight: 'bold',
                 marginBottom: 20,
                 alignSelf: isMobile ? 'center' : 'flex-start',
-                color: '#003f30ff',
+                color: '#00505cff',
               }}
             >
               Offers
@@ -4188,7 +4254,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                   }
                 }}
                 style={{
-                  backgroundColor: '#003f30ff',
+                  backgroundColor: '#00505cff',
                   paddingVertical: 10,
                   paddingHorizontal: 16,
                   borderRadius: 8,
@@ -4199,74 +4265,76 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
             </View>
 
             {/* Current offers section */}
-            <View
-              style={{
-                padding: 20,
-                backgroundColor: '#f9f9f9',
-                borderRadius: 8,
-              }}
-            >
-              <Text
+            <ScrollView>
+              <View
                 style={{
-                  fontSize: 16,
-                  fontWeight: 'bold',
-                  marginBottom: 20,
-                  alignSelf: isMobile ? 'center' : 'flex-start',
-                  color: '#003f30ff',
+                  padding: 20,
+                  backgroundColor: '#ffffffff',
+                  borderRadius: 8,
                 }}
               >
-                Current offers :
-              </Text>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 'bold',
+                    marginBottom: 20,
+                    alignSelf: isMobile ? 'center' : 'flex-start',
+                    color: '#00505cff',
+                  }}
+                >
+                  Current offers :
+                </Text>
 
-              {offers && offers.trim() !== '' ? (
-                offers
-                  .split('?')
-                  .filter((offer) => offer.trim() !== '')
-                  .map((offer, i) => (
-                    <View
-                      key={i}
-                      style={{
-                        backgroundColor: '#f0f0f0',   // light gray background
-                        borderRadius: 8,
-                        padding: 15,
-                        marginBottom: 12,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 1 },
-                        shadowOpacity: 0.1,
-                        shadowRadius: 2,
-                        elevation: 2, // for Android shadow
-                      }}
-                    >
-                      <Text style={{ fontSize: 16, flex: 1, marginRight: 10 }}>
-                        • {offer}
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setOfferToRemoveIndex(i);  // store which offer to remove
-                          setRemoveConfirmModalVisible(true);
-                        }}
+                {offers && offers.trim() !== '' ? (
+                  offers
+                    .split('?')
+                    .filter((offer) => offer.trim() !== '')
+                    .map((offer, i) => (
+                      <View
+                        key={i}
                         style={{
-                          marginLeft: 10,
-                          backgroundColor: '#ff4444',
-                          paddingVertical: 8,
-                          paddingHorizontal: 12,
-                          borderRadius: 6,
+                          backgroundColor: '#f0f0f0',   // light gray background
+                          borderRadius: 8,
+                          padding: 15,
+                          marginBottom: 12,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 1 },
+                          shadowOpacity: 0.1,
+                          shadowRadius: 2,
+                          elevation: 2, // for Android shadow
                         }}
                       >
-                        <Text style={{ color: 'white', fontWeight: 'bold' }}>Remove</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ))
-              ) : (
-                <Text style={{ fontSize: 16, color: '#999' }}>
-                  - offers have not yet been set -
-                </Text>
-              )}
+                        <Text style={{ fontSize: 16, flex: 1, marginRight: 10 }}>
+                          • {offer}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setOfferToRemoveIndex(i);  // store which offer to remove
+                            setRemoveConfirmModalVisible(true);
+                          }}
+                          style={{
+                            marginLeft: 10,
+                            backgroundColor: '#ff4444',
+                            paddingVertical: 8,
+                            paddingHorizontal: 12,
+                            borderRadius: 6,
+                          }}
+                        >
+                          <Text style={{ color: 'white', fontWeight: 'bold' }}>Remove</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))
+                ) : (
+                  <Text style={{ fontSize: 16, color: '#999' }}>
+                    - offers have not yet been set -
+                  </Text>
+                )}
 
-            </View>
+              </View>
+            </ScrollView>
             <View style={{ marginTop: 20, alignItems: "center" }}>
               <TouchableOpacity
                 onPress={() => setResetConfirmModalVisible(true)}
@@ -4524,14 +4592,14 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
       >
         <View
           style={{
-            width: '80%',
+            width: isMobile ? "90%" : "40%",
             backgroundColor: 'white',
             padding: 20,
             borderRadius: 10,
             alignItems: 'center',
           }}
         >
-          <Text style={{ fontSize: 18, marginBottom: 20, fontWeight: 'bold' }}>
+          <Text style={{ fontSize: 18, marginBottom: 20, fontWeight: 'bold', color: '#00505cff' }}>
             Limit Reached
           </Text>
           <Text style={{ fontSize: 16, marginBottom: 20 }}>
@@ -4540,7 +4608,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
           <TouchableOpacity
             onPress={() => setLimitReachedModalVisible(false)}
             style={{
-              backgroundColor: '#003f30ff',
+              backgroundColor: '#00505cff',
               paddingVertical: 10,
               paddingHorizontal: 20,
               borderRadius: 8,
@@ -4574,45 +4642,31 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               fontWeight: "bold",
               marginBottom: 20,
               alignSelf: isMobile ? "center" : "flex-start",
-              color: "#003f30ff",
+              color: "#00505cff",
             }}
           >
             Clinics
           </Text>
-          <View
-            style={{
-              width: !isDesktop ? "100%" : expanded ? "90%" : "95%",
-              alignSelf: "center",
-              position: "absolute",
-              height: isMobile ? "90%" : "85%",
-              marginTop: 80,
-              padding: 14,
-              shadowColor: "#00000045",
-              shadowRadius: 2,
-              shadowOffset: { width: 4, height: 4 },
-              backgroundColor: "#e5ffceff",
-              borderRadius: 12,
-            }}
-          >
-            <ScrollView>
-              <Text
-                style={{
-                  fontSize: 24,
-                  fontWeight: "bold",
-                  marginBottom: 20,
-                  color: "#003f30ff",
-                  alignSelf: "center",
-                }}
-              >
-                Available Clinics
-              </Text>
+            <ScrollView
+              contentContainerStyle={{
+                backgroundColor: 'white',
+                paddingVertical: 8,
+                borderRadius: 10,
+              }}
+            >
               <TouchableOpacity
-                style={{...styles.card, backgroundColor: "rgba(152, 203, 255, 1)", marginBottom: 8, width: isMobile ? "91%" : "98%", height: 30, alignSelf: "center"}}
+                style={{...styles.card, 
+                  backgroundColor: '#00505cff', 
+                  marginBottom: 8, 
+                  width: isMobile ? "91%" : "98%", 
+                  height: 30, 
+                  alignSelf: "center"
+                }}
                 onPress={()=>{
                   setTMap(true)
                 }}
                 >
-                  <Text>View All Registered Clinics in Map</Text>
+                  <Text style={{color: 'white'}}>View All Registered Clinics in Map</Text>
                 </TouchableOpacity>
               <Modal
                 transparent
@@ -4780,6 +4834,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
       setSelectedCI(clinic.introduction);
       setSelectedOffers(clinic.offers);
       setVerified(clinic.isVerified);
+      setDentistList(clinic.dentists)
     }}
   >
     <Text style={{ color: "#fff", fontSize: isMobile ? 8 : 10 }}>View Clinic</Text>
@@ -5154,6 +5209,74 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
           </Text>
         </View>
 
+        {/* Clinic Dentists/Staffs Title */}
+        <Text
+          style={{
+            fontSize: 22,
+            fontWeight: "bold",
+            color: "#003f30",
+            marginBottom: 10,
+          }}
+        >
+          Clinic's Dentist
+        </Text>
+        {/* Clinic Info Container */}
+        <View
+          style={{
+            backgroundColor: "#f8f9f9",
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 20,
+            elevation: 3,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+          }}
+        >
+
+          {/* Dentists List */}
+        {(() => {
+          try {
+            const dentists = JSON.parse(dentistList);
+            return dentists.map((d, i) => (
+              <View key={i} style={{ marginTop: 10 }}>
+                <Text style={{ fontSize: 14, color: "#333", fontWeight: "bold" }}>
+                  • Dr. {d.name} ({d.specialty})
+                </Text>
+
+                {Object.entries(d.weeklySchedule || {}).map(([day, slots], j) =>
+                  slots.length > 0 ? (
+                    <View key={j} style={{ marginLeft: 12, marginTop: 4 }}>
+                      <Text style={{ fontSize: 13, fontWeight: "500", color: "#555" }}>
+                        {day.charAt(0).toUpperCase() + day.slice(1)}:
+                      </Text>
+                      {slots.map((s, k) => (
+                        <Text key={k} style={{ fontSize: 13, color: "#555", marginLeft: 8 }}>
+                          - {s}
+                        </Text>
+                      ))}
+                    </View>
+                  ) : null
+                )}
+              </View>
+            ));
+          } catch {
+            return (
+              <Text             
+                style={{
+                fontSize: selectedOffers ? 17 : 14,
+                marginBottom: 6,
+                color: "#ccc",
+                textAlign: selectedOffers ? "left" : "center",
+              }}>
+                Dentist list have not yet been set
+              </Text>
+            );
+          }
+        })()}
+
+        </View>
 
         {/* Clinic Offers */}
         <Text
@@ -5498,428 +5621,632 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
             )}
 
             </ScrollView>
-          </View>
         </View>
         )}
 
         {/* Dashboard Appointments --------------------------------------------------------------------------------------- */}
 
-        {dashboardView === "appointments" && (
-        <View
-          style={[
-            styles.dashboard,
-            {
-              width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
-              right: dashboardView === "appointments" ? 11 : 20000,
-            },
-          ]}
-        >
-          <Text
-            style={{
-              fontSize: 24,
-              fontWeight: "bold",
-              marginBottom: 20,
-              alignSelf: isMobile ? "center" : "flex-start",
-              color: "#003f30ff",
-            }}
-          >
-            Appointments
-          </Text>
-          <View style={{ flex: 1, width: "100%" }}>
-            <FlatList
-              data={appointmentsCurrentList}
-              keyExtractor={(e) => e.id}
-              style={{ width: "100%" }} // ensure FlatList itself fills parent
-              contentContainerStyle={{
-                flexGrow: 1,
-                alignItems: "stretch", // <-- always stretch so header/rows fill width
-                paddingHorizontal: 12,
-              }}
-              ListHeaderComponent={() => (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    backgroundColor: "#e0e0e0",
-                    padding: 20,
-                    borderTopLeftRadius: 8,
-                    borderTopRightRadius: 8,
-                    alignSelf: "stretch", // make header fill available width
-                  }}
-                >
-                  <Text style={{ flex: 1, fontWeight: "700" }}>Patient</Text>
-                  <Text style={{ flex: 1, fontWeight: "700" }}>Message</Text>
-                  <Text style={{ flex: 1, fontWeight: "700" }}>Request</Text>
-                  <Text style={{ flex: 1, fontWeight: "700" }}>
-                    Request Date & Time
-                  </Text>
-                  <Text style={{ flex: 1, fontWeight: "700" }}>Created At</Text>
-                </View>
-              )}
-              renderItem={({ item }) => (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    borderBottomWidth: 1,
-                    borderColor: "#ccc",
-                    padding: 20,
-                    backgroundColor: "#f9f9f9",
-                    alignSelf: "stretch",
-                  }}
-                >
-                  <Text style={{ flex: 1 }}>
-                    {wrapText(
-                      `${item.profiles.first_name} ${item.profiles.last_name}`,
-                      40
-                    )}
-                  </Text>
-                  {item.message.length > 20 ? (
-                    <Text style={{ textAlign: "left", flex: 1 }}>
-                      <Text style={{ color: "#000" }}>
-                        {item.message.slice(0, 20) + "..."}
-                      </Text>
-                      <Text
-                      onPress={() => {
-                        setSelectedMessage(item.message);
-                        setModalMessage(true);
-                      }} style={{ color: "blue", textDecorationLine: "underline" }}>
-                        See More
-                      </Text>
-                    </Text>
-                  ) : (
-                    <Text style={{ flex: 1 }}>
-                      {item.message}
-                    </Text>
-                  )}
-            <TouchableOpacity
-              style={{ flex: 1 }}
-              onPress={() => openRequestView(item.request)}
+          {dashboardView === "appointments" && (
+            <View
+              style={[
+                styles.dashboard,
+                {
+                  width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
+                  right: dashboardView === "appointments" ? 11 : 20000,
+                },
+              ]}
             >
-              <Text style={{ color: "blue", textDecorationLine: "underline" }}>
-                View Request
+              <Text
+                style={{
+                  fontSize: 24,
+                  fontWeight: "bold",
+                  marginBottom: 20,
+                  alignSelf: isMobile ? "center" : "flex-start",
+                  color: "#00505cff",
+                }}
+              >
+                Appointments
               </Text>
-            </TouchableOpacity>
-                  {/* requestView Modal */}
-            <Modal
-              visible={requestViewVisible}
-              transparent={true}
-              animationType="fade"
-              onRequestClose={() => setRequestViewVisible(false)}
+
+              {isMobile ? (
+                <ScrollView contentContainerStyle={{ paddingHorizontal: 12 }}>
+                  {appointmentsCurrentList.length === 0 ? (
+                    <View style={{ width: "100%", alignItems: "center", marginTop: 40 }}>
+                      <Text style={{ fontSize: 20, color: "gray" }}>
+                        - No Appointments -
+                      </Text>
+                    </View>
+                  ) : (
+                    appointmentsCurrentList.map((item) => (
+                      <View
+                        key={item.id}
+                        style={{
+                          backgroundColor: "#fff",
+                          borderRadius: 10,
+                          padding: 16,
+                          marginBottom: 16,
+                          shadowColor: "#000",
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.1,
+                          shadowRadius: 4,
+                          elevation: 3,
+                          borderWidth: 1,
+                          borderColor: "#ddd",
+                        }}
+                      >
+                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>
+                          Patient:
+                        </Text>
+                        <Text style={{ marginBottom: 10 }}>
+                          {`${item.profiles.first_name} ${item.profiles.last_name}`}
+                        </Text>
+
+                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>
+                          Message:
+                        </Text>
+                        <Text style={{ marginBottom: 10 }}>
+                          {item.message.length > 40 ? (
+                            <>
+                              {item.message.slice(0, 40)}...
+                              <Text
+                                onPress={() => {
+                                  setSelectedMessage(item.message);
+                                  setModalMessage(true);
+                                }}
+                                style={{
+                                  color: "blue",
+                                  textDecorationLine: "underline",
+                                }}
+                              >
+                                {" "}
+                                See More
+                              </Text>
+                            </>
+                          ) : (
+                            item.message
+                          )}
+                        </Text>
+
+                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>
+                          Request:
+                        </Text>
+                        <TouchableOpacity
+                          onPress={() => {
+                            openRequestView(item.request);
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: "blue",
+                              textDecorationLine: "underline",
+                              marginBottom: 10,
+                            }}
+                          >
+                            View Request
+                          </Text>
+                        </TouchableOpacity>
+
+                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>
+                          Request Date & Time:
+                        </Text>
+                        <Text style={{ marginBottom: 10 }}>
+                          {new Date(item.date_time).toLocaleString(undefined, {
+                            year: "numeric",
+                            month: "numeric",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}
+                        </Text>
+
+                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>
+                          Created At:
+                        </Text>
+                        <Text>{new Date(item.created_at || 0).toLocaleString()}</Text>
+                      </View>
+                    ))
+                  )}
+                </ScrollView>
+              ) : (
+                <ScrollView horizontal contentContainerStyle={{ flexGrow: 1 }}>
+                  <View style={{ flex: 1, minWidth: 1000 }}>
+                    <FlatList
+                      data={appointmentsCurrentList}
+                      keyExtractor={(e) => e.id.toString()}
+                      contentContainerStyle={{
+                        alignItems: "stretch",
+                        paddingHorizontal: 12,
+                      }}
+                      ListHeaderComponent={() => (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            backgroundColor: "#00505cff",
+                            paddingVertical: 16,
+                            paddingHorizontal: 20,
+                            borderTopLeftRadius: 8,
+                            borderTopRightRadius: 8,
+                            minWidth: "100%",
+                            gap: 16,
+                          }}
+                        >
+                          <Text style={{ flex: 1, fontWeight: "bold", color: "#fff" }}>
+                            Patient
+                          </Text>
+                          <Text style={{ flex: 1, fontWeight: "bold", color: "#fff" }}>
+                            Message
+                          </Text>
+                          <Text style={{ flex: 1, fontWeight: "bold", color: "#fff" }}>
+                            Request
+                          </Text>
+                          <Text style={{ flex: 1, fontWeight: "bold", color: "#fff" }}>
+                            Request Date & Time
+                          </Text>
+                          <Text style={{ flex: 1, fontWeight: "bold", color: "#fff" }}>
+                            Created At
+                          </Text>
+                        </View>
+                      )}
+                      renderItem={({ item, index }) => (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            borderBottomWidth: 1,
+                            borderColor: "#ddd",
+                            paddingVertical: 18,
+                            paddingHorizontal: 20,
+                            backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#fff",
+                            gap: 16,
+                          }}
+                        >
+                          <Text style={{ flex: 1 }}>
+                            {`${item.profiles.first_name} ${item.profiles.last_name}`}
+                          </Text>
+
+                          <Text style={{ flex: 1 }}>
+                            {item.message.length > 20 ? (
+                              <>
+                                {item.message.slice(0, 20) + "... "}
+                                <Text
+                                  onPress={() => {
+                                    setSelectedMessage(item.message);
+                                    setModalMessage(true);
+                                  }}
+                                  style={{
+                                    color: "#1976d2",
+                                    textDecorationLine: "underline",
+                                  }}
+                                >
+                                  See More
+                                </Text>
+                              </>
+                            ) : (
+                              item.message
+                            )}
+                          </Text>
+
+                          <TouchableOpacity
+                            style={{ flex: 1 }}
+                            onPress={() => {
+                              openRequestView(item.request);
+                            }}
+                          >
+                            <Text
+                              style={{
+                                color: "#1976d2",
+                                textDecorationLine: "underline",
+                                fontSize: 15,
+                              }}
+                            >
+                              View Request
+                            </Text>
+                          </TouchableOpacity>
+
+                          <Text style={{ flex: 1 }}>
+                            {new Date(item.date_time).toLocaleString(undefined, {
+                              year: "numeric",
+                              month: "numeric",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            })}
+                          </Text>
+
+                          <Text style={{ flex: 1 }}>
+                            {new Date(item.created_at || 0).toLocaleString()}
+                          </Text>
+                        </View>
+                      )}
+                      ListEmptyComponent={() => (
+                        <View
+                          style={{
+                            width: "100%",
+                            alignItems: "center",
+                            marginTop: 40,
+                          }}
+                        >
+                          <Text style={{ fontSize: 20, color: "gray" }}>
+                            - No Appointments -
+                          </Text>
+                        </View>
+                      )}
+                    />
+                  </View>
+                </ScrollView>
+              )}
+            </View>
+          )}
+
+
+          {/* Request View Modal */}
+          <Modal
+            visible={requestViewVisible}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setRequestViewVisible(false)}
+          >
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
             >
               <View
                 style={{
-                  flex: 1,
-                  justifyContent: "center",
+                  width: isMobile ? "90%" : "20%",
+                  backgroundColor: "#ffffffff",
+                  borderRadius: 8,
+                  padding: 20,
                   alignItems: "center",
+                  maxHeight: "80%",
                 }}
               >
-                <View
-                  style={{
-                    width: "80%",
-                    backgroundColor: "white",
-                    borderRadius: 8,
-                    padding: 20,
-                    alignItems: "center",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontWeight: "700",
-                      fontSize: 18,
-                      marginBottom: 12,
-                    }}
-                  >
-                    Requested Dentists/Staff
-                  </Text>
+                <Text style={{ fontWeight: "700", fontSize: 18, marginBottom: 12, color: "#00505cff" }}>
+                  Requested Dentists/Staff
+                </Text>
 
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      marginBottom: 20,
-                      textAlign: "center",
-                      whiteSpace: "pre-line", // helps to show new lines if any
-                    }}
-                  >
-                    {selectedRequest.map((line, i) => (
-                      <Text key={i}>
+                <ScrollView style={{ marginBottom: 20 }}>
+                  {!selectedRequest || selectedRequest.length === 0 || selectedRequest === "" ? (
+                    <Text style={{ fontSize: 16, textAlign: "center", color: "#888" }}>
+                      No dentists/staff were requested.
+                    </Text>
+                  ) : (
+                    selectedRequest.map((line, i) => (
+                      <Text key={i} style={{ fontSize: 16, textAlign: "center" }}>
                         {line}
                         {"\n"}
                       </Text>
-                    ))}
-                  </Text>
+                    ))
+                  )}
+                </ScrollView>
 
-                  <TouchableOpacity
-                    style={{
-                      backgroundColor: "#007bff",
-                      paddingVertical: 10,
-                      paddingHorizontal: 30,
-                      borderRadius: 6,
-                    }}
-                    onPress={() => setRequestViewVisible(false)}
-                  >
-                    <Text style={{ color: "white", fontWeight: "bold" }}>Close</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </Modal>
-                  <Text style={{ flex: 1 }}>
-                    {`${new Date(item.date_time).toLocaleString(undefined, {
-                      year: "numeric",
-                      month: "numeric",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                      hour12: true,
-                    })}`}
-                  </Text>
-                  <Text style={{ flex: 1 }}>
-                    {new Date(item.created_at || 0).toLocaleString()}
-                  </Text>
-                </View>
-              )}
-              ListEmptyComponent={() => (
-                // full-width wrapper that centers the "no items" text
-                <View
-                  style={{ width: "100%", alignItems: "center", marginTop: 40 }}
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: "#b32020ff",
+                    paddingVertical: 10,
+                    paddingHorizontal: 30,
+                    borderRadius: 6,
+                    alignSelf: "center",
+                  }}
+                  onPress={() => setRequestViewVisible(false)}
                 >
-                  <Text style={{ fontSize: 20, color: "gray" }}>
-                    - No Appointments -
-                  </Text>
-                </View>
-              )}
-            />
-          </View>
-        </View>
-        )}
+                  <Text style={{ color: "white", fontWeight: "bold" }}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+
 
         {/* Dashboard Pending --------------------------------------------------------------------------------------- */}
 
-        {dashboardView === "pending" && (
-        <View
-          style={[
-            styles.dashboard,
-            {
-              width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
-              right: dashboardView === "pending" ? 11 : 20000,
-            },
-          ]}
-        >
-          <Text
-            style={{
-              fontSize: 24,
-              fontWeight: "bold",
-              marginBottom: 20,
-              alignSelf: isMobile ? "center" : "flex-start",
-              color: "#003f30ff",
-            }}
-          >
-            Requests
-          </Text>
-          <FlatList
-            data={appointmentsList}
-            keyExtractor={(e) => e.id}
-            style={{ width: "100%" }}
-            contentContainerStyle={{
-              flexGrow: 1,
-              alignItems: "stretch", // <-- always stretch so header/rows fill width
-              paddingHorizontal: 12,
-            }}
-            ListHeaderComponent={() => (
-              <View
-                style={{
-                  flexDirection: "row",
-                  backgroundColor: "#ffe680",
-                  padding: 20,
-                  borderTopLeftRadius: 8,
-                  borderTopRightRadius: 8,
-                  alignSelf: "stretch",
-                }}
-              >
-                <Text style={{ flex: 1, fontWeight: "700" }}>Patient</Text>
-                <Text style={{ flex: 1, fontWeight: "700" }}>Request Date & Time</Text>
-                <Text style={{ flex: 1, fontWeight: "700" }}>Message</Text>
-                <Text style={{ flex: 1, fontWeight: "700" }}>Request</Text>
-                <Text style={{ flex: 1, fontWeight: "700" }}>Created At</Text>
-                <Text
-                  style={{ flex: 1, fontWeight: "700", textAlign: "center" }}
-                >
-                  Action
-                </Text>
-              </View>
-            )}
-            renderItem={({ item }) => (
-              <View
-                style={{
-                  flexDirection: "row",
-                  borderBottomWidth: 1,
-                  borderColor: "#ccc",
-                  padding: 20,
-                  backgroundColor: "#fffce9ff",
-                }}
-              >
-                {/* Patient */}
-                <Text style={{ flex: 1 }}>
-                  {wrapText(
-                    `${item.profiles.first_name} ${item.profiles.last_name}`,
-                    40
-                  )}
-                </Text>
-
-                {/* Date & Time */}
-                <Text style={{ flex: 1 }}>
-                  {`${new Date(item.date_time).toLocaleString(undefined, {
-                    year: "numeric",
-                    month: "numeric",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                    hour12: true,
-                  })}`}
-                </Text>
-
-                {/* Message */}
-                {item.message.length > 20 ? (
-                  <Text style={{ textAlign: "left", flex: 1 }}>
-                    <Text style={{ color: "#000" }}>
-                      {item.message.slice(0, 20) + "..."}
-                    </Text>
-                    <Text
-                    onPress={() => {
-                      setSelectedMessage(item.message);
-                      setModalMessage(true);
-                    }} style={{ color: "blue", textDecorationLine: "underline" }}>
-                      See More
-                    </Text>
-                  </Text>
-                  ) : (
-                    <Text style={{ flex: 1 }}>
-                      {item.message}
-                    </Text>
-                  )}
-
-            <TouchableOpacity
-              style={{ flex: 1 }}
-              onPress={() => openRequestView(item.request)}
+          {dashboardView === "pending" && (
+            <View
+              style={[
+                styles.dashboard,
+                {
+                  width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
+                  right: dashboardView === "pending" ? 11 : 20000,
+                },
+              ]}
             >
-              <Text style={{ color: "blue", textDecorationLine: "underline" }}>
-                View Request
+              <Text
+                style={{
+                  fontSize: 24,
+                  fontWeight: "bold",
+                  marginBottom: 20,
+                  alignSelf: isMobile ? "center" : "flex-start",
+                  color: "#00505cff",
+                }}
+              >
+                Requests
               </Text>
-            </TouchableOpacity>
-                  {/* requestView Modal */}
-            <Modal
-              visible={requestViewVisible}
-              transparent={true}
-              animationType="fade"
-              onRequestClose={() => setRequestViewVisible(false)}
-            >
-              <View
-                style={{
-                  flex: 1,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <View
-                  style={{
-                    width: "80%",
-                    backgroundColor: "white",
-                    borderRadius: 8,
-                    padding: 20,
-                    alignItems: "center",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontWeight: "700",
-                      fontSize: 18,
-                      marginBottom: 12,
-                    }}
-                  >
-                    Requested Dentists/Staff
-                  </Text>
 
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      marginBottom: 20,
-                      textAlign: "center",
-                      whiteSpace: "pre-line", // helps to show new lines if any
-                    }}
-                  >
-                    {selectedRequest.map((line, i) => (
-                      <Text key={i}>
-                        {line}
-                        {"\n"}
-                      </Text>
-                    ))}
-                  </Text>
+              {isMobile ? (
+                // 📱 Mobile: cards vertical
+                <ScrollView contentContainerStyle={{ paddingHorizontal: 12 }}>
+                  {appointmentsList.length === 0 ? (
+                    <View style={{ width: "100%", alignItems: "center", marginTop: 40 }}>
+                      <Text style={{ fontSize: 20, color: "gray" }}>- No Pending -</Text>
+                    </View>
+                  ) : (
+                    appointmentsList.map((item) => (
+                      <View
+                        key={item.id}
+                        style={{
+                          backgroundColor: "#fffce9ff",
+                          borderRadius: 10,
+                          padding: 16,
+                          marginBottom: 16,
+                          shadowColor: "#000",
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.1,
+                          shadowRadius: 4,
+                          elevation: 3,
+                          borderWidth: 1,
+                          borderColor: "#ddd",
+                        }}
+                      >
+                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>Patient:</Text>
+                        <Text style={{ marginBottom: 10 }}>
+                          {wrapText(
+                            `${item.profiles.first_name} ${item.profiles.last_name}`,
+                            40
+                          )}
+                        </Text>
 
-                  <TouchableOpacity
-                    style={{
-                      backgroundColor: "#007bff",
-                      paddingVertical: 10,
-                      paddingHorizontal: 30,
-                      borderRadius: 6,
-                    }}
-                    onPress={() => setRequestViewVisible(false)}
-                  >
-                    <Text style={{ color: "white", fontWeight: "bold" }}>Close</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </Modal>
+                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>Request Date & Time:</Text>
+                        <Text style={{ marginBottom: 10 }}>
+                          {`${new Date(item.date_time).toLocaleString(undefined, {
+                            year: "numeric",
+                            month: "numeric",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}`}
+                        </Text>
 
-                {/* Created At */}
-                <Text style={{ flex: 1 }}>
-                  {new Date(item.created_at || 0).toLocaleString()}
-                </Text>
+                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>Message:</Text>
+                        <Text style={{ marginBottom: 10 }}>
+                          {item.message.length > 20 ? (
+                            <>
+                              {item.message.slice(0, 20) + "... "}
+                              <Text
+                                onPress={() => {
+                                  setSelectedMessage(item.message);
+                                  setModalMessage(true);
+                                }}
+                                style={{ color: "blue", textDecorationLine: "underline" }}
+                              >
+                                See More
+                              </Text>
+                            </>
+                          ) : (
+                            item.message
+                          )}
+                        </Text>
 
-                {/* Action Buttons */}
-                <View
-                  style={{
-                    flex: 1,
-                    flexDirection: isMobile ? "column" : "row",
-                    justifyContent: "center",
-                    gap: 6,
-                  }}
-                >
-                  <TouchableOpacity
-                    onPress={() => setRejectAppointmentID(item.id)}
-                    style={{
-                      backgroundColor: "red",
-                      borderRadius: 8,
-                      paddingHorizontal: 10,
-                      paddingVertical: 6,
-                    }}
-                  >
-                    <Text style={{ color: "white", fontSize: 12, textAlign: 'center' }}>Reject</Text>
-                  </TouchableOpacity>
+                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>Request:</Text>
+                        <TouchableOpacity
+                          onPress={() => openRequestView(item.request)}
+                          style={{ marginBottom: 10 }}
+                        >
+                          <Text style={{ color: "blue", textDecorationLine: "underline" }}>
+                            View Request
+                          </Text>
+                        </TouchableOpacity>
 
-                  <TouchableOpacity
-                    onPress={() => acceptAppointment(item.id)}
-                    style={{
-                      backgroundColor: "green",
-                      borderRadius: 8,
-                      paddingHorizontal: 10,
-                      paddingVertical: 6,
-                    }}
-                  >
-                    <Text style={{ color: "white", fontSize: 12, textAlign: 'center' }}>Accept</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-            ListEmptyComponent={
-              <View
-                style={{ width: "100%", alignItems: "center", marginTop: 40 }}
-              >
-                <Text style={{ fontSize: 20, color: "gray" }}>
-                  - No Pending -
-                </Text>
-              </View>
-            }
-          />
-        </View>
-        )}
+                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>Created At:</Text>
+                        <Text style={{ marginBottom: 10 }}>
+                          {new Date(item.created_at || 0).toLocaleString()}
+                        </Text>
+
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            justifyContent: "flex-start",
+                            gap: 12,
+                          }}
+                        >
+                          <TouchableOpacity
+                            onPress={() => acceptAppointment(item.id)}
+                            style={{
+                              backgroundColor: "#4CAF50",
+                              borderRadius: 8,
+                              paddingHorizontal: 10,
+                              paddingVertical: 6,
+                            }}
+                          >
+                            <Text style={{ color: "white", fontSize: 14, textAlign: "center", fontWeight: "600" }}>
+                              Accept
+                            </Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            onPress={() => setRejectAppointmentID(item.id)}
+                            style={{
+                              backgroundColor: '#b32020ff',
+                              borderRadius: 8,
+                              paddingHorizontal: 10,
+                              paddingVertical: 6,
+                            }}
+                          >
+                            <Text style={{ color: "white", fontSize: 14, textAlign: "center", fontWeight: "600" }}>
+                              Reject
+                            </Text>
+                          </TouchableOpacity>
+
+                        </View>
+                      </View>
+                    ))
+                  )}
+                </ScrollView>
+              ) : (
+                // 🖥 Desktop / Web: table view with improved visibility
+                <ScrollView horizontal contentContainerStyle={{ flexGrow: 1 }}>
+                  <View style={{ flex: 1, minWidth: 900 }}>
+                    <FlatList
+                      data={appointmentsList}
+                      keyExtractor={(e) => e.id.toString()}
+                      contentContainerStyle={{
+                        alignItems: "stretch",
+                        paddingHorizontal: 12,
+                      }}
+                      ListHeaderComponent={() => (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            backgroundColor: "#ffe680",
+                            paddingVertical: 16,
+                            paddingHorizontal: 20,
+                            borderTopLeftRadius: 8,
+                            borderTopRightRadius: 8,
+                            minWidth: "100%",
+                            gap: 16,
+                          }}
+                        >
+                          <Text style={{ flex: 1, fontWeight: "bold"}}>
+                            Patient
+                          </Text>
+                          <Text style={{ flex: 1, fontWeight: "bold"}}>
+                            Request Date & Time
+                          </Text>
+                          <Text style={{ flex: 1, fontWeight: "bold"}}>
+                            Message
+                          </Text>
+                          <Text style={{ flex: 1, fontWeight: "bold"}}>
+                            Request
+                          </Text>
+                          <Text style={{ flex: 1, fontWeight: "bold"}}>
+                            Created At
+                          </Text>
+                          <Text style={{ flex: 1, fontWeight: "bold", textAlign: "center" }}>
+                            Action
+                          </Text>
+                        </View>
+                      )}
+                      renderItem={({ item, index }) => (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            borderBottomWidth: 1,
+                            borderColor: "#ddd",
+                            paddingVertical: 18,
+                            paddingHorizontal: 20,
+                            backgroundColor: index % 2 === 0 ? "#fdf9e5" : "#fff",
+                            gap: 16,
+                          }}
+                        >
+                          {/* Patient */}
+                          <Text style={{ flex: 1, color: "#333" }}>
+                            {wrapText(
+                              `${item.profiles.first_name} ${item.profiles.last_name}`,
+                              40
+                            )}
+                          </Text>
+
+                          {/* Date & Time */}
+                          <Text style={{ flex: 1, color: "#333" }}>
+                            {`${new Date(item.date_time).toLocaleString(undefined, {
+                              year: "numeric",
+                              month: "numeric",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            })}`}
+                          </Text>
+
+                          {/* Message */}
+                          <Text style={{ flex: 1, color: "#333" }}>
+                            {item.message.length > 20 ? (
+                              <>
+                                {item.message.slice(0, 20) + "... "}
+                                <Text
+                                  onPress={() => {
+                                    setSelectedMessage(item.message);
+                                    setModalMessage(true);
+                                  }}
+                                  style={{ color: "#0056b3", textDecorationLine: "underline" }}
+                                >
+                                  See More
+                                </Text>
+                              </>
+                            ) : (
+                              item.message
+                            )}
+                          </Text>
+
+                          {/* Request */}
+                          <TouchableOpacity
+                            style={{ flex: 1 }}
+                            onPress={() => openRequestView(item.request)}
+                          >
+                            <Text style={{ color: "#0056b3", textDecorationLine: "underline" }}>
+                              View Request
+                            </Text>
+                          </TouchableOpacity>
+
+                          {/* Created At */}
+                          <Text style={{ flex: 1, color: "#333" }}>
+                            {new Date(item.created_at || 0).toLocaleString()}
+                          </Text>
+
+                          {/* Action Buttons */}
+                          <View
+                            style={{
+                              flex: 1,
+                              flexDirection: "row",
+                              justifyContent: "center",
+                              gap: 8,
+                            }}
+                          >
+
+                            <TouchableOpacity
+                              onPress={() => acceptAppointment(item.id)}
+                              style={{
+                                backgroundColor: '#4CAF50',
+                                borderRadius: 8,
+                                paddingHorizontal: 10,
+                                paddingVertical: 6,
+                              }}
+                            >
+                              <Text style={{ color: "white", textAlign: "center", fontWeight: "600" }}>
+                                Accept
+                              </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              onPress={() => setRejectAppointmentID(item.id)}
+                              style={{
+                                backgroundColor: '#b32020ff',
+                                borderRadius: 8,
+                                paddingHorizontal: 10,
+                                paddingVertical: 6,
+                              }}
+                            >
+                              <Text style={{ color: "white", textAlign: "center", fontWeight: "600" }}>
+                                Reject
+                              </Text>
+                            </TouchableOpacity>
+
+                          </View>
+                        </View>
+                      )}
+                      ListEmptyComponent={() => (
+                        <View style={{ width: "100%", alignItems: "center", marginTop: 40 }}>
+                          <Text style={{ fontSize: 20, color: "gray" }}>- No Pending -</Text>
+                        </View>
+                      )}
+                    />
+                  </View>
+                </ScrollView>
+              )}
+            </View>
+          )}
 
         {/* Dashboard history --------------------------------------------------------------------------------------- */}
 
@@ -5939,7 +6266,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                   fontWeight: "bold",
                   marginBottom: 20,
                   alignSelf: isMobile ? "center" : "flex-start",
-                  color: "#003f30ff",
+                  color: "#00505cff",
                 }}
               >
                 History
@@ -5948,7 +6275,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               <TouchableOpacity
                 onPress={() => setDownloadModal(true)}
                 style={{
-                  backgroundColor: "#007AFF",
+                  backgroundColor: "#00505cff",
                   paddingVertical: 12,
                   paddingHorizontal: 20,
                   borderRadius: 8,
@@ -5961,6 +6288,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 </Text>
               </TouchableOpacity>
 
+              {/* Download Confirmation Modal */}
               <Modal
                 visible={downloadModal}
                 transparent
@@ -5989,9 +6317,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                     <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 16 }}>
                       Confirm Download
                     </Text>
-                    <Text
-                      style={{ fontSize: 16, marginBottom: 24, textAlign: "center" }}
-                    >
+                    <Text style={{ fontSize: 16, marginBottom: 24, textAlign: "center" }}>
                       Are you sure you want to download the history?
                     </Text>
 
@@ -6038,234 +6364,355 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 </View>
               </Modal>
 
-              <FlatList
-                data={appointmentsPast}
-                keyExtractor={(e) => e.id}
-                style={{ width: "100%" }}
-                contentContainerStyle={{
-                  flexGrow: 1,
-                  alignItems: "stretch",
-                  paddingHorizontal: 12,
-                }}
-                ListHeaderComponent={() => (
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      backgroundColor: "#e0e0e0",
-                      padding: 20,
-                      borderTopLeftRadius: 8,
-                      borderTopRightRadius: 8,
-                      alignSelf: "stretch",
-                    }}
-                  >
-                    <Text style={{ flex: 1, fontWeight: "700" }}>Patient</Text>
-                    <Text style={{ flex: 1, fontWeight: "700" }}>Request Date & Time</Text>
-                    <Text style={{ flex: 1, fontWeight: "700" }}>Message</Text>
-                    <Text style={{ flex: 1, fontWeight: "700" }}>Request</Text>
-                    <Text style={{ flex: 1, fontWeight: "700" }}>Status</Text>
-                    <Text style={{ flex: 1, fontWeight: "700" }}>Rejection Note</Text>
-                    <Text style={{ flex: 1, fontWeight: "700" }}>Created At</Text>
-                    <Text style={{ flex: 1, fontWeight: "700" }}>Attendance</Text> {/* NEW */}
-                  </View>
-                )}
-
-                renderItem={({ item }) => (
-                  <View
-                    style={{
-                      flexDirection: "column",
-                      borderBottomWidth: 1,
-                      borderColor: "#ccc",
-                      padding: 20,
-                      backgroundColor: item.isAccepted ? "#e4ffe0" : "#ffe0e0",
-                      alignSelf: "stretch",
-                    }}
-                  >
-                    <View style={{ flexDirection: "row" }}>
-                      {/* Patient */}
-                      <Text style={{ flex: 1 }}>
-                        {`${item.profiles.first_name} ${item.profiles.last_name}`}
-                      </Text>
-
-                      {/* Request Date & Time */}
-                      <Text style={{ flex: 1 }}>
-                        {new Date(item.date_time).toLocaleString(undefined, {
-                          year: "numeric",
-                          month: "numeric",
-                          day: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
-                          hour12: true,
-                        })}
-                      </Text>
-
-                      {/* Message */}
-                      {item.message.length > 20 ? (
-                        <Text style={{ textAlign: "left", flex: 1 }}>
-                          <Text style={{ color: "#000" }}>
-                            {item.message.slice(0, 20) + "..."}
-                          </Text>
-                          <Text
-                            onPress={() => {
-                              setSelectedMessage(item.message);
-                              setModalMessage(true);
-                            }}
-                            style={{ color: "blue", textDecorationLine: "underline" }}
-                          >
-                            See More
-                          </Text>
-                        </Text>
-                      ) : (
-                        <Text style={{ flex: 1 }}>{item.message}</Text>
-                      )}
-
-            <TouchableOpacity
-              style={{ flex: 1 }}
-              onPress={() => openRequestView(item.request)}
-            >
-              <Text style={{ color: "blue", textDecorationLine: "underline" }}>
-                View Request
-              </Text>
-            </TouchableOpacity>
-                  {/* requestView Modal */}
-            <Modal
-              visible={requestViewVisible}
-              transparent={true}
-              animationType="fade"
-              onRequestClose={() => setRequestViewVisible(false)}
-            >
-              <View
-                style={{
-                  flex: 1,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <View
-                  style={{
-                    width: "80%",
-                    backgroundColor: "white",
-                    borderRadius: 8,
-                    padding: 20,
-                    alignItems: "center",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontWeight: "700",
-                      fontSize: 18,
-                      marginBottom: 12,
-                    }}
-                  >
-                    Requested Dentists/Staff
-                  </Text>
-
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      marginBottom: 20,
-                      textAlign: "center",
-                      whiteSpace: "pre-line", // helps to show new lines if any
-                    }}
-                  >
-                    {selectedRequest.map((line, i) => (
-                      <Text key={i}>
-                        {line}
-                        {"\n"}
-                      </Text>
-                    ))}
-                  </Text>
-
-                  <TouchableOpacity
-                    style={{
-                      backgroundColor: "#007bff",
-                      paddingVertical: 10,
-                      paddingHorizontal: 30,
-                      borderRadius: 6,
-                    }}
-                    onPress={() => setRequestViewVisible(false)}
-                  >
-                    <Text style={{ color: "white", fontWeight: "bold" }}>Close</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </Modal>
-
-                      {/* Status */}
-                      <Text style={{ flex: 1 }}>
-                        {item.isAccepted ? "Accepted" : "Rejected"}
-                      </Text>
-
-                      {/* Rejection Note */}
-                      <Text style={{ flex: 1 }}>
-                        {item.isAccepted === false
-                          ? item.rejection_note || "No rejection note"
-                          : "-"}
-                      </Text>
-
-                      {/* Created At */}
-                      <Text style={{ flex: 1 }}>
-                        {new Date(item.created_at || 0).toLocaleString()}
-                      </Text>
-
-                      {/* Attended Status Column */}
-                      <Text style={{ flex: 1 }}>
-                        {item.isAttended === true
-                          ? "Attended"
-                          : item.isAttended === false
-                          ? "Not Attended"
-                          : "Not Attended"}
-                      </Text>
+              {isMobile ? (
+                // 📱 Mobile: card-style vertical list
+                <ScrollView contentContainerStyle={{ paddingHorizontal: 12 }}>
+                  {appointmentsPast.length === 0 ? (
+                    <View
+                      style={{ width: "100%", alignItems: "center", marginTop: 40 }}
+                    >
+                      <Text style={{ fontSize: 20, color: "gray" }}>- No History -</Text>
                     </View>
-
-                    {item.isAccepted === true && (
+                  ) : (
+                    appointmentsPast.map((item) => (
                       <View
+                        key={item.id}
                         style={{
-                          flexDirection: "row",
-                          justifyContent: "flex-end",
-                          marginTop: 10,
-                          gap: 10,
+                          backgroundColor: item.isAccepted ? "#e4ffe0" : "#ffe0e0",
+                          borderRadius: 10,
+                          padding: 16,
+                          marginBottom: 16,
+                          shadowColor: "#000",
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.1,
+                          shadowRadius: 4,
+                          elevation: 3,
+                          borderWidth: 1,
+                          borderColor: "#ddd",
                         }}
                       >
-                        <TouchableOpacity
-                          onPress={() => attendedAppointment(item.id)}
-                          style={{
-                            backgroundColor: "#4CAF50",
-                            paddingVertical: 8,
-                            paddingHorizontal: 16,
-                            borderRadius: 6,
-                          }}
-                        >
-                          <Text style={{ color: "white", fontWeight: "600" }}>Attended</Text>
-                        </TouchableOpacity>
+                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>Patient:</Text>
+                        <Text style={{ marginBottom: 10 }}>
+                          {`${item.profiles.first_name} ${item.profiles.last_name}`}
+                        </Text>
 
+                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>
+                          Request Date & Time:
+                        </Text>
+                        <Text style={{ marginBottom: 10 }}>
+                          {new Date(item.date_time).toLocaleString(undefined, {
+                            year: "numeric",
+                            month: "numeric",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}
+                        </Text>
+
+                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>Message:</Text>
+                        <Text style={{ marginBottom: 10 }}>
+                          {item.message.length > 20 ? (
+                            <>
+                              {item.message.slice(0, 20) + "... "}
+                              <Text
+                                onPress={() => {
+                                  setSelectedMessage(item.message);
+                                  setModalMessage(true);
+                                }}
+                                style={{ color: "blue", textDecorationLine: "underline" }}
+                              >
+                                See More
+                              </Text>
+                            </>
+                          ) : (
+                            item.message
+                          )}
+                        </Text>
+
+                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>Request:</Text>
                         <TouchableOpacity
-                          onPress={() => notAttendedAppointment(item.id)}
-                          style={{
-                            backgroundColor: "#F44336",
-                            paddingVertical: 8,
-                            paddingHorizontal: 16,
-                            borderRadius: 6,
-                          }}
+                          onPress={() => openRequestView(item.request)}
+                          style={{ marginBottom: 10 }}
                         >
-                          <Text style={{ color: "white", fontWeight: "600" }}>
-                            Not Attended
+                          <Text style={{ color: "blue", textDecorationLine: "underline" }}>
+                            View Request
                           </Text>
                         </TouchableOpacity>
+
+                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>Status:</Text>
+                        <Text style={{ marginBottom: 10 }}>
+                          {item.isAccepted ? "Accepted" : "Rejected"}
+                        </Text>
+
+                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>
+                          Rejection Note:
+                        </Text>
+                        <Text style={{ marginBottom: 10 }}>
+                          {item.isAccepted === false
+                            ? item.rejection_note || "No rejection note"
+                            : "-"}
+                        </Text>
+
+                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>Created At:</Text>
+                        <Text style={{ marginBottom: 10 }}>
+                          {new Date(item.created_at || 0).toLocaleString()}
+                        </Text>
+
+                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>
+                          Attendance:
+                        </Text>
+                        <Text style={{ marginBottom: 10 }}>
+                          {item.isAttended === true
+                            ? "Attended"
+                            : item.isAttended === false
+                            ? "Not Attended"
+                            : "Not Attended"}
+                        </Text>
+
+                        {item.isAccepted === true && (
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              justifyContent: "flex-start",
+                              gap: 12,
+                            }}
+                          >
+                            <TouchableOpacity
+                              onPress={() => attendedAppointment(item.id)}
+                              style={{
+                                backgroundColor: "#4CAF50",
+                                borderRadius: 8,
+                                paddingHorizontal: 10,
+                                paddingVertical: 6,
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  color: "white",
+                                  fontSize: 14,
+                                  textAlign: "center",
+                                  fontWeight: "600",
+                                }}
+                              >
+                                Attended
+                              </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              onPress={() => notAttendedAppointment(item.id)}
+                              style={{
+                                backgroundColor: "#b32020ff",
+                                borderRadius: 8,
+                                paddingHorizontal: 10,
+                                paddingVertical: 6,
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  color: "white",
+                                  fontSize: 14,
+                                  textAlign: "center",
+                                  fontWeight: "600",
+                                }}
+                              >
+                                Not Attended
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </View>
-                    )}
+                    ))
+                  )}
+                </ScrollView>
+              ) : (
+                // 🖥 Desktop: table view
+                <ScrollView horizontal contentContainerStyle={{ flexGrow: 1 }}>
+                  <View style={{ flex: 1, minWidth: 1000 }}>
+                    <FlatList
+                      data={appointmentsPast}
+                      keyExtractor={(e) => e.id}
+                      contentContainerStyle={{
+                        alignItems: "stretch",
+                        paddingHorizontal: 12,
+                      }}
+                      ListHeaderComponent={() => (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            backgroundColor: "#ffffffff",
+                            paddingVertical: 16,
+                            paddingHorizontal: 20,
+                            borderTopLeftRadius: 8,
+                            borderTopRightRadius: 8,
+                            minWidth: "100%",
+                            gap: 16,
+                          }}
+                        >
+                          <Text style={{ flex: 1, fontWeight: "700" }}>Patient</Text>
+                          <Text style={{ flex: 1, fontWeight: "700" }}>
+                            Request Date & Time
+                          </Text>
+                          <Text style={{ flex: 1, fontWeight: "700" }}>Message</Text>
+                          <Text style={{ flex: 1, fontWeight: "700" }}>Request</Text>
+                          <Text style={{ flex: 1, fontWeight: "700" }}>Status</Text>
+                          <Text style={{ flex: 1, fontWeight: "700" }}>Rejection Note</Text>
+                          <Text style={{ flex: 1, fontWeight: "700" }}>Created At</Text>
+                          <Text style={{ flex: 1, fontWeight: "700", textAlign: "center" }}>
+                            Attendance
+                          </Text>
+                          <Text style={{ flex: 1, fontWeight: "700", textAlign: "center" }}>
+                            Actions
+                          </Text>
+                        </View>
+                      )}
+                      renderItem={({ item }) => (
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            borderBottomWidth: 1,
+                            borderColor: "#ccc",
+                            paddingVertical: 18,
+                            paddingHorizontal: 20,
+                            backgroundColor: item.isAccepted ? "#e4ffe0" : "#ffe0e0",
+                            gap: 16,
+                            alignItems: "center",
+                            minWidth: "100%",
+                          }}
+                        >
+                          {/* Patient */}
+                          <Text style={{ flex: 1, color: "#333" }}>
+                            {`${item.profiles.first_name} ${item.profiles.last_name}`}
+                          </Text>
 
-                  </View>
-                )}
+                          {/* Request Date & Time */}
+                          <Text style={{ flex: 1, color: "#333" }}>
+                            {new Date(item.date_time).toLocaleString(undefined, {
+                              year: "numeric",
+                              month: "numeric",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            })}
+                          </Text>
 
-                ListEmptyComponent={() => (
-                  <View style={{ width: "100%", alignItems: "center", marginTop: 40 }}>
-                    <Text style={{ fontSize: 20, color: "gray" }}>- No History -</Text>
+                          {/* Message */}
+                          <Text style={{ flex: 1, color: "#333" }}>
+                            {item.message.length > 20 ? (
+                              <>
+                                {item.message.slice(0, 20) + "... "}
+                                <Text
+                                  onPress={() => {
+                                    setSelectedMessage(item.message);
+                                    setModalMessage(true);
+                                  }}
+                                  style={{ color: "#0056b3", textDecorationLine: "underline" }}
+                                >
+                                  See More
+                                </Text>
+                              </>
+                            ) : (
+                              item.message
+                            )}
+                          </Text>
+
+                          {/* Request */}
+                          <TouchableOpacity
+                            style={{ flex: 1 }}
+                            onPress={() => openRequestView(item.request)}
+                          >
+                            <Text
+                              style={{ color: "#0056b3", textDecorationLine: "underline" }}
+                            >
+                              View Request
+                            </Text>
+                          </TouchableOpacity>
+
+                          {/* Status */}
+                          <Text style={{ flex: 1, color: "#333" }}>
+                            {item.isAccepted ? "Accepted" : "Rejected"}
+                          </Text>
+
+                          {/* Rejection Note */}
+                          <Text style={{ flex: 1, color: "#333" }}>
+                            {item.isAccepted === false
+                              ? item.rejection_note || "No rejection note"
+                              : "-"}
+                          </Text>
+
+                          {/* Created At */}
+                          <Text style={{ flex: 1, color: "#333" }}>
+                            {new Date(item.created_at || 0).toLocaleString()}
+                          </Text>
+
+                          {/* Attendance */}
+                          <Text style={{ flex: 1, color: "#333", textAlign: "center" }}>
+                            {item.isAttended === true
+                              ? "Attended"
+                              : item.isAttended === false
+                              ? "Not Attended"
+                              : "Not Attended"}
+                          </Text>
+
+                          {/* Actions */}
+                          <View
+                            style={{
+                              flex: 1,
+                              flexDirection: "row",
+                              justifyContent: "center",
+                              gap: 12,
+                            }}
+                          >
+                            {item.isAccepted === true && (
+                              <>
+                                <TouchableOpacity
+                                  onPress={() => attendedAppointment(item.id)}
+                                  style={{
+                                    backgroundColor: "#4CAF50",
+                                    paddingVertical: 8,
+                                    paddingHorizontal: 14,
+                                    borderRadius: 6,
+                                  }}
+                                >
+                                  <Text
+                                    style={{ color: "white", fontWeight: "600", fontSize: 8 }}
+                                  >
+                                    Attended
+                                  </Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                  onPress={() => notAttendedAppointment(item.id)}
+                                  style={{
+                                    backgroundColor: "#b32020ff",
+                                    paddingVertical: 8,
+                                    paddingHorizontal: 14,
+                                    borderRadius: 6,
+                                  }}
+                                >
+                                  <Text
+                                    style={{ color: "white", fontWeight: "600", fontSize: 8 }}
+                                  >
+                                    Not Attended
+                                  </Text>
+                                </TouchableOpacity>
+                              </>
+                            )}
+                          </View>
+                        </View>
+                      )}
+                      ListEmptyComponent={() => (
+                        <View style={{ width: "100%", alignItems: "center", marginTop: 40 }}>
+                          <Text style={{ fontSize: 20, color: "gray" }}>- No History -</Text>
+                        </View>
+                      )}
+                    />
                   </View>
-                )}
-              />
+                </ScrollView>
+              )}
             </View>
           )}
-
 
         {/* Dashboard Chats --------------------------------------------------------------------------------------- */}
 
@@ -6302,7 +6749,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 fontWeight: "bold",
                 marginBottom: 20,
                 alignSelf: isMobile ? "center" : "flex-start",
-                color: "#003f30ff",
+                color: "#00505cff",
               }}
             >
               Verification
@@ -6317,7 +6764,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                   marginBottom: 20,
                   alignSelf: "center",
                   justifyContent: "center",
-                  color: "#003f30ff",
+                  color: "#00505cff",
                 }}
               >
                 VERIFY YOUR CLINIC!
@@ -6415,6 +6862,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                   <Text style={{ color: "#fff", fontSize: 16 }}>Verify</Text>
                 </TouchableOpacity>
               )}
+
                 <Modal
                   visible={showVerifyModal}
                   transparent
@@ -6434,7 +6882,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                         backgroundColor: "white",
                         borderRadius: 10,
                         padding: 20,
-                        width: "80%",
+                        width: isMobile ? "90%" : "40%",
                         alignItems: "center",
                       }}
                     >
@@ -6444,6 +6892,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                           fontWeight: "bold",
                           marginBottom: 10,
                           textAlign: "center",
+                          color: '#00505cff'
                         }}
                       >
                         Do you want to verify your clinic?
@@ -6530,7 +6979,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                                 backgroundColor: "white",
                                 borderRadius: 10,
                                 padding: 20,
-                                width: "80%",
+                                width: isMobile ? "90%" : "40%",
                                 alignItems: "center",
                               }}
                             >
@@ -6540,6 +6989,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                                   fontWeight: "bold",
                                   marginBottom: 10,
                                   textAlign: "center",
+                                  color: "#00505cff"
                                 }}
                               >
                                 Upload Required
@@ -6593,7 +7043,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               fontWeight: "bold",
               marginBottom: 20,
               alignSelf: isMobile ? "center" : "flex-start",
-              color: "#003f30ff",
+              color: "#00505cff",
             }}
           >
             About Us
@@ -6618,7 +7068,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
           fontWeight: "bold",
           marginBottom: 10,
           textAlign: "center",
-          color: "#003f30",
+          color: "#00505cff",
         }}
       >
         Explore Dental Clinics Around San Jose Delmonte Bulacan!
@@ -6641,7 +7091,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
           fontSize: 20,
           fontWeight: "bold",
           marginBottom: 10,
-          color: "#003f30",
+          color: "#00505cff",
           textAlign: "center",
         }}
       >
@@ -6666,7 +7116,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
             fontSize: 20,
             fontWeight: "bold",
             marginBottom: 12,
-            color: "#003f30",
+            color: "#00505cff",
             textAlign: "left",
           }}
         >
@@ -6714,7 +7164,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
             fontSize: 20,
             fontWeight: "bold",
             marginBottom: 12,
-            color: "#003f30",
+            color: "#00505cff",
             textAlign: "left",
           }}
         >
@@ -6766,7 +7216,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
         onPress={() => setTermsOfUse(true)}
         style={{
           marginTop: 30,
-          backgroundColor: "#00796b",
+          backgroundColor: "#00505cff",
           paddingVertical: 12,
           paddingHorizontal: 20,
           borderRadius: 10,
@@ -6797,7 +7247,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 fontWeight: "bold",
                 marginBottom: 20,
                 textAlign: "center",
-                color: "#003f30",
+                color: "#00505cff",
               }}
             >
               Meet the Team
@@ -6807,7 +7257,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               style={{
                 alignItems: "center",
                 marginBottom: 30,
-                backgroundColor: "#f0fff0",
+                backgroundColor: "#00505cff",
                 borderRadius: 16,
                 padding: 20,
                 shadowColor: "#000",
@@ -6830,10 +7280,10 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 }}
               />
 
-              <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white", marginTop: 8 }}>
                 Miguel Del Rosario
               </Text>
-              <Text style={{ fontSize: 16, color: "#555" }}>
+              <Text style={{ fontSize: 16, color: "white", }}>
                 Project Manager
               </Text>
             </View>
@@ -6841,7 +7291,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               style={{
                 alignItems: "center",
                 marginBottom: 30,
-                backgroundColor: "#f0fff0",
+                backgroundColor: "#00505cff",
                 borderRadius: 16,
                 padding: 20,
                 shadowColor: "#000",
@@ -6864,10 +7314,10 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 }}
               />
 
-              <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white", marginTop: 8 }}>
                 Paala James
               </Text>
-              <Text style={{ fontSize: 16, color: "#555" }}>
+              <Text style={{ fontSize: 16, color: "white",}}>
                 Programmer Specialist
               </Text>
             </View>
@@ -6876,7 +7326,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               style={{
                 alignItems: "center",
                 marginBottom: 30,
-                backgroundColor: "#f0fff0",
+                backgroundColor: "#00505cff",
                 borderRadius: 16,
                 padding: 20,
                 shadowColor: "#000",
@@ -6899,10 +7349,10 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 }}
               />
 
-              <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white", marginTop: 8 }}>
                 Elbert Rosales
               </Text>
-              <Text style={{ fontSize: 16, color: "#555" }}>
+              <Text style={{ fontSize: 16, color: "white",}}>
                 Quality Assurance
               </Text>
             </View>
@@ -6911,7 +7361,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
               style={{
                 alignItems: "center",
                 marginBottom: 30,
-                backgroundColor: "#f0fff0",
+                backgroundColor: "#00505cff",
                 borderRadius: 16,
                 padding: 20,
                 shadowColor: "#000",
@@ -6934,10 +7384,10 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                 }}
               />
 
-              <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white", marginTop: 8 }}>
                 Rex Carlo Rosales
               </Text>
-              <Text style={{ fontSize: 16, color: "#555" }}>
+              <Text style={{ fontSize: 16, color: "white",}}>
                 System Analyst
               </Text>
               </View>
@@ -6945,171 +7395,262 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
           </ScrollView>
         </View>
         )}
-      {/* Modal */}
-      <Modal
-        visible={termsOfUse}
-        transparent
-        onRequestClose={() => setTermsOfUse(false)}
-      >
-        <View
-        style={{
-          flex: 1,
-          backgroundColor: "rgba(0,0,0,0.5)",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <View
+
+        {/* Modal */}
+        <Modal
+          visible={termsOfUse}
+          transparent
+          onRequestClose={() => setTermsOfUse(false)}
+        >
+          <View
           style={{
-            backgroundColor: "white",
-            width: "90%",
-            padding: 20,
-            borderRadius: 16,
-            maxHeight: "80%",
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "center",
+            alignItems: "center",
           }}
         >
-<ScrollView>
-  <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10, color: "#003f30" }}>
-    SMILE STUDIO: Terms of Use
-  </Text>
-  <Text style={{ fontSize: 14, marginBottom: 10, color: "#444" }}>
-    <Text style={{ fontWeight: "bold" }}>Last Updated:</Text> May 8, 2025{"\n"}
-    <Text style={{ fontWeight: "bold" }}>Effective Immediately</Text>
-  </Text>
-
-  <Text style={{ fontSize: 14, color: "#444", lineHeight: 22 }}>
-    By accessing or using Smile Studio: A Cross-Platform Dental Appointment System with AR Teeth and Braces Filter for Dental Patients in San Jose Del Monte, Bulacan, owned and operated by Scuba Scripter and Pixel Cowboy Team, you agree to be legally bound by these Terms of Use. These Terms govern your use of Smile Studio, a web-based and mobile system designed for managing dental appointments with notification-based follow-up reminders.{"\n\n"}
-
-    If you do not agree with any part of these Terms, you must immediately cease all use of the Platform. Continued access constitutes unconditional acceptance of these Terms and any future modifications.{"\n\n"}
-
-    <Text style={{ fontWeight: "bold" }}>1. Definitions{"\n"}</Text>
-    • “Appointment” – A scheduled dental consultation booked through Smile Studio.{"\n"}
-    • “No-Show” – Failure to attend a booked Appointment without prior cancellation.{"\n"}
-    • “Grace Period” – A 15-minute window after a scheduled Appointment time during which a late arrival may still be accommodated.{"\n"}
-    • “Malicious Activity” – Any action that disrupts, exploits, or harms the Platform, its users, or affiliated clinics (e.g., hacking, fake bookings, harassment).{"\n\n"}
-
-    <Text style={{ fontWeight: "bold" }}>2. Eligibility & Account Registration{"\n"}</Text>
-    <Text style={{ fontWeight: "bold" }}>2.1 Age Requirement</Text>{" "}
-    The Platform is accessible to users of all ages but is currently intended for non-commercial, academic/capstone project use only.{"\n"}
-    Minors (under 18) must obtain parental/guardian consent before booking Appointments.{"\n"}
-    <Text style={{ fontWeight: "bold" }}>2.2 Account Responsibility</Text>{" "}
-    Users must provide accurate, current, and complete information during registration. You are solely responsible for:{"\n"}
-    • Maintaining the confidentiality of your login credentials.{"\n"}
-    • All activities conducted under your account.{"\n"}
-    • Immediately notifying us of any unauthorized account use.{"\n\n"}
-
-    <Text style={{ fontWeight: "bold" }}>3. Permitted & Prohibited Use{"\n"}</Text>
-    <Text style={{ fontWeight: "bold" }}>3.1 Acceptable Use</Text>{" "}
-    You may use Smile Studio only for lawful purposes, including:{"\n"}
-    • Booking legitimate dental Appointments at partner clinics in San Jose Del Monte, Bulacan.{"\n"}
-    • Accessing clinic information, availability, location, pricing, services, and notification assistance.{"\n\n"}
-
-    <Text style={{ fontWeight: "bold" }}>3.2 Strictly Prohibited Conduct</Text>{" "}
-    Violations will result in immediate account suspension or termination. You agree NOT to:{"\n"}
-    • Create fake or duplicate Appointments (e.g., under false names).{"\n"}
-    • Engage in hacking, phishing, or data scraping (automated or manual).{"\n"}
-    • Harass clinic staff or other users (e.g., trolling, abusive messages).{"\n"}
-    • Upload malicious software (viruses, spyware) or disrupt server operations.{"\n"}
-    • Misrepresent your identity or medical needs.{"\n"}
-    • Circumvent appointment limits (e.g., creating multiple accounts).{"\n\n"}
-
-    <Text style={{ fontWeight: "bold" }}>4. Appointment Policies{"\n"}</Text>
-    <Text style={{ fontWeight: "bold" }}>4.1 Booking & Cancellation</Text>{" "}
-    • Appointments operate on a “First-Appoint, First-Served” basis.{"\n"}
-    • No downpayment is required (“Appoint Now, Pay Later”).{"\n"}
-    • Cancellations must be made at least 24 hours in advance via the Platform.{"\n\n"}
-
-    <Text style={{ fontWeight: "bold" }}>4.2 No-Show & Late Arrival Policy</Text>{" "}
-    • Notification Reminders: Users receive automated alerts before their scheduled Appointment.{"\n"}
-    • Grace Period: A 15-minute late arrival window is permitted. After this:{"\n"}
-      • The Appointment is automatically forfeited.{"\n"}
-      • The slot is released to other patients.{"\n"}
-      • The User must reschedule.{"\n"}
-    Strike System:{"\n"}
-    • 1st No-Show = Warning (User is notified of policy violation).{"\n"}
-    • 2nd No-Show = 1-month Account Suspension.{"\n"}
-    Suspended accounts cannot book new Appointments but may still view clinic information.{"\n\n"}
-
-    <Text style={{ fontWeight: "bold" }}>4.3 Clinic Cancellations</Text>{" "}
-    Partner clinics reserve the right to reschedule or cancel Appointments due to unforeseen circumstances such as dentist unavailability, equipment failure, or emergencies. Patients will be promptly notified via the Platform’s notification system.{"\n\n"}
-
-    <Text style={{ fontWeight: "bold" }}>5. Medical Disclaimer & Patient Responsibilities{"\n"}</Text>
-    <Text style={{ fontWeight: "bold" }}>5.1 Non-Emergency Use</Text>{" "}
-    Smile Studio is not intended for medical emergencies. If you are experiencing severe pain, bleeding, infection, or urgent dental issues, please call 911 (Philippine hotline: 117) or proceed to the nearest emergency facility.{"\n"}
-    <Text style={{ fontWeight: "bold" }}>5.2 Patient Honesty</Text>{" "}
-    Patients must provide truthful and complete medical information when booking and attending Appointments.{"\n"}
-    <Text style={{ fontWeight: "bold" }}>5.3 AR Filter Disclaimer</Text>{" "}
-    The AR Teeth and Braces Filter is for illustrative and educational purposes only. It is not a substitute for professional dental advice or treatment planning.{"\n\n"}
-
-    <Text style={{ fontWeight: "bold" }}>6. Intellectual Property Rights{"\n"}</Text>
-    <Text style={{ fontWeight: "bold" }}>6.1 Ownership</Text>{" "}
-    All text, graphics, logos, clinic data, AR filters, and notification software are the exclusive property of Smile Studio and its partner clinics.{"\n"}
-    <Text style={{ fontWeight: "bold" }}>6.2 Limited License</Text>{" "}
-    Users are granted a revocable, non-exclusive license to access the Platform for personal, non-commercial healthcare purposes.{"\n\n"}
-
-    <Text style={{ fontWeight: "bold" }}>7. Privacy & Data Security{"\n"}</Text>
-    Our Privacy Policy explains how we collect, store, and protect your data. By using the Platform, you agree to its terms.{"\n"}
-    <Text style={{ fontWeight: "bold" }}>7.1 Confidentiality</Text>{" "}
-    All medical information shared during Appointments is protected under the Philippine Data Privacy Act of 2012 (Republic Act No. 10173).{"\n"}
-    <Text style={{ fontWeight: "bold" }}>7.2 Data Retention</Text>{" "}
-    Patient data, including appointment records, is stored for a maximum of 12 months for reporting and scheduling purposes. After this period, data is securely deleted in compliance with Philippine law.{"\n\n"}
-
-    <Text style={{ fontWeight: "bold" }}>8. Disclaimers & Limitation of Liability{"\n"}</Text>
-    <Text style={{ fontWeight: "bold" }}>8.1 No Medical Guarantees</Text>{" "}
-    Smile Studio is not a healthcare provider. We do not guarantee diagnosis accuracy, treatment outcomes, or clinic availability.{"\n"}
-    <Text style={{ fontWeight: "bold" }}>8.2 Platform “As Is”</Text>{" "}
-    The Platform may experience downtime, bugs, or delays.{"\n"}
-    <Text style={{ fontWeight: "bold" }}>8.3 No Financial Liability</Text>{" "}
-    We do not charge users and do not handle payments, medical services, or clinic operations.{"\n"}
-    We are not liable for:{"\n"}
-    • User misconduct (e.g., no-shows, fake bookings).{"\n"}
-    • Clinic errors (e.g., overbooking, misdiagnosis).{"\n"}
-    • Indirect damages (e.g., lost time, travel costs).{"\n\n"}
-
-    <Text style={{ fontWeight: "bold" }}>9. Feedback & Complaints{"\n"}</Text>
-    Users may provide feedback or file complaints regarding clinics, services, or system errors by contacting Smile Studio Support.     Reports of unprofessional conduct by clinics or users will be reviewed, and appropriate action may include warnings, suspensions, or termination of accounts.{"\n\n"}
-
-    <Text style={{ fontWeight: "bold" }}>10. Termination & Enforcement{"\n"}</Text>
-    <Text style={{ fontWeight: "bold" }}>10.1 By Smile Studio</Text>{" "}
-    We may suspend or terminate accounts for:{"\n"}
-    • Breach of these Terms (e.g., fake Appointments, harassment).{"\n"}
-    • Malicious Activity (e.g., hacking attempts).{"\n"}
-    • Excessive No-Shows (per Section 4.2).{"\n"}
-    <Text style={{ fontWeight: "bold" }}>10.2 By Users</Text>{" "}
-    You may deactivate your account at any time by contacting: (+63) 921-888-1835{"\n\n"}
-
-    <Text style={{ fontWeight: "bold" }}>11. Governing Law & Dispute Resolution{"\n"}</Text>
-    These Terms are governed by Philippine law (Republic Act No. 10173, Data Privacy Act of 2012).{"\n"}
-    Disputes must first undergo mediation in San Jose Del Monte, Bulacan.{"\n"}
-    Unresolved disputes will be settled in Philippine courts.{"\n\n"}
-
-    <Text style={{ fontWeight: "bold" }}>12. Contact Information{"\n"}</Text>
-    Smile Studio Support{"\n"}
-    Scuba Scripter and Pixel Cowboy Team{"\n"}
-    (+63) 921-888-1835{"\n"}
-    San Jose Del Monte, Bulacan, Philippines{"\n\n"}
-
-    <Text style={{ fontWeight: "bold" }}>Acknowledgment{"\n"}</Text>
-    By creating an account or booking an Appointment through Smile Studio, you acknowledge that you have read, understood, and agreed to these Terms of Use.
-  </Text>
-</ScrollView>
-
-          <TouchableOpacity
-            onPress={() => setTermsOfUse(false)}
+          <View
             style={{
-              marginTop: 20,
-              backgroundColor: "#003f30",
-              paddingVertical: 10,
-              borderRadius: 8,
+              backgroundColor: "white",
+              width: "90%",
+              padding: 20,
+              borderRadius: 16,
+              maxHeight: "80%",
             }}
           >
-            <Text style={{ color: "white", textAlign: "center", fontWeight: "bold" }}>
-              Close
-            </Text>
-          </TouchableOpacity>
+  <ScrollView>
+    <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10, color: "#00505cff" }}>
+      SMILE STUDIO
+    </Text>
+
+
+    {/* Divider */}
+    <View style={{ marginVertical: 20, borderBottomWidth: 1, borderBottomColor: "#ccc" }} />
+
+    {/* Privacy Policy Title */}
+    <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10, color: "#00505cff" }}>
+      Privacy Policy
+    </Text>
+    <Text style={{ fontSize: 14, marginBottom: 10, color: "#444" }}>
+      <Text style={{ fontWeight: "bold" }}>Last Updated:</Text> May 8, 2025{"\n"}
+      <Text style={{ fontWeight: "bold" }}>Effective Immediately</Text>
+    </Text>
+
+    <Text style={{ fontSize: 14, color: "#444", lineHeight: 22 }}>
+      By accessing or using Smile Studio: A Cross-Platform Dental Appointment System with AR Teeth and Braces Filter for Dental Patients in San Jose Del Monte, Bulacan, owned and operated by Scuba Scripter and Pixel Cowboy Team, you agree to be legally bound by these Terms of Use. These Terms govern your use of Smile Studio, a web-based and mobile system designed for managing dental appointments with notification-based follow-up reminders.{"\n\n"}
+
+      If you do not agree with any part of these Terms, you must immediately cease all use of the Platform. Continued access constitutes unconditional acceptance of these Terms and any future modifications.{"\n\n"}
+
+      <Text style={{ fontWeight: "bold" }}>1. Definitions{"\n"}</Text>
+      • “Appointment” – A scheduled dental consultation booked through Smile Studio.{"\n"}
+      • “No-Show” – Failure to attend a booked Appointment without prior cancellation.{"\n"}
+      • “Grace Period” – A 15-minute window after a scheduled Appointment time during which a late arrival may still be accommodated.{"\n"}
+      • “Malicious Activity” – Any action that disrupts, exploits, or harms the Platform, its users, or affiliated clinics (e.g., hacking, fake bookings, harassment).{"\n\n"}
+
+      <Text style={{ fontWeight: "bold" }}>2. Eligibility & Account Registration{"\n"}</Text>
+      <Text style={{ fontWeight: "bold" }}>2.1 Age Requirement</Text>{" "}
+      The Platform is accessible to users of all ages but is currently intended for non-commercial, academic/capstone project use only.{"\n"}
+      Minors (under 18) must obtain parental/guardian consent before booking Appointments.{"\n"}
+      <Text style={{ fontWeight: "bold" }}>2.2 Account Responsibility</Text>{" "}
+      Users must provide accurate, current, and complete information during registration. You are solely responsible for:{"\n"}
+      • Maintaining the confidentiality of your login credentials.{"\n"}
+      • All activities conducted under your account.{"\n"}
+      • Immediately notifying us of any unauthorized account use.{"\n\n"}
+
+      <Text style={{ fontWeight: "bold" }}>3. Permitted & Prohibited Use{"\n"}</Text>
+      <Text style={{ fontWeight: "bold" }}>3.1 Acceptable Use</Text>{" "}
+      You may use Smile Studio only for lawful purposes, including:{"\n"}
+      • Booking legitimate dental Appointments at partner clinics in San Jose Del Monte, Bulacan.{"\n"}
+      • Accessing clinic information, availability, location, pricing, services, and notification assistance.{"\n\n"}
+
+      <Text style={{ fontWeight: "bold" }}>3.2 Strictly Prohibited Conduct</Text>{" "}
+      Violations will result in immediate account suspension or termination. You agree NOT to:{"\n"}
+      • Create fake or duplicate Appointments (e.g., under false names).{"\n"}
+      • Engage in hacking, phishing, or data scraping (automated or manual).{"\n"}
+      • Harass clinic staff or other users (e.g., trolling, abusive messages).{"\n"}
+      • Upload malicious software (viruses, spyware) or disrupt server operations.{"\n"}
+      • Misrepresent your identity or medical needs.{"\n"}
+      • Circumvent appointment limits (e.g., creating multiple accounts).{"\n\n"}
+
+      <Text style={{ fontWeight: "bold" }}>4. Appointment Policies{"\n"}</Text>
+      <Text style={{ fontWeight: "bold" }}>4.1 Booking & Cancellation</Text>{" "}
+      • Appointments operate on a “First-Appoint, First-Served” basis.{"\n"}
+      • No downpayment is required (“Appoint Now, Pay Later”).{"\n"}
+      • Cancellations must be made at least 24 hours in advance via the Platform.{"\n\n"}
+
+      <Text style={{ fontWeight: "bold" }}>4.2 No-Show & Late Arrival Policy</Text>{" "}
+      • Notification Reminders: Users receive automated alerts before their scheduled Appointment.{"\n"}
+      • Grace Period: A 15-minute late arrival window is permitted. After this:{"\n"}
+        • The Appointment is automatically forfeited.{"\n"}
+        • The slot is released to other patients.{"\n"}
+        • The User must reschedule.{"\n"}
+      Strike System:{"\n"}
+      • 1st No-Show = Warning (User is notified of policy violation).{"\n"}
+      • 2nd No-Show = 1-month Account Suspension.{"\n"}
+      Suspended accounts cannot book new Appointments but may still view clinic information.{"\n\n"}
+
+      <Text style={{ fontWeight: "bold" }}>4.3 Clinic Cancellations</Text>{" "}
+      Partner clinics reserve the right to reschedule or cancel Appointments due to unforeseen circumstances such as dentist unavailability, equipment failure, or emergencies. Patients will be promptly notified via the Platform’s notification system.{"\n\n"}
+
+      <Text style={{ fontWeight: "bold" }}>5. Medical Disclaimer & Patient Responsibilities{"\n"}</Text>
+      <Text style={{ fontWeight: "bold" }}>5.1 Non-Emergency Use</Text>{" "}
+      Smile Studio is not intended for medical emergencies. If you are experiencing severe pain, bleeding, infection, or urgent dental issues, please call 911 (Philippine hotline: 117) or proceed to the nearest emergency facility.{"\n"}
+      <Text style={{ fontWeight: "bold" }}>5.2 Patient Honesty</Text>{" "}
+      Patients must provide truthful and complete medical information when booking and attending Appointments.{"\n"}
+      <Text style={{ fontWeight: "bold" }}>5.3 AR Filter Disclaimer</Text>{" "}
+      The AR Teeth and Braces Filter is for illustrative and educational purposes only. It is not a substitute for professional dental advice or treatment planning.{"\n\n"}
+
+      <Text style={{ fontWeight: "bold" }}>6. Intellectual Property Rights{"\n"}</Text>
+      <Text style={{ fontWeight: "bold" }}>6.1 Ownership</Text>{" "}
+      All text, graphics, logos, clinic data, AR filters, and notification software are the exclusive property of Smile Studio and its partner clinics.{"\n"}
+      <Text style={{ fontWeight: "bold" }}>6.2 Limited License</Text>{" "}
+      Users are granted a revocable, non-exclusive license to access the Platform for personal, non-commercial healthcare purposes.{"\n\n"}
+
+      <Text style={{ fontWeight: "bold" }}>7. Privacy & Data Security{"\n"}</Text>
+      Our Privacy Policy explains how we collect, store, and protect your data. By using the Platform, you agree to its terms.{"\n"}
+      <Text style={{ fontWeight: "bold" }}>7.1 Confidentiality</Text>{" "}
+      All medical information shared during Appointments is protected under the Philippine Data Privacy Act of 2012 (Republic Act No. 10173).{"\n"}
+      <Text style={{ fontWeight: "bold" }}>7.2 Data Retention</Text>{" "}
+      Patient data, including appointment records, is stored for a maximum of 12 months for reporting and scheduling purposes. After this period, data is securely deleted in compliance with Philippine law.{"\n\n"}
+
+      <Text style={{ fontWeight: "bold" }}>8. Disclaimers & Limitation of Liability{"\n"}</Text>
+      <Text style={{ fontWeight: "bold" }}>8.1 No Medical Guarantees</Text>{" "}
+      Smile Studio is not a healthcare provider. We do not guarantee diagnosis accuracy, treatment outcomes, or clinic availability.{"\n"}
+      <Text style={{ fontWeight: "bold" }}>8.2 Platform “As Is”</Text>{" "}
+      The Platform may experience downtime, bugs, or delays.{"\n"}
+      <Text style={{ fontWeight: "bold" }}>8.3 No Financial Liability</Text>{" "}
+      We do not charge users and do not handle payments, medical services, or clinic operations.{"\n"}
+      We are not liable for:{"\n"}
+      • User misconduct (e.g., no-shows, fake bookings).{"\n"}
+      • Clinic errors (e.g., overbooking, misdiagnosis).{"\n"}
+      • Indirect damages (e.g., lost time, travel costs).{"\n\n"}
+
+      <Text style={{ fontWeight: "bold" }}>9. Feedback & Complaints{"\n"}</Text>
+      Users may provide feedback or file complaints regarding clinics, services, or system errors by contacting Smile Studio Support.     Reports of unprofessional conduct by clinics or users will be reviewed, and appropriate action may include warnings, suspensions, or termination of accounts.{"\n\n"}
+
+      <Text style={{ fontWeight: "bold" }}>10. Termination & Enforcement{"\n"}</Text>
+      <Text style={{ fontWeight: "bold" }}>10.1 By Smile Studio</Text>{" "}
+      We may suspend or terminate accounts for:{"\n"}
+      • Breach of these Terms (e.g., fake Appointments, harassment).{"\n"}
+      • Malicious Activity (e.g., hacking attempts).{"\n"}
+      • Excessive No-Shows (per Section 4.2).{"\n"}
+      <Text style={{ fontWeight: "bold" }}>10.2 By Users</Text>{" "}
+      You may deactivate your account at any time by contacting: (+63) 921-888-1835{"\n\n"}
+
+      <Text style={{ fontWeight: "bold" }}>11. Governing Law & Dispute Resolution{"\n"}</Text>
+      These Terms are governed by Philippine law (Republic Act No. 10173, Data Privacy Act of 2012).{"\n"}
+      Disputes must first undergo mediation in San Jose Del Monte, Bulacan.{"\n"}
+      Unresolved disputes will be settled in Philippine courts.{"\n\n"}
+
+      <Text style={{ fontWeight: "bold" }}>12. Contact Information{"\n"}</Text>
+      Smile Studio Support{"\n"}
+      Scuba Scripter and Pixel Cowboy Team{"\n"}
+      (+63) 921-888-1835{"\n"}
+      San Jose Del Monte, Bulacan, Philippines{"\n\n"}
+
+      <Text style={{ fontWeight: "bold" }}>Acknowledgment{"\n"}</Text>
+      By creating an account or booking an Appointment through Smile Studio, you acknowledge that you have read, understood, and agreed to these Terms of Use.
+    </Text>
+
+
+          {/* Divider */}
+          <View style={{ marginVertical: 20, borderBottomWidth: 1, borderBottomColor: "#ccc" }} />
+
+          {/* Privacy Policy Title */}
+          <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10, color: "#00505cff" }}>
+            Privacy Policy
+          </Text>
+
+          {/* Full Privacy Policy Content */}
+          <Text style={{ fontSize: 14, color: "#444", lineHeight: 22 }}>
+            <Text style={{ fontWeight: "bold" }}>Effective Date:</Text> May 8, 2025{"\n\n"}
+
+            This Privacy Policy outlines how Smile Studio (“we”, “our”, or “us”) collects, uses, stores, and protects your personal information when you access or use our platform.
+
+            {"\n\n"}<Text style={{ fontWeight: "bold" }}>1. Information We Collect</Text>{"\n"}
+            We collect the following types of information from users:{"\n"}
+            • Personal identification (name, age, contact number, address){"\n"}
+            • Appointment data (scheduled date/time, clinic, purpose){"\n"}
+            • Optional medical details you provide{"\n"}
+            • Usage data (device type, IP address, app interactions){"\n"}
+            • AR Filter image interactions (not stored or transmitted)
+
+            {"\n\n"}<Text style={{ fontWeight: "bold" }}>2. How We Use Your Information</Text>{"\n"}
+            Your information is used to:{"\n"}
+            • Schedule and manage dental appointments{"\n"}
+            • Send notifications and reminders{"\n"}
+            • Improve system performance and user experience{"\n"}
+            • Provide academic insights for capstone research (anonymized){"\n"}
+            • Ensure compliance with dental service requirements
+
+            {"\n\n"}<Text style={{ fontWeight: "bold" }}>3. Legal Basis for Processing</Text>{"\n"}
+            We process your personal data based on:{"\n"}
+            • Your explicit consent when signing up and booking{"\n"}
+            • Legitimate interest in providing the platform{"\n"}
+            • Compliance with local laws and academic guidelines
+
+            {"\n\n"}<Text style={{ fontWeight: "bold" }}>4. Data Sharing & Disclosure</Text>{"\n"}
+            • Your personal data is shared only with authorized dental clinics that you book with.{"\n"}
+            • We do not sell, rent, or disclose your data to third parties.{"\n"}
+            • Data may be accessed by developers strictly for technical support and improvement.
+
+            {"\n\n"}<Text style={{ fontWeight: "bold" }}>5. Data Retention Policy</Text>{"\n"}
+            • We retain personal data for 12 months after your last activity.{"\n"}
+            • After this period, data is automatically deleted or anonymized.{"\n"}
+            • You may request earlier deletion at any time.
+
+            {"\n\n"}<Text style={{ fontWeight: "bold" }}>6. Security Measures</Text>{"\n"}
+            We protect your data using:{"\n"}
+            • Secure server connections (HTTPS){"\n"}
+            • Encrypted data storage and password protection{"\n"}
+            • Access restrictions for authorized personnel only{"\n"}
+            • Regular app maintenance and data privacy training
+
+            {"\n\n"}<Text style={{ fontWeight: "bold" }}>7. Your Rights Under RA 10173</Text>{"\n"}
+            Under the Philippine Data Privacy Act of 2012, you have the right to:{"\n"}
+            • Be informed about data collection and usage{"\n"}
+            • Access your personal data{"\n"}
+            • Correct inaccurate or outdated information{"\n"}
+            • Object to data processing{"\n"}
+            • Withdraw consent at any time{"\n"}
+            • Lodge a complaint with the National Privacy Commission
+
+            {"\n\n"}<Text style={{ fontWeight: "bold" }}>8. Children’s Privacy</Text>{"\n"}
+            The platform is open to minors with parental or guardian consent. We do not knowingly collect data from users under 13 without verified adult approval.
+
+            {"\n\n"}<Text style={{ fontWeight: "bold" }}>9. Third-Party Links & Integrations</Text>{"\n"}
+            Smile Studio may link to third-party clinics or systems. We are not responsible for how those parties handle your data. Always review their own privacy practices.
+
+            {"\n\n"}<Text style={{ fontWeight: "bold" }}>10. Changes to This Privacy Policy</Text>{"\n"}
+            We may revise this policy as needed. Updates will be reflected in the app and are effective immediately upon posting.
+
+            {"\n\n"}<Text style={{ fontWeight: "bold" }}>11. Contact Us</Text>{"\n"}
+            For questions or concerns, contact:{"\n"}
+            Smile Studio Support{"\n"}
+            Scuba Scripter and Pixel Cowboy Team{"\n"}
+            (+63) 921-888-1835{"\n"}
+            San Jose Del Monte, Bulacan, Philippines
+          </Text>
+
+  </ScrollView>
+
+            <TouchableOpacity
+              onPress={() => setTermsOfUse(false)}
+              style={{
+                marginTop: 20,
+                backgroundColor: "#00505cff",
+                paddingVertical: 10,
+                borderRadius: 8,
+              }}
+            >
+              <Text style={{ color: "white", textAlign: "center", fontWeight: "bold" }}>
+                Close
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-      </Modal>
+        </Modal>
 
 
       </LinearGradient>
@@ -7127,13 +7668,14 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 30,
     padding: 60,
     justifyContent: "flex-start",
-    alignItems: "center", // Make it higher than dashboard
-    width: 380,
+    alignItems: "center",
+    width: '100%',   // <-- This makes it stretch full width of the parent
     elevation: 5,
     shadowColor: "#00000045",
     shadowRadius: 1,
     shadowOffset: { width: 6, height: 6 },
   },
+
   toggleButtonWrapper: {
     left: 0,
     top: 50,
@@ -7155,9 +7697,9 @@ const styles = StyleSheet.create({
     alignContent: "center",
   },
   mar2: {
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 16,
-    marginTop: 8,
+    marginTop: 1,
     marginBottom: 0,
     width: "100%",
     alignItems: "flex-start",
@@ -7165,7 +7707,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "#000000ff",
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: "600",
     letterSpacing: 0.5,
   },

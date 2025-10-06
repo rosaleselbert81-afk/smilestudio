@@ -8,6 +8,7 @@ import {
   TextInput,
   Modal,
   StyleSheet,
+  useWindowDimensions,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 
@@ -40,6 +41,7 @@ function TimePicker({
   );
 
   const ampm = ["AM", "PM"];
+  const { width } = useWindowDimensions();
 
   return (
     <View style={styles.timePickerRow}>
@@ -180,6 +182,8 @@ function DentistScheduleEditor({
 
   const hasSchedule = true;
   const is24Hours = false;
+
+  const { width } = useWindowDimensions();
 
   const timeToMinutes = (h, m, ampm) => {
     let hour24 = h % 12;
@@ -333,8 +337,10 @@ function DentistScheduleEditor({
         onRequestClose={() => setShowConfirmModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Confirm Save</Text>
+          <View style={{...styles.modalContainer,
+           ...(width > 720 ? { width: '40%' } : { width: '90%' }),
+          }}>
+            <Text style={{...styles.modalTitle, color: '#00505cff'}}>Confirm Save</Text>
             <Text style={styles.modalText}>
               Are you sure you want to save this schedule?
             </Text>
@@ -368,9 +374,11 @@ function DentistScheduleEditor({
                     Alert.alert("Error", "Failed to save schedule to DB.");
                     console.error("Save error:", error);
                   }
+                  
+                  onBack
                 }}
               >
-                <Text style={styles.buttonText}>Yes, Save</Text>
+                <Text style={styles.buttonText}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -430,14 +438,14 @@ const styles = StyleSheet.create({
   },
   addSlotButton: {
     marginTop: 6,
-    backgroundColor: "#007bff",
+    backgroundColor: '#00505cff',
     paddingVertical: 12,
     borderRadius: 4,
     alignItems: "center",
   },
   addButton: {
     flex: 1,
-    backgroundColor: "#28a745",
+    backgroundColor: '#4CAF50',
     paddingVertical: 10,
     borderRadius: 4,
     alignItems: "center",
@@ -445,7 +453,7 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: "#999",
+    backgroundColor: '#b32020ff',
     paddingVertical: 10,
     borderRadius: 4,
     alignItems: "center",
@@ -459,7 +467,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   backButton: {
-    backgroundColor: "#555",
+    backgroundColor: '#b32020ff',
     padding: 12,
     borderRadius: 6,
     flex: 1,

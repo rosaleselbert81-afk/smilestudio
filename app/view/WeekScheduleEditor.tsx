@@ -187,7 +187,7 @@ const WeekScheduleEditor = (props: WeekScheduleEditorProps) => {
             fontSize: 20,
             fontWeight: "bold",
             marginBottom: 16,
-            color: "#003f30",
+            color: '#00505cff',
             textAlign: "left",
           }}
         >
@@ -253,41 +253,42 @@ const WeekScheduleEditor = (props: WeekScheduleEditorProps) => {
             onValuesChange={(from, to, hasSchedule) => setSat({ from, to, hasSchedule })}
           />
         </ScrollView>
-
-        <TouchableOpacity
-          style={{
-            ...(width > 720
-              ? {
-                  paddingVertical: 20,
-                  height: 30,
-                }
-              : {
-                  width: 500,
-                  height: 40,
-                  marginTop: 15,
-                }),
-            width: "100%",
-            alignSelf: "center",
-            backgroundColor: "green",
-            borderRadius: 10,
-            shadowColor: "#000",
-          }}
-          onPress={() => {
-            updateSchedule();
-          }}
-        >
-          <Text
+        
+        <View style={{backgroundColor: 'white', padding: 8}}>
+          <TouchableOpacity
             style={{
-              color: "white",
-              fontWeight: "700",
-              textAlign: "center",
-              fontSize: 16,
-              ...(width > 720 ? { bottom: 10 } : { top: 10 }),
+              ...(width > 720
+                ? {
+                    paddingVertical: 20,
+                    height: 30,
+                  }
+                : {
+                    width: 500,
+                    height: 40,
+                  }),
+              width: "100%",
+              alignSelf: "center",
+              backgroundColor: '#00505cff',
+              borderRadius: 10,
+              shadowColor: "#000",
+            }}
+            onPress={() => {
+              updateSchedule();
             }}
           >
-            Save
-          </Text>
-        </TouchableOpacity>
+            <Text
+              style={{
+                color: "white",
+                fontWeight: "700",
+                textAlign: "center",
+                fontSize: 16,
+                ...(width > 720 ? { bottom: 10 } : { top: 10 }),
+              }}
+            >
+              Save
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Success Modal */}
@@ -310,7 +311,7 @@ const WeekScheduleEditor = (props: WeekScheduleEditorProps) => {
             style={{
               width: "100%",
               maxWidth: 320,
-              backgroundColor: "white",
+              backgroundColor: '#f1f5f9',
               borderRadius: 12,
               padding: 25,
               alignItems: "center",
@@ -321,14 +322,14 @@ const WeekScheduleEditor = (props: WeekScheduleEditorProps) => {
               elevation: 5,
             }}
           >
-            <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 20 }}>
+            <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 20, color: '#1f5474ff' }}>
               Schedule Saved Successfully!
             </Text>
 
             <TouchableOpacity
               onPress={() => setSuccessModalVisible(false)}
               style={{
-                backgroundColor: "green",
+                backgroundColor: '#4CAF50',
                 paddingVertical: 12,
                 paddingHorizontal: 30,
                 borderRadius: 8,
@@ -432,7 +433,7 @@ const DayScheduleView = (props: DayScheduleViewProps) => {
           style={{
             fontWeight: "700",
             fontSize: 16,
-            color: "#003f30",
+            color: '#00505cff',
           }}
         >
           {props.title}

@@ -104,7 +104,7 @@ export default function Account() {
   const [tMap, setTMap] = useState(false);
   const [verified, setVerified] = useState(false);
 
-
+  const [dentistList, setDentistList] = useState<Dentist[]>([]);
   const [patientUsers, setPatientUsers] = useState<any[]>([]);
 
 
@@ -621,27 +621,43 @@ useEffect(() => {
               </View>
             </View>
           </Modal>
-            <ScrollView 
-              contentContainerStyle={{   
-                flexGrow: 1,
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: '100%',
-                paddingBottom: 60, }}
-              showsVerticalScrollIndicator={false}
-              > 
+          {(isMobile) && (
+            <View style={[{ height: 60}]}>
+              <TouchableOpacity
+                style={{
+                  width: 50,
+                  height: 50,
+                  backgroundColor: 'transparent',
+                  alignSelf: 'flex-end',
+                  left: 60,
+                  borderRadius: 10,
+                  zIndex: 9999,
+                }}
+                onPress={() => {
+                  setMoved((prev) => !prev);
+                  setExpanded((prev) => !prev);
+                }}
+                disabled={loading}
+              >
+                {moved ? (
+                  <MaterialIcons name="keyboard-arrow-right" size={34} color="#00505cff" />
+                ) : (
+                  <MaterialIcons name="keyboard-arrow-left" size={34} color="#00505cff" />
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+
             <Image
               source={require('../../assets/favicon.ico.png')}
-              style={styles.logo}
+              style={{...styles.logo, marginTop: isMobile ? -50  : null}}
             />
 
-            <Text style={{fontWeight: 'bold', fontSize: 30, marginTop: -40, color: '#00505cff', textAlign: 'center', }}>SMILE STUDIO</Text>
-            <Text style={{fontSize: 12, color: '#00505cff', textAlign: 'center', marginBottom: 7, }}>GRIN CREATORS</Text>
-            <View style={{padding: 7, paddingLeft: 10, paddingRight: 10, backgroundColor: 'white', marginBottom: 30, borderRadius: 10}}>
+            <Text style={{fontWeight: 'bold', fontSize: 20, marginTop: -40, color: '#00505cff', textAlign: 'center', }}>SMILE STUDIO</Text>
+            <Text style={{fontSize: 12, color: '#00505cff', textAlign: 'center', marginBottom: 7 }}>GRIN CREATORS</Text>
+            <View style={{padding: 7, marginLeft: 40, marginRight: 40, backgroundColor: 'white', marginBottom: 30, borderRadius: 10}}>
               <Text style={{fontSize: 12, color: '#00505cff', textAlign: 'center'}}>ADMIN</Text>
             </View>
-            <View style={{ ...styles.container, width: '100%' }}>
-
                 <TouchableOpacity
                   style={{
                     backgroundColor: '#00505cff',
@@ -680,6 +696,15 @@ useEffect(() => {
                     </Text>
                   )}
                 </TouchableOpacity>
+            <ScrollView 
+              contentContainerStyle={{   
+                flexGrow: 1,
+                alignItems: "center",
+                marginTop: 12,
+              }}
+              showsVerticalScrollIndicator={false}
+              > 
+            <View style={{ ...styles.container, width: '100%' }}>
 
                 <Modal
                   transparent
@@ -1073,33 +1098,33 @@ useEffect(() => {
           </View>
           </LinearGradient>
                                            {/* Toggle Button */}
-          {(Platform.OS === "android" || Platform.OS === "ios") && (
+          {(isMobile) && (
             <View style={[styles.toggleButtonWrapper, { height: 60 }]}>
-              <TouchableOpacity
-                style={{
-                  width: 50,
-                  height: 50,
-                  backgroundColor: '#00505cff',
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderRadius: 10,
-                  zIndex: 9999,
-                  shadowColor: "#00000045",
-                  shadowRadius: 2,
-                  shadowOffset: { width: 2, height: 2 },
-                }}
-                onPress={() => {
-                  setMoved((prev) => !prev);
-                  setExpanded((prev) => !prev);
-                }}
-                disabled={loading}
-              >
-                {moved ? (
-                  <MaterialIcons name="keyboard-arrow-right" size={34} color="white" />
-                ) : (
-                  <MaterialIcons name="keyboard-arrow-left" size={34} color="white" />
-                )}
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={{
+                    width: 50,
+                    height: 50,
+                    backgroundColor: !moved ? 'transparent' : '#00505cff',
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 10,
+                    zIndex: 9999,
+                    shadowColor: !moved ? "transparent" : "#00000045",
+                    shadowRadius: !moved ? null : 2,
+                    shadowOffset: !moved ? null : { width: 2, height: 2 },
+                  }}
+                  onPress={() => {
+                    setMoved((prev) => !prev);
+                    setExpanded((prev) => !prev);
+                  }}
+                  disabled={loading}
+                >
+                  {moved ? (
+                    <MaterialIcons name="keyboard-arrow-right" size={34} color= {!moved ? 'transparent' : 'white'} />
+                  ) : (
+                    <MaterialIcons name="keyboard-arrow-left" size={34} color= {!moved ? 'transparent' : 'white'} />
+                  )}
+                </TouchableOpacity>
             </View>
           )}
       </View>
@@ -1245,49 +1270,49 @@ useEffect(() => {
             </View>
     
             
-          {/* Dashboard Clinics --------------------------------------------------------------------------------------- */}
+        {/* Dashboard Clinics --------------------------------------------------------------------------------------- */}
     
-            <View style={[styles.dashboard, { width: !isDesktop ? '95%' : expanded ? '80%' : '95%', right: dashboardView === 'clinics' ? 11 : 20000}]}>
-                <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, alignSelf: isMobile ? 'center' : 'flex-start', color: '#003f30ff'}}>
-                    Clinics
-                </Text>
-                <View
-                    style={
-                      {
-                        width: !isDesktop ? '100%' : expanded ? '90%' : '95%',
-                        alignSelf: 'center',
-                        position: 'absolute',
-                        height: isMobile ? "90%" : "85%",
-                        marginTop: 80,
-                        padding: 14,
-                        shadowColor: '#00000045',
-                        shadowRadius: 2,
-                        shadowOffset: { width: 4, height: 4 },
-                        backgroundColor: '#e5ffceff',
-                        borderRadius: 12,
-                      }
-                    }
-                  >
-                    <ScrollView>
-                      <Text
-                        style={{
-                          fontSize: 24,
-                          fontWeight: 'bold',
-                          marginBottom: 20,
-                          color: '#003f30ff',
-                          alignSelf: 'center',
-                        }}
-                      >
-                        Available Clinics
-                      </Text>
-                      <TouchableOpacity
-                        style={{...styles.card, backgroundColor: "rgba(152, 203, 255, 1)", marginBottom: 8, width: isMobile ? "91%" : "98%", height: 30, alignSelf: "center"}}
-                        onPress={()=>{
-                          setTMap(true)
-                        }}
-                        >
-                          <Text>View All Registered Clinics in Map</Text>
-                        </TouchableOpacity>
+        <View
+          style={[
+            styles.dashboard,
+            {
+              width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
+              right: dashboardView === "clinics" ? 11 : 20000,
+            },
+          ]}
+        >
+          <Text
+            style={{
+              fontSize: 24,
+              fontWeight: "bold",
+              marginBottom: 20,
+              alignSelf: isMobile ? "center" : "flex-start",
+              color: "#00505cff",
+            }}
+          >
+            Clinics
+          </Text>
+            <ScrollView
+              contentContainerStyle={{
+                backgroundColor: 'white',
+                paddingVertical: 8,
+                borderRadius: 10,
+              }}
+            >
+              <TouchableOpacity
+                style={{...styles.card, 
+                  backgroundColor: '#00505cff', 
+                  marginBottom: 8, 
+                  width: isMobile ? "91%" : "98%", 
+                  height: 30, 
+                  alignSelf: "center"
+                }}
+                onPress={()=>{
+                  setTMap(true)
+                }}
+                >
+                  <Text style={{color: 'white'}}>View All Registered Clinics in Map</Text>
+                </TouchableOpacity>
               <Modal
                 transparent
                 animationType="fade"
@@ -1363,49 +1388,49 @@ useEffect(() => {
                 </View>
               </Modal>
 
-                    {clinicList.length === 0 ? (
-                      <Text style={{ textAlign: "center" }}>No clinics found.</Text>
-                    ) : (
-                      <View
-                        style={{
-                          flexDirection: isMobile ? "column" : "row",
-                          flexWrap: isMobile ? "nowrap" : "wrap",
-                          justifyContent: isMobile ? "flex-start" : "center",
-                        }}
-                      >
-                        {clinicList
-                        .filter((clinic) => clinic.isFirst === false)
-                        .map((clinic, index) => (
-                          <LinearGradient
-                            colors={["#ffffffff", "#bdeeffff"]}
-                            key={clinic.id || index}
-                            style={{
-                              flexDirection: "row",
-                              backgroundColor: "#fff",
-                              padding: 20,
-                              margin: 8,
-                              borderRadius: 16,
-                              shadowColor: "#000",
-                              shadowOpacity: 0.15,
-                              shadowRadius: 6,
-                              shadowOffset: { width: 0, height: 4 },
-                              elevation: 4,
-                              alignItems: "center",
-                              minHeight: 140,
+            {clinicList.length === 0 ? (
+              <Text style={{ textAlign: "center" }}>No clinics found.</Text>
+            ) : (
+              <View
+                style={{
+                  flexDirection: isMobile ? "column" : "row",
+                  flexWrap: isMobile ? "nowrap" : "wrap",
+                  justifyContent: isMobile ? "flex-start" : "center",
+                }}
+              >
+                {clinicList
+                  .filter((clinic) => clinic.isFirst === false)
+                  .map((clinic, index) => (
+                  <LinearGradient
+                    colors={["#ffffffff", "#bdeeffff"]}
+                    key={clinic.id || index}
+                    style={{
+                      flexDirection: "row",
+                      backgroundColor: "#fff",
+                      padding: 20,
+                      margin: 8,
+                      borderRadius: 16,
+                      shadowColor: "#000",
+                      shadowOpacity: 0.15,
+                      shadowRadius: 6,
+                      shadowOffset: { width: 0, height: 4 },
+                      elevation: 4,
+                      alignItems: "center",
+                      minHeight: 140,
 
-                              // responsive width
-                              width: isMobile ? "95%" : "45%",
-                            }}
-                          >
-                            {/* Left side: Image + Info */}
-                            <View
-                              style={{
-                                flex: 7,
-                                flexDirection: "row",
-                                alignItems: "center",
-                                marginLeft: 4,
-                              }}
-                            >
+                      // responsive width
+                      width: isMobile ? "95%" : "45%",
+                    }}
+                  >
+                    {/* Left side: Image + Info */}
+                    <View
+                      style={{
+                        flex: 7,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginLeft: 4,
+                      }}
+                    >
 <View style={{ position: "relative" }}>
   <Image
     source={{ uri: clinic.clinic_photo_url }}
@@ -1454,6 +1479,7 @@ useEffect(() => {
       setSelectedCI(clinic.introduction);
       setSelectedOffers(clinic.offers);
       setVerified(clinic.isVerified);
+      setDentistList(clinic.dentists)
     }}
   >
     <Text style={{ color: "#fff", fontSize: isMobile ? 8 : 10 }}>View Clinic</Text>
@@ -1828,6 +1854,74 @@ useEffect(() => {
           </Text>
         </View>
 
+        {/* Clinic Dentists/Staffs Title */}
+        <Text
+          style={{
+            fontSize: 22,
+            fontWeight: "bold",
+            color: "#003f30",
+            marginBottom: 10,
+          }}
+        >
+          Clinic's Dentist
+        </Text>
+        {/* Clinic Info Container */}
+        <View
+          style={{
+            backgroundColor: "#f8f9f9",
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 20,
+            elevation: 3,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+          }}
+        >
+
+          {/* Dentists List */}
+        {(() => {
+          try {
+            const dentists = JSON.parse(dentistList);
+            return dentists.map((d, i) => (
+              <View key={i} style={{ marginTop: 10 }}>
+                <Text style={{ fontSize: 14, color: "#333", fontWeight: "bold" }}>
+                  • Dr. {d.name} ({d.specialty})
+                </Text>
+
+                {Object.entries(d.weeklySchedule || {}).map(([day, slots], j) =>
+                  slots.length > 0 ? (
+                    <View key={j} style={{ marginLeft: 12, marginTop: 4 }}>
+                      <Text style={{ fontSize: 13, fontWeight: "500", color: "#555" }}>
+                        {day.charAt(0).toUpperCase() + day.slice(1)}:
+                      </Text>
+                      {slots.map((s, k) => (
+                        <Text key={k} style={{ fontSize: 13, color: "#555", marginLeft: 8 }}>
+                          - {s}
+                        </Text>
+                      ))}
+                    </View>
+                  ) : null
+                )}
+              </View>
+            ));
+          } catch {
+            return (
+              <Text             
+                style={{
+                fontSize: selectedOffers ? 17 : 14,
+                marginBottom: 6,
+                color: "#ccc",
+                textAlign: selectedOffers ? "left" : "center",
+              }}>
+                Dentist list have not yet been set
+              </Text>
+            );
+          }
+        })()}
+
+        </View>
 
         {/* Clinic Offers */}
         <Text
@@ -2041,7 +2135,57 @@ useEffect(() => {
       </View>
     </View>
   </Modal>
-                                {/* Modal: Map View */}
+
+</View>
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{
+                            fontWeight: "bold",
+                            fontSize: isMobile ? 15 : 18,
+                            marginBottom: 6,
+                          }}
+                        >
+                          {clinic.clinic_name || "Unnamed Clinic"}
+                        </Text>
+                        <Text style={{ marginBottom: 2, fontSize: isMobile ? 13 : 16 }}>
+                          {clinic.address || "No address provided"}
+                        </Text>
+                        <Text style={{ color: "#555", fontSize: isMobile ? 13 : 16 }}>
+                          {clinic.mobile_number || "No Contact Number"}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Right side: Buttons */}
+                    <View style={{ flex: 3, justifyContent: "space-around" }}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          console.log(`Proceed to map: ${clinic.id}`);
+                          setSelectedClinicId(clinic.id);
+                          setModalMap(true);
+                          setMapView([clinic.longitude, clinic.latitude]);
+                        }}
+                        style={{
+                          backgroundColor: "#0058aaff",
+                          paddingVertical: 12,
+                          paddingHorizontal: 10,
+                          borderRadius: 10,
+                          alignItems: "center",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: "#fff",
+                            fontWeight: "bold",
+                            fontSize: isMobile ? 9 : 14,
+                            textAlign: "center",
+                          }}
+                        >
+                          Check in Map
+                        </Text>
+                      </TouchableOpacity>
+
+                      {/* Modal: Map View */}
                       <Modal
                         transparent
                         animationType="fade"
@@ -2058,7 +2202,6 @@ useEffect(() => {
                             justifyContent: "center",
                             alignItems: "center",
                             padding: 20,
-                            zIndex: 100,
                           }}
                         >
                           <View
@@ -2116,63 +2259,14 @@ useEffect(() => {
                           </View>
                         </View>
                       </Modal>
+                    </View>
+                  </LinearGradient>
+                ))}
+              </View>
+            )}
 
-</View>
-                              <View style={{ flex: 1 }}>
-                                <Text
-                                  style={{
-                                    fontWeight: "bold",
-                                    fontSize: isMobile ? 15 : 18,
-                                    marginBottom: 6,
-                                  }}
-                                >
-                                  {clinic.clinic_name || "Unnamed Clinic"}
-                                </Text>
-                                <Text style={{ marginBottom: 2, fontSize: isMobile ? 13 : 16 }}>
-                                  {clinic.address || "No address provided"}
-                                </Text>
-                                <Text style={{ color: "#555", fontSize: isMobile ? 13 : 16 }}>
-                                  {clinic.mobile_number || "No Contact Number"}
-                                </Text>
-                              </View>
-                            </View>
-
-                            {/* Right side: Buttons */}
-                            <View style={{ flex: 3, justifyContent: "space-around" }}>
-                              <TouchableOpacity
-                                onPress={() => {
-                                  console.log(`Proceed to map: ${clinic.id}`);
-                                  setSelectedClinicId(clinic.id);
-                                  setModalMap(true);
-                                  setMapView([clinic.longitude, clinic.latitude]);
-                                }}
-                                style={{
-                                  backgroundColor: "#0058aaff",
-                                  paddingVertical: 12,
-                                  paddingHorizontal: 10,
-                                  borderRadius: 10,
-                                  alignItems: "center",
-                                }}
-                              >
-                                <Text
-                                  style={{
-                                    color: "#fff",
-                                    fontWeight: "bold",
-                                    fontSize: isMobile ? 9 : 14,
-                                    textAlign: "center",
-                                  }}
-                                >
-                                  Check in Map
-                                </Text>
-                              </TouchableOpacity>
-                            </View>
-                          </LinearGradient>
-                        ))}
-                      </View>
-                    )}
-                    </ScrollView>
-                  </View>
-            </View>
+            </ScrollView>
+        </View>
 
         {/* Dashboard Auth Users --------------------------------------------------------------------------------------- */}
 
@@ -2191,183 +2285,299 @@ useEffect(() => {
               fontWeight: "bold",
               marginBottom: 20,
               alignSelf: isMobile ? "center" : "flex-start",
-              color: "#003f30ff",
+              color: "#00505cff",
             }}
           >
             Auth Users
           </Text>
-          <ScrollView horizontal>
-            <View style={{ borderWidth: 1, borderColor: "#ccc", borderRadius: 8 }}>
-              {/* Header */}
-              <View style={{ flexDirection: "row", backgroundColor: "#003f30", padding: 10 }}>
-                <Text style={{ color: "white", width: 150, fontWeight: "bold" }}>Name</Text>
-                <Text style={{ color: "white", width: 100, fontWeight: "bold" }}>Gender</Text>
-                <Text style={{ color: "white", width: 120, fontWeight: "bold" }}>Birthdate</Text>
-                <Text style={{ color: "white", width: 150, fontWeight: "bold" }}>Mobile</Text>
-                <Text style={{ color: "white", width: 150, fontWeight: "bold" }}>Striked?</Text>
-                <Text style={{ color: "white", width: 200, fontWeight: "bold" }}>Actions</Text>
-              </View>
-
-              {/* Rows */}
-              {patientUsers.map((user, index) => (
-                <View
-                  key={user.id}
-                  style={{
-                    flexDirection: "row",
-                    padding: 10,
-                    backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#ffffff",
-                    alignItems: "center",
-                  }}
-                >
-                  <Text style={{ width: 150 }}>{`${user.first_name || ""} ${user.last_name || ""}`}</Text>
-                  <Text style={{ width: 100 }}>{user.gender || "N/A"}</Text>
-                  <Text style={{ width: 120 }}>{user.birthdate || "N/A"}</Text>
-                  <Text style={{ width: 150 }}>{user.mobile_number || "N/A"}</Text>
-                  <Text style={{ width: 100 }}>{user.isStriked ? "Yes" : "No"}</Text>
-                  <View style={{ flexDirection: "row", width: 200 }}>
-<TouchableOpacity
-  onPress={() => {
-    setModalType('warn');
-    setSelectedUser(user);
-    setUserMessage(true); // show modal
-  }}
-  style={{
-    backgroundColor: user.isWarning ? '#7f8c8d' : '#f39c12',
-    padding: 6,
-    borderRadius: 4,
-    marginRight: 10,
-  }}
->
-  <Text style={{ color: '#fff', fontSize: 12 }}>
-    {user.isWarning ? 'Unwarn' : 'Warn'}
-  </Text>
-</TouchableOpacity>
-
-<TouchableOpacity
-  onPress={() => {
-    setModalType('ban');
-    setSelectedUser(user);
-    setUserMessage(true); // show modal
-  }}
-  style={{
-    backgroundColor: user.isBan ? '#7f8c8d' : '#c0392b',
-    padding: 6,
-    borderRadius: 4,
-  }}
->
-  <Text style={{ color: '#fff', fontSize: 12 }}>
-    {user.isBan ? 'Unban' : 'Ban'}
-  </Text>
-</TouchableOpacity>
-
-<Modal visible={userMessage} transparent animationType="fade">
-  <View
-    style={{
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      justifyContent: 'center',
-      alignItems: 'center',
-    }}
-  >
-    <View
-      style={{
-        backgroundColor: '#fff',
-        padding: 20,
-        borderRadius: 8,
-        width: '80%',
-      }}
-    >
-<Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
-  {modalType === 'warn'
-    ? selectedUser?.isWarning
-      ? `Unwarn ${selectedUser?.first_name} ${selectedUser?.last_name}`
-      : `Warn ${selectedUser?.first_name} ${selectedUser?.last_name}`
-    : selectedUser?.isBan
-    ? `Unban ${selectedUser?.first_name} ${selectedUser?.last_name}`
-    : `Ban ${selectedUser?.first_name} ${selectedUser?.last_name}`}
-</Text>
-
-      {/* Show input only if warning or banning */}
-      {((modalType === 'warn' && !selectedUser?.isWarning) ||
-        (modalType === 'ban' && !selectedUser?.isBan)) && (
-        <>
-          <Text style={{ marginBottom: 5 }}>Reason:</Text>
-          <TextInput
-            placeholder="Enter reason"
-            value={reason}
-            onChangeText={setReason}
-            style={{
-              borderWidth: 1,
-              borderColor: '#ccc',
-              borderRadius: 5,
-              padding: 10,
-              marginBottom: 10,
-            }}
-            multiline
-          />
-        </>
-      )}
-
-      {/* Confirmation text only if unwarn/unban */}
-      {((modalType === 'warn' && selectedUser?.isWarning) ||
-        (modalType === 'ban' && selectedUser?.isBan)) && (
-        <Text style={{ marginBottom: 10 }}>
-          Are you sure you want to {modalType === 'warn' ? 'unwarn' : 'unban'} this user?
-        </Text>
-      )}
-
-      <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-        <TouchableOpacity
-          onPress={() => {
-            setUserMessage(false);
-            setSelectedUser(null);
-            setReason('');
-          }}
-          style={{ marginRight: 15 }}
-        >
-          <Text style={{ color: '#888' }}>Cancel</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={async () => {
-            if (!selectedUser) return;
-
-
-            const needsReason =
-              (modalType === 'warn' && !selectedUser.isWarning) ||
-              (modalType === 'ban' && !selectedUser.isBan);
-
-            if (needsReason && reason.trim() === '') {
-              alert('Please enter a reason');
-              return;
-            }
-
-            if (modalType === 'warn') {
-              await warnUser(selectedUser.id, selectedUser.isWarning, reason);
-            } else if (modalType === 'ban') {
-              await banUser(selectedUser.id, selectedUser.isBan, reason);
-            }
-
-            setUserMessage(false);
-            setSelectedUser(null);
-            setReason('');
-          }}
-        >
-          <Text style={{ color: '#007BFF' }}>Confirm</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </View>
-</Modal>
-
-
-                  </View>
+          {isMobile ? (
+            // 📱 Mobile Layout (Card style)
+            <ScrollView contentContainerStyle={{ padding: 12 }}>
+              {patientUsers.length === 0 ? (
+                <View style={{ alignItems: "center", marginTop: 40 }}>
+                  <Text style={{ fontSize: 20, color: "gray" }}>- No Patients -</Text>
                 </View>
-              ))}
+              ) : (
+                patientUsers.map((user, index) => (
+                  <View
+                    key={user.id}
+                    style={{
+                      backgroundColor: "#f9f9f9",
+                      borderRadius: 10,
+                      padding: 16,
+                      marginBottom: 16,
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 4,
+                      elevation: 3,
+                      borderWidth: 1,
+                      borderColor: "#ccc",
+                    }}
+                  >
+                    <Text style={{ fontWeight: "700", marginBottom: 6 }}>Name:</Text>
+                    <Text style={{ marginBottom: 10 }}>{`${user.first_name || ""} ${user.last_name || ""}`}</Text>
+
+                    <Text style={{ fontWeight: "700", marginBottom: 6 }}>Gender:</Text>
+                    <Text style={{ marginBottom: 10 }}>{user.gender || "N/A"}</Text>
+
+                    <Text style={{ fontWeight: "700", marginBottom: 6 }}>Birthdate:</Text>
+                    <Text style={{ marginBottom: 10 }}>{user.birthdate || "N/A"}</Text>
+
+                    <Text style={{ fontWeight: "700", marginBottom: 6 }}>Mobile:</Text>
+                    <Text style={{ marginBottom: 10 }}>{user.mobile_number || "N/A"}</Text>
+
+                    <Text style={{ fontWeight: "700", marginBottom: 6 }}>Striked:</Text>
+                    <Text style={{ marginBottom: 10 }}>{user.isStriked ? "Yes" : "No"}</Text>
+
+                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setModalType("warn");
+                          setSelectedUser(user);
+                          setUserMessage(true);
+                        }}
+                        style={{
+                          backgroundColor: user.isWarning ? "#7f8c8d" : "#f39c12",
+                          padding: 8,
+                          borderRadius: 5,
+                          flex: 1,
+                          marginRight: 8,
+                        }}
+                      >
+                        <Text style={{ color: "#fff", textAlign: "center" }}>
+                          {user.isWarning ? "Unwarn" : "Warn"}
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        onPress={() => {
+                          setModalType("ban");
+                          setSelectedUser(user);
+                          setUserMessage(true);
+                        }}
+                        style={{
+                          backgroundColor: user.isBan ? "#7f8c8d" : "#c0392b",
+                          padding: 8,
+                          borderRadius: 5,
+                          flex: 1,
+                        }}
+                      >
+                        <Text style={{ color: "#fff", textAlign: "center" }}>
+                          {user.isBan ? "Unban" : "Ban"}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          ) : (
+          // 🖥️ Desktop / Tablet Patient Table
+          <ScrollView horizontal contentContainerStyle={{ flexGrow: 1 }}>
+            <View style={{ flex: 1, minWidth: 900 }}>
+              {patientUsers.length === 0 ? (
+                <View style={{ width: "100%", alignItems: "center", marginTop: 40 }}>
+                  <Text style={{ fontSize: 20, color: "gray" }}>- No Patients -</Text>
+                </View>
+              ) : (
+                <>
+                  {/* Header Row */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      backgroundColor: "#00505cff",
+                      paddingVertical: 16,
+                      paddingHorizontal: 20,
+                      borderTopLeftRadius: 8,
+                      borderTopRightRadius: 8,
+                      minWidth: "100%",
+                    }}
+                  >
+                    <Text style={{ flex: 1, fontWeight: "700", color: "white" }}>Name</Text>
+                    <Text style={{ flex: 1, fontWeight: "700", color: "white" }}>Gender</Text>
+                    <Text style={{ flex: 1, fontWeight: "700", color: "white" }}>Birthdate</Text>
+                    <Text style={{ flex: 1, fontWeight: "700", color: "white" }}>Mobile</Text>
+                    <Text style={{ flex: 1, fontWeight: "700", color: "white" }}>Striked?</Text>
+                    <Text style={{ flex: 1, fontWeight: "700", color: "white" }}>Actions</Text>
+                  </View>
+
+                  {/* Rows */}
+                  <ScrollView>
+                  {patientUsers.map((user, index) => (
+                    <View
+                      key={user.id}
+                      style={{
+                        flexDirection: "row",
+                        borderBottomWidth: 1,
+                        borderColor: "#ccc",
+                        paddingVertical: 20,
+                        paddingHorizontal: 20,
+                        backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#fff",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text style={{ flex: 1 }}>{`${user.first_name || ""} ${user.last_name || ""}`}</Text>
+                      <Text style={{ flex: 1 }}>{user.gender || "N/A"}</Text>
+                      <Text style={{ flex: 1 }}>{user.birthdate || "N/A"}</Text>
+                      <Text style={{ flex: 1 }}>{user.mobile_number || "N/A"}</Text>
+                      <Text style={{ flex: 1 }}>{user.isStriked ? "Yes" : "No"}</Text>
+
+                      <View style={{ flex: 1, flexDirection: "row" }}>
+                        {/* Warn Button */}
+                        <TouchableOpacity
+                          onPress={() => {
+                            setModalType("warn");
+                            setSelectedUser(user);
+                            setUserMessage(true);
+                          }}
+                          style={{
+                            backgroundColor: user.isWarning ? "#7f8c8d" : "#f39c12",
+                            paddingVertical: 6,
+                            paddingHorizontal: 10,
+                            borderRadius: 4,
+                            marginRight: 10,
+                          }}
+                        >
+                          <Text style={{ color: "#fff", fontSize: 12 }}>
+                            {user.isWarning ? "Unwarn" : "Warn"}
+                          </Text>
+                        </TouchableOpacity>
+
+                        {/* Ban Button */}
+                        <TouchableOpacity
+                          onPress={() => {
+                            setModalType("ban");
+                            setSelectedUser(user);
+                            setUserMessage(true);
+                          }}
+                          style={{
+                            backgroundColor: user.isBan ? "#7f8c8d" : "#c0392b",
+                            paddingVertical: 6,
+                            paddingHorizontal: 10,
+                            borderRadius: 4,
+                          }}
+                        >
+                          <Text style={{ color: "#fff", fontSize: 12 }}>
+                            {user.isBan ? "Unban" : "Ban"}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))}
+                  </ScrollView>
+                </>
+              )}
             </View>
           </ScrollView>
+          )}
 
         </View>
+
+        {userMessage && (
+          <Modal visible={userMessage} transparent animationType="fade">
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: '#fff',
+                  padding: 20,
+                  borderRadius: 8,
+                  width: '80%',
+                  maxWidth: 400,
+                }}
+              >
+                <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
+                  {modalType === 'warn'
+                    ? selectedUser?.isWarning
+                      ? `Unwarn ${selectedUser?.first_name} ${selectedUser?.last_name}`
+                      : `Warn ${selectedUser?.first_name} ${selectedUser?.last_name}`
+                    : selectedUser?.isBan
+                    ? `Unban ${selectedUser?.first_name} ${selectedUser?.last_name}`
+                    : `Ban ${selectedUser?.first_name} ${selectedUser?.last_name}`}
+                </Text>
+
+                {/* Reason input (only shown when issuing a warn or ban) */}
+                {((modalType === 'warn' && !selectedUser?.isWarning) ||
+                  (modalType === 'ban' && !selectedUser?.isBan)) && (
+                  <>
+                    <Text style={{ marginBottom: 5 }}>Reason:</Text>
+                    <TextInput
+                      placeholder="Enter reason"
+                      value={reason}
+                      onChangeText={setReason}
+                      style={{
+                        borderWidth: 1,
+                        borderColor: '#ccc',
+                        borderRadius: 5,
+                        padding: 10,
+                        marginBottom: 10,
+                        height: 80,
+                        textAlignVertical: 'top',
+                      }}
+                      multiline
+                    />
+                  </>
+                )}
+
+                {/* Confirmation text for unban/unwarn */}
+                {((modalType === 'warn' && selectedUser?.isWarning) ||
+                  (modalType === 'ban' && selectedUser?.isBan)) && (
+                  <Text style={{ marginBottom: 10 }}>
+                    Are you sure you want to {modalType === 'warn' ? 'unwarn' : 'unban'} this user?
+                  </Text>
+                )}
+
+                <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setUserMessage(false);
+                      setSelectedUser(null);
+                      setReason('');
+                    }}
+                    style={{ marginRight: 15 }}
+                  >
+                    <Text style={{ color: '#888' }}>Cancel</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={async () => {
+                      if (!selectedUser) return;
+
+                      const needsReason =
+                        (modalType === 'warn' && !selectedUser.isWarning) ||
+                        (modalType === 'ban' && !selectedUser.isBan);
+
+                      if (needsReason && reason.trim() === '') {
+                        alert('Please enter a reason');
+                        return;
+                      }
+
+                      if (modalType === 'warn') {
+                        await warnUser(selectedUser.id, selectedUser.isWarning, reason);
+                      } else if (modalType === 'ban') {
+                        await banUser(selectedUser.id, selectedUser.isBan, reason);
+                      }
+
+                      setUserMessage(false);
+                      setSelectedUser(null);
+                      setReason('');
+                    }}
+                  >
+                    <Text style={{ color: '#007BFF', fontWeight: 'bold' }}>Confirm</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
+        )}
+
 
         {/* Dashboard Auth Clinics --------------------------------------------------------------------------------------- */}
 
@@ -2386,215 +2596,362 @@ useEffect(() => {
               fontWeight: "bold",
               marginBottom: 20,
               alignSelf: isMobile ? "center" : "flex-start",
-              color: "#003f30ff",
+              color: "#00505cff",
             }}
           >
             Auth Clinics
           </Text>
-<ScrollView horizontal>
-  <View style={{ borderWidth: 1, borderColor: "#ccc", borderRadius: 8 }}>
-    {/* Header */}
-    <View style={{ flexDirection: "row", backgroundColor: "#003f30", padding: 10 }}>
-      <Text style={{ color: "white", width: 150, fontWeight: "bold" }}>Clinic Name</Text>
-      <Text style={{ color: "white", width: 120, fontWeight: "bold" }}>Email</Text>
-      <Text style={{ color: "white", width: 140, fontWeight: "bold" }}>Mobile</Text>
-      <Text style={{ color: "white", width: 200, fontWeight: "bold" }}>Address</Text>
-      <Text style={{ color: "white", width: 100, fontWeight: "bold" }}>Striked?</Text>
-      <Text style={{ color: "white", width: 200, fontWeight: "bold" }}>Actions</Text>
-    </View>
+        {isMobile ? (
+          // 📱 Mobile Layout (Card style)
+          <ScrollView contentContainerStyle={{ padding: 12 }}>
+            {clinicList.length === 0 ? (
+              <View style={{ alignItems: "center", marginTop: 40 }}>
+                <Text style={{ fontSize: 20, color: "gray" }}>- No Clinics -</Text>
+              </View>
+            ) : (
+              clinicList.map((clinic, index) => (
+                <View
+                  key={clinic.id}
+                  style={{
+                    backgroundColor: "#f9f9f9",
+                    borderRadius: 10,
+                    padding: 16,
+                    marginBottom: 16,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                    elevation: 3,
+                    borderWidth: 1,
+                    borderColor: "#ccc",
+                  }}
+                >
+                  <Text style={{ fontWeight: "700", marginBottom: 6 }}>Clinic Name:</Text>
+                  <Text style={{ marginBottom: 10 }}>{clinic.clinic_name || "N/A"}</Text>
 
-    {clinicList.map((clinic, index) => (
-      <View
-        key={clinic.id}
-        style={{
-          flexDirection: "row",
-          padding: 10,
-          backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#ffffff",
-          alignItems: "center",
-        }}
-      >
-        <Text style={{ width: 150 }}>{clinic.clinic_name || "N/A"}</Text>
-        <Text style={{ width: 120 }}>{clinic.email || "N/A"}</Text>
-        <Text style={{ width: 140 }}>{clinic.mobile_number || "N/A"}</Text>
-        <Text style={{ width: 200 }}>{clinic.address || "N/A"}</Text>
-        <Text style={{ width: 200 }}>{clinic.IsStriked ? "Yes" : "No"}</Text>
+                  <Text style={{ fontWeight: "700", marginBottom: 6 }}>Email:</Text>
+                  <Text style={{ marginBottom: 10 }}>{clinic.email || "N/A"}</Text>
 
-        <View style={{ flexDirection: "row", width: 200 }}>
-          <TouchableOpacity
-            onPress={() => {
-              console.log("Clinic warn pressed:", clinic.id, clinic.isWarn);
-              setModalType("warn");
-              setSelectedClinic(clinic);
-              setClinicMessage(true);
-            }}
+                  <Text style={{ fontWeight: "700", marginBottom: 6 }}>Mobile:</Text>
+                  <Text style={{ marginBottom: 10 }}>{clinic.mobile_number || "N/A"}</Text>
+
+                  <Text style={{ fontWeight: "700", marginBottom: 6 }}>Address:</Text>
+                  <Text style={{ marginBottom: 10 }}>{clinic.address || "N/A"}</Text>
+
+                  <Text style={{ fontWeight: "700", marginBottom: 6 }}>Striked:</Text>
+                  <Text style={{ marginBottom: 10 }}>{clinic.IsStriked ? "Yes" : "No"}</Text>
+
+                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setModalType("warn");
+                        setSelectedClinic(clinic);
+                        setClinicMessage(true);
+                      }}
+                      style={{
+                        backgroundColor: clinic.isWarn ? "#7f8c8d" : "#f39c12",
+                        padding: 8,
+                        borderRadius: 5,
+                        flex: 1,
+                        marginRight: 8,
+                      }}
+                    >
+                      <Text style={{ color: "#fff", textAlign: "center" }}>
+                        {clinic.isWarn ? "Unwarn" : "Warn"}
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => {
+                        setModalType("ban");
+                        setSelectedClinic(clinic);
+                        setClinicMessage(true);
+                      }}
+                      style={{
+                        backgroundColor: clinic.isBan ? "#7f8c8d" : "#c0392b",
+                        padding: 8,
+                        borderRadius: 5,
+                        flex: 1,
+                      }}
+                    >
+                      <Text style={{ color: "#fff", textAlign: "center" }}>
+                        {clinic.isBan ? "Unban" : "Ban"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
+          </ScrollView>
+        ) : (
+          // 🖥️ Desktop / Tablet Table Layout
+          <ScrollView horizontal contentContainerStyle={{ flexGrow: 1 }}>
+            <View style={{ flex: 1, minWidth: 900 }}>
+              {clinicList.length === 0 ? (
+                <View style={{ width: "100%", alignItems: "center", marginTop: 40 }}>
+                  <Text style={{ fontSize: 20, color: "gray" }}>- No Clinics -</Text>
+                </View>
+              ) : (
+                <>
+                  {/* Table Header */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      backgroundColor: "#00505cff",
+                      paddingVertical: 16,
+                      paddingHorizontal: 20,
+                      borderTopLeftRadius: 8,
+                      borderTopRightRadius: 8,
+                      minWidth: "100%",
+                    }}
+                  >
+                    <Text style={{ flex: 1, fontWeight: "700", color: "white" }}>Clinic Name</Text>
+                    <Text style={{ flex: 1, fontWeight: "700", color: "white" }}>Email</Text>
+                    <Text style={{ flex: 1, fontWeight: "700", color: "white" }}>Mobile</Text>
+                    <Text style={{ flex: 1, fontWeight: "700", color: "white" }}>Address</Text>
+                    <Text style={{ flex: 1, fontWeight: "700", color: "white" }}>Striked?</Text>
+                    <Text style={{ flex: 1, fontWeight: "700", color: "white" }}>Actions</Text>
+                  </View>
+
+                  <ScrollView>
+                    {clinicList.map((clinic, index) => (
+                      <View
+                        key={clinic.id}
+                        style={{
+                          flexDirection: "row",
+                          borderBottomWidth: 1,
+                          borderColor: "#ccc",
+                          paddingVertical: 20,
+                          paddingHorizontal: 20,
+                          backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#fff",
+                          alignItems: "center",
+                          gap: 10
+                        }}
+                      >
+                        <Text
+                          style={{ flex: 1 }}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.7}
+                        >
+                          {clinic.clinic_name || "N/A"}
+                        </Text>
+
+                        <Text
+                          style={{ flex: 1 }}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.7}
+                        >
+                          {clinic.email || "N/A"}
+                        </Text>
+
+                        <Text
+                          style={{ flex: 1 }}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.7}
+                        >
+                          {clinic.mobile_number || "N/A"}
+                        </Text>
+
+                        <Text
+                          style={{ flex: 1 }}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.7}
+                        >
+                          {clinic.address || "N/A"}
+                        </Text>
+
+                        <Text
+                          style={{ flex: 1 }}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.7}
+                        >
+                          {clinic.IsStriked ? "Yes" : "No"}
+                        </Text>
+
+                        <View style={{ flex: 1, flexDirection: "row" }}>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setModalType("warn");
+                              setSelectedClinic(clinic);
+                              setClinicMessage(true);
+                            }}
+                            style={{
+                              backgroundColor: clinic.isWarn ? "#7f8c8d" : "#f39c12",
+                              paddingVertical: 6,
+                              paddingHorizontal: 10,
+                              borderRadius: 4,
+                              marginRight: 10,
+                            }}
+                          >
+                            <Text style={{ color: "#fff", fontSize: 12 }}>
+                              {clinic.isWarn ? "Unwarn" : "Warn"}
+                            </Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            onPress={() => {
+                              setModalType("ban");
+                              setSelectedClinic(clinic);
+                              setClinicMessage(true);
+                            }}
+                            style={{
+                              backgroundColor: clinic.isBan ? "#7f8c8d" : "#c0392b",
+                              paddingVertical: 6,
+                              paddingHorizontal: 10,
+                              borderRadius: 4,
+                            }}
+                          >
+                            <Text style={{ color: "#fff", fontSize: 12 }}>
+                              {clinic.isBan ? "Unban" : "Ban"}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    ))}
+                  </ScrollView>
+
+                </>
+              )}
+            </View>
+          </ScrollView>
+        )}
+
+        {/* Modal for clinics */}
+        <Modal visible={clinicMessage} transparent animationType="fade">
+          <View
             style={{
-              backgroundColor: clinic.isWarn ? "#7f8c8d" : "#f39c12",
-              padding: 6,
-              borderRadius: 4,
-              marginRight: 10,
+              flex: 1,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              justifyContent: "center",
+              alignItems: "center",
             }}
           >
-            <Text style={{ color: "#fff", fontSize: 12 }}>
-              {clinic.isWarn ? "Unwarn" : "Warn"}
-            </Text>
-          </TouchableOpacity>
+            <View
+              style={{
+                backgroundColor: "#fff",
+                padding: 20,
+                borderRadius: 8,
+                width: "80%",
+              }}
+            >
+              <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>
+                {modalType === "warn"
+                  ? selectedClinic?.isWarn
+                    ? `Unwarn ${selectedClinic?.clinic_name}`
+                    : `Warn ${selectedClinic?.clinic_name}`
+                  : selectedClinic?.isBan
+                  ? `Unban ${selectedClinic?.clinic_name}`
+                  : `Ban ${selectedClinic?.clinic_name}`}
+              </Text>
 
-          <TouchableOpacity
-            onPress={() => {
-              console.log("Clinic ban pressed:", clinic.id, clinic.isBan);
-              setModalType("ban");
-              setSelectedClinic(clinic);
-              setClinicMessage(true);
-            }}
-            style={{
-              backgroundColor: clinic.isBan ? "#7f8c8d" : "#c0392b",
-              padding: 6,
-              borderRadius: 4,
-            }}
-          >
-            <Text style={{ color: "#fff", fontSize: 12 }}>
-              {clinic.isBan ? "Unban" : "Ban"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    ))}
-  </View>
-</ScrollView>
+              {/* If warning or banning, show reason input */}
+              {((modalType === "warn" && !selectedClinic?.isWarn) ||
+                (modalType === "ban" && !selectedClinic?.isBan)) && (
+                <>
+                  <Text style={{ marginBottom: 5 }}>Reason:</Text>
+                  <TextInput
+                    placeholder="Enter reason"
+                    value={reason}
+                    onChangeText={setReason}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: "#ccc",
+                      borderRadius: 5,
+                      padding: 10,
+                      marginBottom: 10,
+                    }}
+                    multiline
+                  />
+                </>
+              )}
 
-{/* Modal for clinics */}
-<Modal visible={clinicMessage} transparent animationType="fade">
-  <View
-    style={{
-      flex: 1,
-      backgroundColor: "rgba(0,0,0,0.5)",
-      justifyContent: "center",
-      alignItems: "center",
-    }}
-  >
-    <View
-      style={{
-        backgroundColor: "#fff",
-        padding: 20,
-        borderRadius: 8,
-        width: "80%",
-      }}
-    >
-      <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>
-        {modalType === "warn"
-          ? selectedClinic?.isWarn
-            ? `Unwarn ${selectedClinic?.clinic_name}`
-            : `Warn ${selectedClinic?.clinic_name}`
-          : selectedClinic?.isBan
-          ? `Unban ${selectedClinic?.clinic_name}`
-          : `Ban ${selectedClinic?.clinic_name}`}
-      </Text>
+              {/* Confirmation for un-warn/un-ban */}
+              {((modalType === "warn" && selectedClinic?.isWarn) ||
+                (modalType === "ban" && selectedClinic?.isBan)) && (
+                <Text style={{ marginBottom: 10 }}>
+                  Are you sure you want to {modalType === "warn" ? "unwarn" : "unban"} this clinic?
+                </Text>
+              )}
 
-      {/* If warning or banning, show reason input */}
-      {((modalType === "warn" && !selectedClinic?.isWarn) ||
-        (modalType === "ban" && !selectedClinic?.isBan)) && (
-        <>
-          <Text style={{ marginBottom: 5 }}>Reason:</Text>
-          <TextInput
-            placeholder="Enter reason"
-            value={reason}
-            onChangeText={setReason}
-            style={{
-              borderWidth: 1,
-              borderColor: "#ccc",
-              borderRadius: 5,
-              padding: 10,
-              marginBottom: 10,
-            }}
-            multiline
-          />
-        </>
-      )}
+              <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setClinicMessage(false);
+                    setSelectedClinic(null);
+                    setReason("");
+                  }}
+                  style={{ marginRight: 15 }}
+                >
+                  <Text style={{ color: "#888" }}>Cancel</Text>
+                </TouchableOpacity>
 
-      {/* Confirmation for un-warn/un-ban */}
-      {((modalType === "warn" && selectedClinic?.isWarn) ||
-        (modalType === "ban" && selectedClinic?.isBan)) && (
-        <Text style={{ marginBottom: 10 }}>
-          Are you sure you want to {modalType === "warn" ? "unwarn" : "unban"} this clinic?
-        </Text>
-      )}
+                <TouchableOpacity
+                  onPress={async () => {
+                    if (!selectedClinic) return;
 
-      <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-        <TouchableOpacity
-          onPress={() => {
-            setClinicMessage(false);
-            setSelectedClinic(null);
-            setReason("");
-          }}
-          style={{ marginRight: 15 }}
-        >
-          <Text style={{ color: "#888" }}>Cancel</Text>
-        </TouchableOpacity>
+                    const needsReason =
+                      (modalType === "warn" && !selectedClinic.isWarn) ||
+                      (modalType === "ban" && !selectedClinic.isBan);
 
-        <TouchableOpacity
-          onPress={async () => {
-            if (!selectedClinic) return;
+                    if (needsReason && reason.trim() === "") {
+                      alert("Please enter a reason");
+                      return;
+                    }
 
-            const needsReason =
-              (modalType === "warn" && !selectedClinic.isWarn) ||
-              (modalType === "ban" && !selectedClinic.isBan);
+                    console.log("Updating clinic:", selectedClinic.id, modalType, reason);
 
-            if (needsReason && reason.trim() === "") {
-              alert("Please enter a reason");
-              return;
-            }
+                    if (modalType === "warn") {
 
-            console.log("Updating clinic:", selectedClinic.id, modalType, reason);
+                      const { data, error } = await supabase
+                        .from("clinic_profiles")
+                        .update({
+                          isWarn: !selectedClinic.isWarn,
+                          notif_message: !selectedClinic.isWarn ? reason : null,
+                          IsStriked: true,
+                        })
+                        .eq("id", selectedClinic.id);
+                      console.log("Warn update result:", data, error);
+                    } else if (modalType === "ban") {
+                      const { data, error } = await supabase
+                        .from("clinic_profiles")
+                        .update({
+                          isBan: !selectedClinic.isBan,
+                          notif_message: !selectedClinic.isBan ? reason : null,
+                        })
+                        .eq("id", selectedClinic.id);
+                      console.log("Ban update result:", data, error);
+                    }
 
-            if (modalType === "warn") {
+                    // Refresh clinic list from DB
+                    const { data: refreshed, error: refErr } = await supabase
+                      .from("clinic_profiles")
+                      .select("*");
+                    if (refErr) {
+                      console.error("Clinic refresh error:", refErr);
+                    } else {
+                      setClinicList(refreshed || []);
+                    }
 
-              const { data, error } = await supabase
-                .from("clinic_profiles")
-                .update({
-                  isWarn: !selectedClinic.isWarn,
-                  notif_message: !selectedClinic.isWarn ? reason : null,
-                  IsStriked: true,
-                })
-                .eq("id", selectedClinic.id);
-              console.log("Warn update result:", data, error);
-            } else if (modalType === "ban") {
-              const { data, error } = await supabase
-                .from("clinic_profiles")
-                .update({
-                  isBan: !selectedClinic.isBan,
-                  notif_message: !selectedClinic.isBan ? reason : null,
-                })
-                .eq("id", selectedClinic.id);
-              console.log("Ban update result:", data, error);
-            }
-
-            // Refresh clinic list from DB
-            const { data: refreshed, error: refErr } = await supabase
-              .from("clinic_profiles")
-              .select("*");
-            if (refErr) {
-              console.error("Clinic refresh error:", refErr);
-            } else {
-              setClinicList(refreshed || []);
-            }
-
-            setClinicMessage(false);
-            setSelectedClinic(null);
-            setReason("");
-          }}
-        >
-          <Text style={{ color: "#007BFF" }}>Confirm</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </View>
-</Modal>
-
-
+                    setClinicMessage(false);
+                    setSelectedClinic(null);
+                    setReason("");
+                  }}
+                >
+                  <Text style={{ color: "#007BFF" }}>Confirm</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
         </View>
 
     
-          {/* Dashboard Chats --------------------------------------------------------------------------------------- */}
+        {/* Dashboard Chats --------------------------------------------------------------------------------------- */}
     
           <View style={[styles.dashboard, { width: !isDesktop ? '95%' : expanded ? '80%' : '95%', right: dashboardView === 'chats' ? 11 : 20000}]}>
          <Text
@@ -2603,14 +2960,14 @@ useEffect(() => {
               fontWeight: "bold",
               marginBottom: 20,
               alignSelf: isMobile ? "center" : "flex-start",
-              color: "#003f30ff",
+              color: "#00505cff",
             }}
           >
             Support
           </Text>
           </View>
     
-          {/* Dashboard Team --------------------------------------------------------------------------------------- */}
+        {/* Dashboard Team --------------------------------------------------------------------------------------- */}
     
         {dashboardView === "team" && (
         <View
@@ -2628,7 +2985,7 @@ useEffect(() => {
               fontWeight: "bold",
               marginBottom: 20,
               alignSelf: isMobile ? "center" : "flex-start",
-              color: "#003f30ff",
+              color: "#00505cff",
             }}
           >
             About Us
@@ -2653,7 +3010,7 @@ useEffect(() => {
           fontWeight: "bold",
           marginBottom: 10,
           textAlign: "center",
-          color: "#003f30",
+          color: "#00505cff",
         }}
       >
         Explore Dental Clinics Around San Jose Delmonte Bulacan!
@@ -2676,7 +3033,7 @@ useEffect(() => {
           fontSize: 20,
           fontWeight: "bold",
           marginBottom: 10,
-          color: "#003f30",
+          color: "#00505cff",
           textAlign: "center",
         }}
       >
@@ -2701,7 +3058,7 @@ useEffect(() => {
             fontSize: 20,
             fontWeight: "bold",
             marginBottom: 12,
-            color: "#003f30",
+            color: "#00505cff",
             textAlign: "left",
           }}
         >
@@ -2749,7 +3106,7 @@ useEffect(() => {
             fontSize: 20,
             fontWeight: "bold",
             marginBottom: 12,
-            color: "#003f30",
+            color: "#00505cff",
             textAlign: "left",
           }}
         >
@@ -2801,7 +3158,7 @@ useEffect(() => {
         onPress={() => setTermsOfUse(true)}
         style={{
           marginTop: 30,
-          backgroundColor: "#00796b",
+          backgroundColor: "#00505cff",
           paddingVertical: 12,
           paddingHorizontal: 20,
           borderRadius: 10,
@@ -2837,8 +3194,17 @@ useEffect(() => {
           }}
         >
 <ScrollView>
-  <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10, color: "#003f30" }}>
-    SMILE STUDIO: Terms of Use
+  <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10, color: "#00505cff" }}>
+    SMILE STUDIO
+  </Text>
+
+
+  {/* Divider */}
+  <View style={{ marginVertical: 20, borderBottomWidth: 1, borderBottomColor: "#ccc" }} />
+
+  {/* Privacy Policy Title */}
+  <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10, color: "#00505cff" }}>
+    Privacy Policy
   </Text>
   <Text style={{ fontSize: 14, marginBottom: 10, color: "#444" }}>
     <Text style={{ fontWeight: "bold" }}>Last Updated:</Text> May 8, 2025{"\n"}
@@ -2960,13 +3326,94 @@ useEffect(() => {
     <Text style={{ fontWeight: "bold" }}>Acknowledgment{"\n"}</Text>
     By creating an account or booking an Appointment through Smile Studio, you acknowledge that you have read, understood, and agreed to these Terms of Use.
   </Text>
+
+
+        {/* Divider */}
+        <View style={{ marginVertical: 20, borderBottomWidth: 1, borderBottomColor: "#ccc" }} />
+
+        {/* Privacy Policy Title */}
+        <Text style={{ fontSize: 20, fontWeight: "bold", marginBottom: 10, color: "#00505cff" }}>
+          Privacy Policy
+        </Text>
+
+        {/* Full Privacy Policy Content */}
+        <Text style={{ fontSize: 14, color: "#444", lineHeight: 22 }}>
+          <Text style={{ fontWeight: "bold" }}>Effective Date:</Text> May 8, 2025{"\n\n"}
+
+          This Privacy Policy outlines how Smile Studio (“we”, “our”, or “us”) collects, uses, stores, and protects your personal information when you access or use our platform.
+
+          {"\n\n"}<Text style={{ fontWeight: "bold" }}>1. Information We Collect</Text>{"\n"}
+          We collect the following types of information from users:{"\n"}
+          • Personal identification (name, age, contact number, address){"\n"}
+          • Appointment data (scheduled date/time, clinic, purpose){"\n"}
+          • Optional medical details you provide{"\n"}
+          • Usage data (device type, IP address, app interactions){"\n"}
+          • AR Filter image interactions (not stored or transmitted)
+
+          {"\n\n"}<Text style={{ fontWeight: "bold" }}>2. How We Use Your Information</Text>{"\n"}
+          Your information is used to:{"\n"}
+          • Schedule and manage dental appointments{"\n"}
+          • Send notifications and reminders{"\n"}
+          • Improve system performance and user experience{"\n"}
+          • Provide academic insights for capstone research (anonymized){"\n"}
+          • Ensure compliance with dental service requirements
+
+          {"\n\n"}<Text style={{ fontWeight: "bold" }}>3. Legal Basis for Processing</Text>{"\n"}
+          We process your personal data based on:{"\n"}
+          • Your explicit consent when signing up and booking{"\n"}
+          • Legitimate interest in providing the platform{"\n"}
+          • Compliance with local laws and academic guidelines
+
+          {"\n\n"}<Text style={{ fontWeight: "bold" }}>4. Data Sharing & Disclosure</Text>{"\n"}
+          • Your personal data is shared only with authorized dental clinics that you book with.{"\n"}
+          • We do not sell, rent, or disclose your data to third parties.{"\n"}
+          • Data may be accessed by developers strictly for technical support and improvement.
+
+          {"\n\n"}<Text style={{ fontWeight: "bold" }}>5. Data Retention Policy</Text>{"\n"}
+          • We retain personal data for 12 months after your last activity.{"\n"}
+          • After this period, data is automatically deleted or anonymized.{"\n"}
+          • You may request earlier deletion at any time.
+
+          {"\n\n"}<Text style={{ fontWeight: "bold" }}>6. Security Measures</Text>{"\n"}
+          We protect your data using:{"\n"}
+          • Secure server connections (HTTPS){"\n"}
+          • Encrypted data storage and password protection{"\n"}
+          • Access restrictions for authorized personnel only{"\n"}
+          • Regular app maintenance and data privacy training
+
+          {"\n\n"}<Text style={{ fontWeight: "bold" }}>7. Your Rights Under RA 10173</Text>{"\n"}
+          Under the Philippine Data Privacy Act of 2012, you have the right to:{"\n"}
+          • Be informed about data collection and usage{"\n"}
+          • Access your personal data{"\n"}
+          • Correct inaccurate or outdated information{"\n"}
+          • Object to data processing{"\n"}
+          • Withdraw consent at any time{"\n"}
+          • Lodge a complaint with the National Privacy Commission
+
+          {"\n\n"}<Text style={{ fontWeight: "bold" }}>8. Children’s Privacy</Text>{"\n"}
+          The platform is open to minors with parental or guardian consent. We do not knowingly collect data from users under 13 without verified adult approval.
+
+          {"\n\n"}<Text style={{ fontWeight: "bold" }}>9. Third-Party Links & Integrations</Text>{"\n"}
+          Smile Studio may link to third-party clinics or systems. We are not responsible for how those parties handle your data. Always review their own privacy practices.
+
+          {"\n\n"}<Text style={{ fontWeight: "bold" }}>10. Changes to This Privacy Policy</Text>{"\n"}
+          We may revise this policy as needed. Updates will be reflected in the app and are effective immediately upon posting.
+
+          {"\n\n"}<Text style={{ fontWeight: "bold" }}>11. Contact Us</Text>{"\n"}
+          For questions or concerns, contact:{"\n"}
+          Smile Studio Support{"\n"}
+          Scuba Scripter and Pixel Cowboy Team{"\n"}
+          (+63) 921-888-1835{"\n"}
+          San Jose Del Monte, Bulacan, Philippines
+        </Text>
+
 </ScrollView>
 
           <TouchableOpacity
             onPress={() => setTermsOfUse(false)}
             style={{
               marginTop: 20,
-              backgroundColor: "#003f30",
+              backgroundColor: "#00505cff",
               paddingVertical: 10,
               borderRadius: 8,
             }}
@@ -2998,7 +3445,7 @@ useEffect(() => {
                 fontWeight: "bold",
                 marginBottom: 20,
                 textAlign: "center",
-                color: "#003f30",
+                color: "#00505cff",
               }}
             >
               Meet the Team
@@ -3008,7 +3455,7 @@ useEffect(() => {
               style={{
                 alignItems: "center",
                 marginBottom: 30,
-                backgroundColor: "#f0fff0",
+                backgroundColor: "#00505cff",
                 borderRadius: 16,
                 padding: 20,
                 shadowColor: "#000",
@@ -3031,10 +3478,10 @@ useEffect(() => {
                 }}
               />
 
-              <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white", marginTop: 8 }}>
                 Miguel Del Rosario
               </Text>
-              <Text style={{ fontSize: 16, color: "#555" }}>
+              <Text style={{ fontSize: 16, color: "white", }}>
                 Project Manager
               </Text>
             </View>
@@ -3042,7 +3489,7 @@ useEffect(() => {
               style={{
                 alignItems: "center",
                 marginBottom: 30,
-                backgroundColor: "#f0fff0",
+                backgroundColor: "#00505cff",
                 borderRadius: 16,
                 padding: 20,
                 shadowColor: "#000",
@@ -3065,10 +3512,10 @@ useEffect(() => {
                 }}
               />
 
-              <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white", marginTop: 8 }}>
                 Paala James
               </Text>
-              <Text style={{ fontSize: 16, color: "#555" }}>
+              <Text style={{ fontSize: 16, color: "white",}}>
                 Programmer Specialist
               </Text>
             </View>
@@ -3077,7 +3524,7 @@ useEffect(() => {
               style={{
                 alignItems: "center",
                 marginBottom: 30,
-                backgroundColor: "#f0fff0",
+                backgroundColor: "#00505cff",
                 borderRadius: 16,
                 padding: 20,
                 shadowColor: "#000",
@@ -3100,10 +3547,10 @@ useEffect(() => {
                 }}
               />
 
-              <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white", marginTop: 8 }}>
                 Elbert Rosales
               </Text>
-              <Text style={{ fontSize: 16, color: "#555" }}>
+              <Text style={{ fontSize: 16, color: "white",}}>
                 Quality Assurance
               </Text>
             </View>
@@ -3112,7 +3559,7 @@ useEffect(() => {
               style={{
                 alignItems: "center",
                 marginBottom: 30,
-                backgroundColor: "#f0fff0",
+                backgroundColor: "#00505cff",
                 borderRadius: 16,
                 padding: 20,
                 shadowColor: "#000",
@@ -3135,10 +3582,10 @@ useEffect(() => {
                 }}
               />
 
-              <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white", marginTop: 8 }}>
                 Rex Carlo Rosales
               </Text>
-              <Text style={{ fontSize: 16, color: "#555" }}>
+              <Text style={{ fontSize: 16, color: "white",}}>
                 System Analyst
               </Text>
               </View>
@@ -3147,117 +3594,345 @@ useEffect(() => {
         </View>
         )}
 
-          {/* Dashboard Verify Clinic --------------------------------------------------------------------------------------- */}
+        {/* Dashboard Verify Clinic --------------------------------------------------------------------------------------- */}
   
-      <View
-        style={[
-          styles.dashboard,
-          {
-            width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
-            right: dashboardView === "ar" ? 11 : 20000,
-          },
-        ]}
-      >
-        <Text
-          style={{
-            fontSize: 24,
-            fontWeight: "bold",
-            marginBottom: 20,
-            alignSelf: isMobile ? "center" : "flex-start",
-            color: "#003f30ff",
-          }}
+        <View
+          style={[
+            styles.dashboard,
+            {
+              width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
+              right: dashboardView === "ar" ? 11 : 20000,
+            },
+          ]}
         >
-          Verify Clinics
-        </Text>
+          <Text
+            style={{
+              fontSize: 24,
+              fontWeight: "bold",
+              marginBottom: 20,
+              alignSelf: isMobile ? "center" : "flex-start",
+              color: "#00505cff",
+            }}
+          >
+            Verify Clinics
+          </Text>
 
-        <ScrollView horizontal>
-          <View style={{ borderWidth: 1, borderColor: "#ccc", borderRadius: 8 }}>
-            {/* Header */}
-            <View style={{ flexDirection: "row", backgroundColor: "#003f30", padding: 10 }}>
-              <Text style={{ color: "white", width: 180, fontWeight: "bold" }}>Clinic Name</Text>
-              <Text style={{ color: "white", width: 200, fontWeight: "bold" }}>Email</Text>
-              <Text style={{ color: "white", width: 150, fontWeight: "bold" }}>Mobile</Text>
-              <Text style={{ color: "white", width: 250, fontWeight: "bold" }}>Address</Text>
-              <Text style={{ color: "white", width: 250, fontWeight: "bold" }}>Actions</Text>
-            </View>
-
-            {/* Rows */}
-            {clinicList
-              .filter((clinic) => clinic.request_verification === true)
-              .map((clinic, index) => (
-                <View
-                  key={clinic.id}
-                  style={{
-                    flexDirection: "row",
-                    padding: 10,
-                    backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#ffffff",
-                    alignItems: "center",
-                  }}
-                >
-                  <Text style={{ width: 180 }}>{clinic.clinic_name || "N/A"}</Text>
-                  <Text style={{ width: 200 }}>{clinic.email || "No email"}</Text>
-                  <Text style={{ width: 150 }}>{clinic.mobile_number || "N/A"}</Text>
-                  <Text numberOfLines={1} style={{ width: 250 }}>{clinic.address || "N/A"}</Text>
-                  <View style={{ flexDirection: "row", width: 250 }}>
-                    {/* Deny Button */}
-                    <TouchableOpacity
-                      onPress={() => {
-                        setSelectedClinicForAction(clinic);
-                        setDenialReason("");
-                        setDenialModalVisible(true);
-                      }}
+          {isMobile ? (
+            // 📱 Mobile Card View
+            <ScrollView contentContainerStyle={{ padding: 12 }}>
+              {clinicList.filter(clinic => clinic.request_verification).length === 0 ? (
+                <View style={{ alignItems: "center", marginTop: 40 }}>
+                  <Text style={{ fontSize: 20, color: "gray" }}>- No Clinic Requests -</Text>
+                </View>
+              ) : (
+                clinicList
+                  .filter(clinic => clinic.request_verification === true)
+                  .map((clinic, index) => (
+                    <View
+                      key={clinic.id}
                       style={{
-                        backgroundColor: "#c0392b",
-                        paddingVertical: 6,
-                        paddingHorizontal: 12,
-                        borderRadius: 6,
-                        marginRight: 10,
+                        backgroundColor: "#f9f9f9",
+                        borderRadius: 10,
+                        padding: 16,
+                        marginBottom: 16,
+                        borderWidth: 1,
+                        borderColor: "#ccc",
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 4,
+                        elevation: 3,
                       }}
                     >
-                      <Text style={{ color: "#fff", fontSize: 14 }}>Deny</Text>
-                    </TouchableOpacity>
+                      <Text style={{ fontWeight: "700", marginBottom: 6 }}>Clinic Name:</Text>
+                      <Text style={{ marginBottom: 10 }}>{clinic.clinic_name || "N/A"}</Text>
 
-                    {/* Verify Button */}
-                    <TouchableOpacity
-                      onPress={() => {
-                        setSelectedClinicForAction(clinic);
-                        setVerificationModalVisible(true);
-                      }}
-                      style={{
-                        backgroundColor: "#2ecc71",
-                        paddingVertical: 6,
-                        paddingHorizontal: 12,
-                        borderRadius: 6,
-                      }}
-                    >
-                      <Text style={{ color: "#fff", fontSize: 14 }}>Verify</Text>
-                    </TouchableOpacity>
-                    <Modal visible={denialModalVisible} transparent animationType="fade">
-                      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" }}>
-                        <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 10, width: "85%" }}>
-                          <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>
-                            Reason for Denial
+                      <Text style={{ fontWeight: "700", marginBottom: 6 }}>Email:</Text>
+                      <Text style={{ marginBottom: 10 }}>{clinic.email || "N/A"}</Text>
+
+                      <Text style={{ fontWeight: "700", marginBottom: 6 }}>Mobile:</Text>
+                      <Text style={{ marginBottom: 10 }}>{clinic.mobile_number || "N/A"}</Text>
+
+                      <Text style={{ fontWeight: "700", marginBottom: 6 }}>Address:</Text>
+                      <Text style={{ marginBottom: 10 }}>{clinic.address || "N/A"}</Text>
+
+                      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                        {/* Deny */}
+                        <TouchableOpacity
+                          onPress={() => {
+                            setSelectedClinicForAction(clinic);
+                            setDenialReason("");
+                            setDenialModalVisible(true);
+                          }}
+                          style={{
+                            backgroundColor: "#c0392b",
+                            padding: 8,
+                            borderRadius: 5,
+                            flex: 1,
+                            marginRight: 8,
+                          }}
+                        >
+                          <Text style={{ color: "#fff", textAlign: "center" }}>Deny</Text>
+                        </TouchableOpacity>
+
+                        {/* Verify */}
+                        <TouchableOpacity
+                          onPress={() => {
+                            setSelectedClinicForAction(clinic);
+                            setVerificationModalVisible(true);
+                          }}
+                          style={{
+                            backgroundColor: "#2ecc71",
+                            padding: 8,
+                            borderRadius: 5,
+                            flex: 1,
+                          }}
+                        >
+                          <Text style={{ color: "#fff", textAlign: "center" }}>Verify</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))
+              )}
+            </ScrollView>
+          ) : (
+            // 🖥️ Desktop Table View
+          <ScrollView horizontal contentContainerStyle={{ flexGrow: 1 }}>
+            <View style={{ flex: 1, minWidth: 1000 }}>
+              {clinicList.filter(clinic => clinic.request_verification).length === 0 ? (
+                <View style={{ width: "100%", alignItems: "center", marginTop: 40 }}>
+                  <Text style={{ fontSize: 20, color: "gray" }}>- No Clinic Requests -</Text>
+                </View>
+              ) : (
+                <>
+                  {/* Header */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      backgroundColor: "#00505cff",
+                      paddingVertical: 16,
+                      paddingHorizontal: 20,
+                      borderTopLeftRadius: 8,
+                      borderTopRightRadius: 8,
+                      minWidth: "100%",
+                    }}
+                  >
+                    {["Clinic Name", "Email", "Mobile", "Address", "Actions"].map((label, index) => (
+                      <Text
+                        key={index}
+                        style={{ flex: 1, fontWeight: "700", color: "white" }}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.7}
+                      >
+                        {label}
+                      </Text>
+                    ))}
+                  </View>
+
+                  {/* Rows */}
+                  <ScrollView>
+                    {clinicList
+                      .filter(clinic => clinic.request_verification)
+                      .map((clinic, index) => (
+                        <View
+                          key={clinic.id}
+                          style={{
+                            flexDirection: "row",
+                            borderBottomWidth: 1,
+                            borderColor: "#ccc",
+                            paddingVertical: 20,
+                            paddingHorizontal: 20,
+                            backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#fff",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Text style={{ flex: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                            {clinic.clinic_name || "N/A"}
                           </Text>
-                          <TextInput
-                            placeholder="Enter reason..."
-                            value={denialReason}
-                            onChangeText={setDenialReason}
-                            multiline
-                            style={{
-                              borderWidth: 1,
-                              borderColor: "#ccc",
-                              borderRadius: 8,
-                              padding: 10,
-                              height: 100,
-                              marginBottom: 20,
+                          <Text style={{ flex: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                            {clinic.email || "N/A"}
+                          </Text>
+                          <Text style={{ flex: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                            {clinic.mobile_number || "N/A"}
+                          </Text>
+                          <Text style={{ flex: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                            {clinic.address || "N/A"}
+                          </Text>
+
+                          {/* Actions */}
+                          <View style={{ flex: 1, flexDirection: "row" }}>
+                            {/* Deny */}
+                            <TouchableOpacity
+                              onPress={() => {
+                                setSelectedClinicForAction(clinic);
+                                setDenialReason("");
+                                setDenialModalVisible(true);
+                              }}
+                              style={{
+                                backgroundColor: "#c0392b",
+                                paddingVertical: 6,
+                                paddingHorizontal: 12,
+                                borderRadius: 6,
+                                marginRight: 10,
+                              }}
+                            >
+                              <Text style={{ color: "#fff", fontSize: 14 }}>Deny</Text>
+                            </TouchableOpacity>
+
+                            {/* Verify */}
+                            <TouchableOpacity
+                              onPress={() => {
+                                setSelectedClinicForAction(clinic);
+                                setVerificationModalVisible(true);
+                              }}
+                              style={{
+                                backgroundColor: "#2ecc71",
+                                paddingVertical: 6,
+                                paddingHorizontal: 12,
+                                borderRadius: 6,
+                              }}
+                            >
+                              <Text style={{ color: "#fff", fontSize: 14 }}>Verify</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ))}
+                  </ScrollView>
+                </>
+                
+              )}
+            </View>
+          </ScrollView>
+          )}
+        </View>
+                  {/* ⛔ Denial Modal */}
+                  <Modal visible={denialModalVisible} transparent animationType="fade">
+                    <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" }}>
+                      <View style={{ backgroundColor: "#fff", padding: 20, borderRadius: 10, width: isMobile ? "90%" : "40%" }}>
+                        <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10, color: '#00505cff' }}>
+                          Reason for Denial
+                        </Text>
+                        <TextInput
+                          placeholder="Enter reason..."
+                          value={denialReason}
+                          onChangeText={setDenialReason}
+                          multiline
+                          style={{
+                            borderWidth: 1,
+                            borderColor: "#ccc",
+                            borderRadius: 8,
+                            padding: 10,
+                            height: 100,
+                            marginBottom: 20,
+                          }}
+                        />
+
+                        <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+                          <TouchableOpacity
+                            onPress={() => {
+                              setDenialModalVisible(false);
+                              setDenialReason("");
+                              setSelectedClinicForAction(null);
                             }}
-                          />
+                            style={{ marginRight: 20 }}
+                          >
+                            <Text style={{ color: "#888" }}>Cancel</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            onPress={async () => {
+                              if (!selectedClinicForAction) return;
+                              if (denialReason.trim() === "") {
+                                alert("Please enter a reason");
+                                return;
+                              }
+
+                              const { error } = await supabase
+                                .from("clinic_profiles")
+                                .update({
+                                  request_verification: false,
+                                  denied_verification_reason: denialReason,
+                                })
+                                .eq("id", selectedClinicForAction.id);
+
+                              if (error) {
+                                alert("Error denying clinic.");
+                                console.error(error);
+                              } else {
+                                setClinicList(prev =>
+                                  prev.map(c =>
+                                    c.id === selectedClinicForAction.id
+                                      ? { ...c, request_verification: false }
+                                      : c
+                                  )
+                                );
+                              }
+
+                              setDenialModalVisible(false);
+                              setSelectedClinicForAction(null);
+                              setDenialReason("");
+                            }}
+                          >
+                            <Text style={{ color: "#c0392b", fontWeight: "bold" }}>Submit & Deny</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  </Modal>
+
+                  {/* ✅ Verification Modal */}
+                  <Modal visible={verificationModalVisible} transparent animationType="fade">
+                    <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" }}>
+                      <View
+                        style={{
+                          backgroundColor: "#fff",
+                          padding: 20,
+                          borderRadius: 10,
+                          width: isMobile ? "90%" : "40%" ,
+                          maxHeight: "90%",
+                        }}
+                      >
+                        <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+                          <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10, color: '#00505cff' }}>
+                            Are you sure you want to verify{" "}
+                            <Text style={{ fontWeight: "bold" }}>
+                              {selectedClinicForAction?.clinic_name || "this clinic"}?
+                            </Text>
+                          </Text>
+
+                          <View
+                            style={{
+                              marginTop: 15,
+                              marginBottom: 20,
+                              height: selectedClinicForAction?.license_photo_url ? 450 : undefined,
+                              justifyContent: "center",
+                              alignItems: "center",
+                            }}
+                          >
+                            {selectedClinicForAction?.license_photo_url ? (
+                              <Image
+                                source={{ uri: selectedClinicForAction.license_photo_url }}
+                                resizeMode="contain"
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  borderRadius: 10,
+                                  borderWidth: 1,
+                                  borderColor: "#ccc",
+                                }}
+                              />
+                            ) : (
+                              <Text style={{ color: "#c0392b", fontStyle: "italic" }}>
+                                This clinic did not provide a Business Permit.
+                              </Text>
+                            )}
+                          </View>
 
                           <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
                             <TouchableOpacity
                               onPress={() => {
-                                setDenialModalVisible(false);
-                                setDenialReason("");
+                                setVerificationModalVisible(false);
                                 setSelectedClinicForAction(null);
                               }}
                               style={{ marginRight: 20 }}
@@ -3268,158 +3943,40 @@ useEffect(() => {
                             <TouchableOpacity
                               onPress={async () => {
                                 if (!selectedClinicForAction) return;
-                                if (denialReason.trim() === "") {
-                                  alert("Please enter a reason");
-                                  return;
-                                }
 
-                                // ❌ Update request_verification to false
                                 const { error } = await supabase
                                   .from("clinic_profiles")
                                   .update({
                                     request_verification: false,
-                                    denied_verification_reason: denialReason,
+                                    denied_verification_reason: null,
+                                    isVerified: true,
                                   })
                                   .eq("id", selectedClinicForAction.id);
 
                                 if (error) {
-                                  alert("Error denying clinic.");
+                                  alert("Error verifying clinic.");
                                   console.error(error);
                                 } else {
-                                  // Remove from UI
-                                  setClinicList((prev) =>
-                                    prev.map((c) =>
+                                  setClinicList(prev =>
+                                    prev.map(c =>
                                       c.id === selectedClinicForAction.id
-                                        ? { ...c, request_verification: false }
+                                        ? { ...c, request_verification: false, isVerified: true }
                                         : c
                                     )
                                   );
                                 }
 
-                                setDenialModalVisible(false);
+                                setVerificationModalVisible(false);
                                 setSelectedClinicForAction(null);
-                                setDenialReason("");
                               }}
                             >
-                              <Text style={{ color: "#c0392b", fontWeight: "bold" }}>Submit & Deny</Text>
+                              <Text style={{ color: "#2ecc71", fontWeight: "bold" }}>Verify</Text>
                             </TouchableOpacity>
                           </View>
-                        </View>
+                        </ScrollView>
                       </View>
-                    </Modal>
-                    {/* Verification Modal */}
-                    <Modal visible={verificationModalVisible} transparent animationType="fade">
-                      <View
-                        style={{
-                          flex: 1,
-                          backgroundColor: "rgba(0,0,0,0.5)",
-                          justifyContent: "center",
-                          alignItems: "center",
-                        }}
-                      >
-                        <View
-                          style={{
-                            backgroundColor: "#fff",
-                            padding: 20,
-                            borderRadius: 10,
-                            width: isMobile ? "90%" : "40%",
-                            maxHeight: "90%",
-                          }}
-                        >
-                          <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-                            <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>
-                              Are you sure you want to verify{" "}
-                              <Text style={{ fontWeight: "bold" }}>
-                                {selectedClinicForAction?.clinic_name || "this clinic"}?
-                              </Text>
-                            </Text>
-
-                            {/* IMAGE or MESSAGE */}
-                            <View
-                              style={{
-                                marginTop: 15,
-                                marginBottom: 20,
-                                flexGrow: 1,
-                                height: selectedClinicForAction?.license_photo_url ? 450 : undefined,
-                                justifyContent: "center",
-                                alignItems: "center",
-                              }}
-                            >
-                              {selectedClinicForAction?.license_photo_url ? (
-                                <Image
-                                  source={{ uri: selectedClinicForAction.license_photo_url }}
-                                  resizeMode="contain"
-                                  style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    borderRadius: 10,
-                                    borderWidth: 1,
-                                    borderColor: "#ccc",
-                                  }}
-                                />
-                              ) : (
-                                <Text style={{ color: "#c0392b", fontStyle: "italic" }}>
-                                  This clinic did not provide a Business Permit.
-                                </Text>
-                              )}
-                            </View>
-
-                            {/* ACTION BUTTONS */}
-                            <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
-                              <TouchableOpacity
-                                onPress={() => {
-                                  setVerificationModalVisible(false);
-                                  setSelectedClinicForAction(null);
-                                }}
-                                style={{ marginRight: 20 }}
-                              >
-                                <Text style={{ color: "#888" }}>Cancel</Text>
-                              </TouchableOpacity>
-
-                              <TouchableOpacity
-                                onPress={async () => {
-                                  if (!selectedClinicForAction) return;
-
-                                  const { error } = await supabase
-                                    .from("clinic_profiles")
-                                    .update({
-                                      request_verification: false,
-                                      denied_verification_reason: null,
-                                      isVerified: true,
-                                    })
-                                    .eq("id", selectedClinicForAction.id);
-                                    
-
-                                  if (error) {
-                                    alert("Error verifying clinic.");
-                                    console.error(error);
-                                  } else {
-                                    setClinicList((prev) =>
-                                      prev.map((c) =>
-                                        c.id === selectedClinicForAction.id
-                                          ? { ...c, request_verification: false, isVerified: true }
-                                          : c
-                                      )
-                                    );
-                                  }
-
-                                  setVerificationModalVisible(false);
-                                  setSelectedClinicForAction(null);
-                                }}
-                              >
-                                <Text style={{ color: "#2ecc71", fontWeight: "bold" }}>Verify</Text>
-                              </TouchableOpacity>
-                            </View>
-                          </ScrollView>
-                        </View>
-                      </View>
-                    </Modal>
-                  </View>
-                </View>
-              ))}
-          </View>
-        </ScrollView>
-      </View>
+                    </View>
+                  </Modal>
       </LinearGradient>
     </LinearGradient>
   )
@@ -3458,7 +4015,7 @@ const styles = StyleSheet.create({
     shadowColor: '#00000045',
     shadowRadius: 2,
     shadowOffset: { width: 4, height: 4 },
-    backgroundColor: '#fff',
+    backgroundColor: '#f1f5f9',
     borderRadius: 12,
     alignContent: 'center',
   },
