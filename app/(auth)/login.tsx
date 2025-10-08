@@ -45,7 +45,10 @@ export default function Login() {
   const [modalVisible, setModalVisible] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [loginError, setLoginError] = useState('');
-
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotModalVisible, setForgotModalVisible] = useState(false);
+  const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
+  const [forgotError, setForgotError] = useState('');
   
 
 
@@ -334,17 +337,116 @@ const handleLogin = async () => {
                 </View>
               </Modal>
             </View>
-            <Text
-              style={{
-                textAlign: 'center',
-                fontSize: 14,
-                color: '#ffffffff',
-                textDecorationLine: 'underline',
-                fontWeight: 'bold',
+            <TouchableOpacity onPress={() => setForgotModalVisible(true)}>
+              <Text
+                style={{
+                  textAlign: 'center',
+                  fontSize: 14,
+                  color: '#ffffffff',
+                  textDecorationLine: 'underline',
+                  fontWeight: 'bold',
+                  marginTop: 10,
+                }}
+              >
+                Forgot Password?
+              </Text>
+            </TouchableOpacity>
+            <Modal
+              transparent
+              animationType="fade"
+              visible={forgotModalVisible}
+              onRequestClose={() => {
+                setForgotModalVisible(false);
+                setForgotPasswordSent(false);
+                setForgotEmail('');
+                setForgotError('');
               }}
             >
-              Forgot Password?
-            </Text>
+              <View style={styles.modalOverlay}>
+                <View style={[styles.modalBox, { width: isMobile ? 300 : 400 }]}>
+                  <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15, color: '#003f30ff' }}>
+                    Reset Your Password
+                  </Text>
+
+                  {!forgotPasswordSent ? (
+                    <>
+                      <TextInput
+                        placeholder="Enter your email"
+                        placeholderTextColor="#aaa"
+                        style={{
+                          backgroundColor: '#f0f0f0',
+                          padding: 10,
+                          width: '100%',
+                          borderRadius: 8,
+                          marginBottom: 10,
+                          color: '#000',
+                        }}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        value={forgotEmail}
+                        onChangeText={setForgotEmail}
+                      />
+
+                      {forgotError !== '' && (
+                        <Text style={{ color: 'red', marginBottom: 10 }}>{forgotError}</Text>
+                      )}
+
+                      <TouchableOpacity
+                        style={{
+                          backgroundColor: '#00505cff',
+                          paddingVertical: 12,
+                          borderRadius: 8,
+                          width: '100%',
+                          alignItems: 'center',
+                          marginBottom: 10,
+                        }}
+                        onPress={async () => {
+                          setForgotError('');
+                          if (!forgotEmail) {
+                            setForgotError('Please enter your email.');
+                            return;
+                          }
+
+                          const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+                            redirectTo: 'https://smilestudio.works/reset-password',
+                          });
+
+                          if (error) {
+                            setForgotError(error.message);
+                          } else {
+                            setForgotPasswordSent(true);
+                          }
+                        }}
+                      >
+                        <Text style={{ color: '#fff', fontWeight: 'bold' }}>Send Reset Link</Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <Text style={{ color: 'green', fontWeight: 'bold', textAlign: 'center' }}>
+                      Password reset link sent! Check your email.
+                    </Text>
+                  )}
+
+                  <TouchableOpacity
+                    style={{
+                      marginTop: 10,
+                      backgroundColor: '#b32020ff',
+                      paddingVertical: 10,
+                      paddingHorizontal: 25,
+                      borderRadius: 8,
+                    }}
+                    onPress={() => {
+                      setForgotModalVisible(false);
+                      setForgotPasswordSent(false);
+                      setForgotEmail('');
+                      setForgotError('');
+                    }}
+                  >
+                    <Text style={{ color: 'white', fontWeight: 'bold' }}>CLOSE</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
           </View>
           <StatusBar style="auto" />
         </View>

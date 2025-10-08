@@ -16,7 +16,7 @@ import com.facebook.soloader.SoLoader
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ReactNativeHostWrapper
 
-// 👇 Import your custom Banuba package
+// ✅ Import remains — just in case manual fallback is needed
 import com.anonymous.smilestudioPROTO.BanubaARPackage
 
 class MainApplication : Application(), ReactApplication {
@@ -26,8 +26,7 @@ class MainApplication : Application(), ReactApplication {
     object : DefaultReactNativeHost(this) {
       override fun getPackages(): List<ReactPackage> {
         val packages = PackageList(this).packages
-        // 👇 Add your Banuba package manually here
-        packages.add(BanubaARPackage())
+        // ✅ Removed manual add of BanubaARPackage to avoid duplicate view registration
         return packages
       }
 
