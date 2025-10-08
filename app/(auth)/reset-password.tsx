@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -20,6 +21,9 @@ export default function ResetPasswordScreen() {
   const [tokenReady, setTokenReady] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 480;
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     const extractTokensFromHash = async () => {
@@ -110,19 +114,26 @@ export default function ResetPasswordScreen() {
   }
 
   return (
-    <LinearGradient colors={['#80c4c4ff', '#009b84ff']} style={styles.container}>
+    <LinearGradient colors={['#80c4c4ff', '#009b84ff']} style={{...styles.container, paddingHorizontal: isMobile ? null : '50%'}}>
       <Text style={styles.title}>Set New Password</Text>
-      <View style={styles.inputRow}>
-        <MaterialIcons name="lock" size={24} color="white" />
-        <TextInput
-          style={[styles.input, passwordError && styles.inputError]}
-          secureTextEntry
-          placeholder="Enter new password"
-          placeholderTextColor="rgba(255,255,255,0.7)"
-          onChangeText={onChangePassword}
-          value={newPassword}
-        />
-      </View>
+        <View style={styles.inputRow}>
+          <MaterialIcons name="lock" size={24} color="white" />
+          <TextInput
+            style={[styles.input, passwordError && styles.inputError]}
+            secureTextEntry={!showPassword}
+            placeholder="Enter new password"
+            placeholderTextColor="rgba(255,255,255,0.7)"
+            onChangeText={onChangePassword}
+            value={newPassword}
+          />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            <MaterialIcons
+              name={showPassword ? "visibility" : "visibility-off"}
+              size={24}
+              color="white"
+            />
+          </TouchableOpacity>
+        </View>
       {passwordError && (
         <View style={styles.errorBox}>
           <MaterialIcons name="error-outline" size={20} color="#ffadad" />
@@ -130,9 +141,9 @@ export default function ResetPasswordScreen() {
         </View>
       )}
       <TouchableOpacity
-        style={[styles.button, loading && { opacity: 0.6 }]}
+        style={[styles.button, (loading || passwordError) && { opacity: 0.6 }]}
         onPress={handlePasswordReset}
-        disabled={loading}
+        disabled={loading || !!passwordError}  // disable if error or loading
       >
         <Text style={styles.buttonText}>
           {loading ? 'Updating...' : 'Update Password'}
@@ -188,7 +199,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   errorText: {
-    color: '#ff6b6b',
+    color: '#2e0a0aff',
     fontSize: 14,
     flexShrink: 1,
   },
