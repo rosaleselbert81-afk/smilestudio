@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -18,36 +19,60 @@ export default function ResetPasswordScreen() {
   const router = useRouter();
 
   useEffect(() => {
-    const checkSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
+    const extractTokensFromHash = async () => {
+      if (Platform.OS !== 'web') {
+        Alert.alert('Error', 'Password reset only works in the browser.');
+        return;
+      }
 
-      if (data.session) {
-        setTokenReady(true);
+      const hash = window.location.hash;
+      if (!hash) {
+        Alert.alert('Error', 'No token found in URL.');
+        return;
+      }
+
+      const params = new URLSearchParams(hash.slice(1)); // remove '#'
+      const access_token = params.get('access_token');
+      const refresh_token = params.get('refresh_token');
+
+      if (access_token && refresh_token) {
+        const { data, error } = await supabase.auth.setSession({
+          access_token,
+          refresh_token,
+        });
+
+        if (error) {
+          Alert.alert('Error', error.message);
+        } else {
+          setTokenReady(true);
+        }
       } else {
-        Alert.alert('Error', 'Missing or invalid token. Please use the link from your email.');
+        Alert.alert('Error', 'Missing access or refresh token.');
       }
     };
 
-    checkSession();
+    extractTokensFromHash();
   }, []);
 
   const handlePasswordReset = async () => {
     if (!newPassword || newPassword.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters.');
+      Alert.alert('Error', 'Password must be at least 6 characters');
       return;
     }
 
     setLoading(true);
 
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
 
     setLoading(false);
 
     if (error) {
       Alert.alert('Error', error.message);
     } else {
-      Alert.alert('Success', 'Password updated successfully!');
-      router.replace('/'); // Redirect to login or homepage
+      Alert.alert('Success', 'Password updated successfully');
+      router.replace('/'); // Go to login or home
     }
   };
 
@@ -76,7 +101,9 @@ export default function ResetPasswordScreen() {
         onPress={handlePasswordReset}
         disabled={loading}
       >
-        <Text style={styles.buttonText}>{loading ? 'Updating...' : 'Update Password'}</Text>
+        <Text style={styles.buttonText}>
+          {loading ? 'Updating...' : 'Update Password'}
+        </Text>
       </TouchableOpacity>
     </View>
   );
