@@ -11,15 +11,12 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import { LinearGradient } from 'expo-linear-gradient';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 export default function ResetPasswordScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [tokenReady, setTokenReady] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [passwordError, setPasswordError] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -61,24 +58,30 @@ export default function ResetPasswordScreen() {
   const validatePassword = (password: string) => {
     if (!password) {
       return "Password is required";
-    }
-    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(password)) {
+    } else if (
+      !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(password)
+    ) {
       return "Password must be at least 8 characters and include uppercase, lowercase, number, and special character";
     }
-    return '';
+    return null;
   };
 
   const handlePasswordReset = async () => {
     const errorMsg = validatePassword(newPassword);
-    setPasswordError(errorMsg);
+
     if (errorMsg) {
+      setPasswordError(errorMsg);
+      Alert.alert("Error", errorMsg);
       return;
     }
 
+    setPasswordError(null);
     setLoading(true);
+
     const { error } = await supabase.auth.updateUser({
       password: newPassword,
     });
+
     setLoading(false);
 
     if (error) {
@@ -89,137 +92,90 @@ export default function ResetPasswordScreen() {
     }
   };
 
+  const onChangePassword = (text: string) => {
+    setNewPassword(text);
+    // Validate on every input change for live feedback
+    const errorMsg = validatePassword(text);
+    setPasswordError(errorMsg);
+  };
+
   if (!tokenReady) {
     return (
-      <LinearGradient colors={['#80c4c4ff', '#009b84ff']} style={styles.container}>
+      <View style={styles.container}>
         <Text style={styles.title}>Verifying reset link...</Text>
-        <ActivityIndicator size="large" color="#ffffffff" />
-      </LinearGradient>
+        <ActivityIndicator size="large" color="#00505cff" />
+      </View>
     );
   }
 
   return (
-    <LinearGradient colors={['#80c4c4ff', '#009b84ff']} style={styles.container}>
-      <View style={{ width: '100%', maxWidth: 500, marginHorizontal: 'auto' }}>
-        <Text style={styles.title}>Set New Password</Text>
-        <Text style={styles.label}>NEW PASSWORD</Text>
-        <View
-          style={[
-            styles.verticallySpacedRow,
-            passwordError ? { borderColor: '#b32020ff' } : undefined,
-          ]}
-        >
-          <MaterialIcons name="lock" size={24} color="white" />
-          <TextInput
-            style={styles.input}
-            secureTextEntry={!showPassword}
-            placeholder="Enter new password"
-            placeholderTextColor="rgba(218, 218, 218, 1)"
-            onChangeText={(text) => {
-              setNewPassword(text);
-              if (passwordError) setPasswordError('');
-            }}
-            value={newPassword}
-            autoCapitalize="none"
-          />
-          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-            <MaterialIcons
-              name={showPassword ? 'visibility' : 'visibility-off'}
-              size={24}
-              color="white"
-            />
-          </TouchableOpacity>
-        </View>
-
-        {passwordError !== '' && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorTitle}>Invalid Password</Text>
-            <Text style={styles.errorMessage}>{passwordError}</Text>
-          </View>
-        )}
-
-        <TouchableOpacity
-          style={[styles.button, loading && { opacity: 0.6 }]}
-          onPress={handlePasswordReset}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>
-            {loading ? 'Updating...' : 'Update Password'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </LinearGradient>
+    <View style={styles.container}>
+      <Text style={styles.title}>Set New Password</Text>
+      <TextInput
+        style={[
+          styles.input,
+          passwordError && { borderColor: 'red' }, // red border if error
+        ]}
+        secureTextEntry
+        placeholder="Enter new password"
+        placeholderTextColor="#999"
+        onChangeText={onChangePassword}
+        value={newPassword}
+      />
+      {passwordError && (
+        <Text style={styles.errorText}>{passwordError}</Text>
+      )}
+      <TouchableOpacity
+        style={[styles.button, loading && { opacity: 0.6 }]}
+        onPress={handlePasswordReset}
+        disabled={loading}
+      >
+        <Text style={styles.buttonText}>
+          {loading ? 'Updating...' : 'Update Password'}
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    paddingTop: 100,
+    padding: 24,
+    justifyContent: 'center',
+    backgroundColor: '#f4f4f4',
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffffff',
-    alignSelf: 'center',
-    marginBottom: 20,
-    letterSpacing: 1,
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: '#ffffffff',
-    marginBottom: 10,
-    letterSpacing: 1,
-  },
-  verticallySpacedRow: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#ffffffff',
-    marginBottom: 16,
-    flexDirection: 'row',
-    height: 60,
-    alignItems: 'center',
-    gap: 5,
+    marginBottom: 24,
+    textAlign: 'center',
+    color: '#003f30ff',
   },
   input: {
-    backgroundColor: 'transparent',
-    outlineWidth: 0,
-    width: '80%',
-    height: 40,
-    color: 'rgba(255, 255, 255, 1)',
-  },
-  button: {
-    backgroundColor: '#ffffffff',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonText: {
-    color: '#00505cff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  errorBox: {
-    backgroundColor: '#ffd0d0ff',
+    backgroundColor: '#fff',
     padding: 12,
     borderRadius: 8,
-    marginBottom: 10,
-    alignSelf: 'stretch',
-  },
-  errorTitle: {
-    color: '#b32020ff',
-    fontWeight: 'bold',
     fontSize: 16,
-    textAlign: 'center',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    marginBottom: 8,
+    color: '#000',
   },
-  errorMessage: {
-    color: '#b32020ff',
+  errorText: {
+    color: 'red',
+    marginBottom: 16,
     fontSize: 14,
-    textAlign: 'center',
+  },
+  button: {
+    backgroundColor: '#00505cff',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
