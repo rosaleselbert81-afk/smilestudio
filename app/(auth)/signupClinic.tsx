@@ -152,40 +152,59 @@ const validateForm = (): boolean => {
   return Object.keys(newErrors).length === 0;
 };
 
+const emailExists = async (email: string): Promise<boolean> => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', email)
+    .maybeSingle(); // avoids throwing on "no rows"
+
+  if (error) {
+    console.error('Error checking email existence:', error.message);
+    return false; // assume false on error, or handle as needed
+  }
+
+  return !!data;
+};
+
 const signUpHandler = async () => {
   if (!validateForm()) {
-    // Validation failed, errors are set, so just return here
-    return;
+    return; // Don't proceed if validation fails
+  }
+
+  // Check if email already exists before signup
+  const exists = await emailExists(email);
+  if (exists) {
+    alert("🚫 This email is already taken.");
+    return;  // stop signup
   }
 
   try {
-    // Upload photos first and get URLs
     let clinicPhotoUrl = null;
     let licensePhotoUrl = null;
 
     if (clinicPhoto) {
       clinicPhotoUrl = await uploadPhoto(clinicPhoto, 'clinic-photos');
     }
+
     if (licensePhoto) {
       licensePhotoUrl = await uploadPhoto(licensePhoto, 'license-photos');
     }
 
-    // Prepare clinic profile with photo URLs and prepend '0' to mobile number
     const clinicProfile = {
       clinic_name: clinicName,
-      mobile_number: '0' + mobileNumber,  // <-- Prepend '0' here
-      address: address,
+      mobile_number: mobileNumber.startsWith('0') ? mobileNumber : '0' + mobileNumber,
+      address,
       clinic_photo_url: clinicPhotoUrl || undefined,
       license_photo_url: licensePhotoUrl || undefined,
     };
 
-    // Call signUpClinic from context
-    await signUpClinic(email, password, clinicProfile);
+    const success = await signUpClinic(email, password, clinicProfile);
 
-    alert(
-      "Clinic account created. Please verify your email. If you did not receive a verification, try using another email."
-    );
-    router.push('/login');
+    if (success) {
+      alert("✅ Clinic account created. Please verify your email to continue.");
+      router.push('/login');
+    }
   } catch (error: any) {
     Alert.alert('Signup failed', error.message || 'Unknown error');
   }

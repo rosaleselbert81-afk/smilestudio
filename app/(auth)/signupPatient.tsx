@@ -128,6 +128,21 @@ const validateForm = async (): Promise<boolean> => {
     }
   };
 
+// helper function to check if email exists in profiles
+const emailExists = async (email: string): Promise<boolean> => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', email)
+    .single();
+
+  if (error && error.code !== 'PGRST116') { // ignore "No rows found" error
+    console.error('Error checking email existence:', error);
+  }
+
+  return !!data;
+};
+
 const handleSignup = async () => {
   const isValid = await validateForm();
   if (!isValid) {
@@ -138,6 +153,13 @@ const handleSignup = async () => {
   if (password !== confirmPassword) {
     setErrors(prev => ({ ...prev, confirmPassword: 'Passwords do not match.' }));
     return;
+  }
+
+  // Check if email already exists before signing up
+  const exists = await emailExists(email);
+  if (exists) {
+    alert("🚫 This email is already taken.");
+    return;  // stop here, no account creation
   }
 
   const formattedMobileNumber = mobileNumber.startsWith('0') ? mobileNumber : '0' + mobileNumber;
@@ -157,9 +179,6 @@ const handleSignup = async () => {
     router.push('/login');
   }
 };
-
-
-
 
   return (
     <LinearGradient colors={['#80c4c4ff', '#009b84ff']} style={styles.container}>
@@ -778,6 +797,7 @@ const handleSignup = async () => {
                 if (termsAccepted) {
                   handleSignup();
                 }
+                setModalVisible(false);
               }}
               disabled={!termsAccepted}
               style={{

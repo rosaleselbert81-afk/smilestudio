@@ -149,8 +149,8 @@ export default function Login() {
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.subtext}>Do you have an Account (Patient/Clinic)?</Text>
-            <Text style={styles.subtext}>Sign up here!</Text>
+            <Text style={{...styles.subtext, marginTop: 20}}>Do you have an Account (Patient/Clinic)?</Text>
+            <Text style={{...styles.subtext, marginBottom: 20}}>Sign up here!</Text>
 
             <View style={styles.verticallySpaced}>
               <TouchableOpacity style={styles.signupButton} onPress={() => setModalVisible(true)}>

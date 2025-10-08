@@ -97,6 +97,15 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
   const [isAuthenticated, setAuthenticated] = useState(false);
   const [role, setRole] = useState<string>("");
 
+const emailExists = async (email: string): Promise<boolean> => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', email)
+    .maybeSingle();
+
+  return !!data;
+};
 
 const signUp = async (
   email: string,
@@ -114,37 +123,39 @@ const signUp = async (
 
     if (error) {
       const msg = error.message.toLowerCase();
+
       if (
         msg.includes("user already") ||
         msg.includes("email already") ||
         msg.includes("duplicate")
       ) {
         alert("🚫 This email is already taken.");
-        return false; // ❌ Sign-up failed
+        return false;
       }
 
       alert(`Sign-up failed: ${error.message}`);
       return false;
     }
 
+    // Save temp profile for later use on login
     await AsyncStorage.setItem("temp_profile", JSON.stringify(profile));
-    return true; // ✅ Success
+
+    return true; // Success
   } catch (err: any) {
     console.error("Sign-up error:", err);
+    alert("⚠️ An unexpected error occurred during sign-up.");
     return false;
   }
 };
 
 
-
-
-
 const signUpClinic = async (
   email: string,
   password: string,
-  clinicProfile: ClinicProfile
-) => {
+  clinicProfile: any
+): Promise<boolean> => {
   try {
+    // Sign up with Supabase auth
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -155,148 +166,156 @@ const signUpClinic = async (
 
     if (error) {
       const msg = error.message.toLowerCase();
+
       if (
         msg.includes("user already") ||
         msg.includes("email already") ||
         msg.includes("duplicate")
       ) {
-        alert("🚫 This email is already taken. Please use a different one.");
-        return; // 🔒 prevent continuation
+        alert("🚫 This email is already taken.");
+        return false;
       }
 
       alert(`Sign-up failed: ${error.message}`);
-      return;
+      return false;
     }
 
-    await AsyncStorage.setItem(
-      "temp_clinic_profile",
-      JSON.stringify(clinicProfile)
-    );
+    // ✅ Do NOT insert into profiles yet — wait for email verification + login
+    await AsyncStorage.setItem("temp_clinic_profile", JSON.stringify(clinicProfile));
+
+    return true;
   } catch (err: any) {
     console.error("Clinic sign-up error:", err);
     alert("⚠️ An unexpected error occurred. Please try again later.");
+    return false;
   }
 };
 
 
-  const signIn = async (email: string, password: string) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
 
-      if (error) throw error;
+const signIn = async (email: string, password: string) => {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      const { session, user } = data;
-      if (!session || !user) throw new Error("No session or user returned.");
+    if (error) throw error;
 
-      const { data: patientProfile } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("id", user.id)
-        .single();
+    const { session, user } = data;
+    if (!session || !user) throw new Error("No session or user returned.");
 
-      if (!patientProfile) {
-        const storedProfile = await AsyncStorage.getItem("temp_profile");
-        if (storedProfile) {
-          const parsed = JSON.parse(storedProfile);
-          await supabase.from("profiles").insert([
-            {
-              id: user.id,
-              first_name: parsed.first_name,
-              last_name: parsed.last_name,
-              gender: parsed.gender,
-              birthdate: parsed.birthdate,
-              avatar_url: parsed.photo_url || null,
-              mobile_number: parsed.mobile_number,
-              role: "Patient",
-            },
-          ]);
-          await AsyncStorage.removeItem("temp_profile");
-        }
-      }
+    // Check if patient profile exists
+    const { data: patientProfile, error: patientError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
 
-      const { data: clinicProfile } = await supabase
-        .from("clinic_profiles")
-        .select("id")
-        .eq("id", user.id)
-        .single();
+    if (patientError) throw patientError;
 
-      if (!clinicProfile) {
-        const storedClinic = await AsyncStorage.getItem("temp_clinic_profile");
-        if (storedClinic) {
-          const parsed = JSON.parse(storedClinic);
+    // If no patient profile, insert it from temp storage
+    if (!patientProfile) {
+      const storedProfile = await AsyncStorage.getItem("temp_profile");
+      if (storedProfile) {
+        const parsed = JSON.parse(storedProfile);
 
-          const uploadedClinicPhotoUrl = parsed.clinic_photo_url
-            ? await uploadPhoto(parsed.clinic_photo_url, "clinic")
-            : null;
+        const { error: insertError } = await supabase.from("profiles").insert([
+          {
+            id: user.id,
+            email: user.email || null,  // safe fallback
+            first_name: parsed.first_name,
+            last_name: parsed.last_name,
+            gender: parsed.gender,
+            birthdate: parsed.birthdate,
+            avatar_url: parsed.photo_url || null,
+            mobile_number: parsed.mobile_number,
+            role: "Patient",
+          },
+        ]);
+        if (insertError) throw insertError;
 
-          const uploadedLicensePhotoUrl = parsed.license_photo_url
-            ? await uploadPhoto(parsed.license_photo_url, "license")
-            : null;
-
-          await supabase.from("clinic_profiles").insert([
-            {
-              id: user.id,
-              clinic_name: parsed.clinic_name,
-              address: parsed.address,
-              mobile_number: parsed.mobile_number,
-              clinic_photo_url: uploadedClinicPhotoUrl,
-              license_photo_url: uploadedLicensePhotoUrl,
-              role: "Clinic",
-            },
-          ]);
-
-          await AsyncStorage.removeItem("temp_clinic_profile");
-        }
-      }
-
-      const adminCheck = await supabase
-        .from("admin_profiles")
-        .select("role")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      const clinicCheck = await supabase
-        .from("clinic_profiles")
-        .select("role")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      const patientCheck = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      let role = "";
-
-      if (adminCheck.data?.role?.toLowerCase() === "admin") {
-        role = "admin";
-      } else if (clinicCheck.data?.role) {
-        role = "clinic";
-      } else if (patientCheck.data?.role) {
-        role = "patient";
-      }
-
-      await AsyncStorage.multiSet([
-        ["access_token", session.access_token],
-        ["refresh_token", session.refresh_token],
-        ["user_id", user.id],
-        ["user_role", role],
-      ]);
-
-      setRole(role);
-      setSession(session);
-      setAuthenticated(true);
-    } catch (err: any) {
-      console.error("Sign-in error:", err?.message || err);
-      if (!err?.message?.toLowerCase().includes("invalid")) {
-        alert("⚠️ An error occurred while signing in.");
+        await AsyncStorage.removeItem("temp_profile");
       }
     }
-  };
+
+    // Check if clinic profile exists
+    const { data: clinicProfile, error: clinicError } = await supabase
+      .from("clinic_profiles")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (clinicError) throw clinicError;
+
+    // Insert clinic profile if missing
+    if (!clinicProfile) {
+      const storedClinic = await AsyncStorage.getItem("temp_clinic_profile");
+      if (storedClinic) {
+        const parsed = JSON.parse(storedClinic);
+
+        const uploadedClinicPhotoUrl = parsed.clinic_photo_url
+          ? await uploadPhoto(parsed.clinic_photo_url, "clinic")
+          : null;
+
+        const uploadedLicensePhotoUrl = parsed.license_photo_url
+          ? await uploadPhoto(parsed.license_photo_url, "license")
+          : null;
+
+        const { error: insertClinicError } = await supabase.from("clinic_profiles").insert([
+          {
+            id: user.id,
+            clinic_name: parsed.clinic_name,
+            address: parsed.address,
+            mobile_number: parsed.mobile_number,
+            clinic_photo_url: uploadedClinicPhotoUrl,
+            license_photo_url: uploadedLicensePhotoUrl,
+            role: "Clinic",
+          },
+        ]);
+        if (insertClinicError) throw insertClinicError;
+
+        await AsyncStorage.removeItem("temp_clinic_profile");
+      }
+    }
+
+    // Check roles for user
+    const [{ data: adminCheck }, { data: clinicCheck }, { data: patientCheck }] =
+      await Promise.all([
+        supabase.from("admin_profiles").select("role").eq("id", user.id).maybeSingle(),
+        supabase.from("clinic_profiles").select("role").eq("id", user.id).maybeSingle(),
+        supabase.from("profiles").select("role").eq("id", user.id).maybeSingle(),
+      ]);
+
+    let role = "";
+    if (adminCheck?.role?.toLowerCase() === "admin") {
+      role = "admin";
+    } else if (clinicCheck?.role) {
+      role = "clinic";
+    } else if (patientCheck?.role) {
+      role = "patient";
+    }
+
+    // Store tokens and user info locally
+    await AsyncStorage.multiSet([
+      ["access_token", session.access_token],
+      ["refresh_token", session.refresh_token],
+      ["user_id", user.id],
+      ["user_role", role],
+    ]);
+
+    // Update state
+    setRole(role);
+    setSession(session);
+    setAuthenticated(true);
+  } catch (err: any) {
+    console.error("Sign-in error:", err?.message || err);
+    if (!err?.message?.toLowerCase().includes("invalid")) {
+      alert("⚠️ An error occurred while signing in.");
+    }
+  }
+};
+
 
   const signOut = async () => {
     try {
