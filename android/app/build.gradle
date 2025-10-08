@@ -182,4 +182,11 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    // === Banuba SDK dependencies for face filter (teeth braces) ===
+    implementation "com.banuba.sdk:sdk_api:1.0.0"
+    implementation "com.banuba.sdk:sdk_core:1.0.0"
+    implementation "com.banuba.sdk:effect_player:1.0.0"
+    implementation "com.banuba.sdk:face_tracker:1.0.0"
 }
+
