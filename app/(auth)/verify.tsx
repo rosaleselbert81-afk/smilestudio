@@ -43,7 +43,12 @@ const Verify = () => {
       {status === 'verifying' && <p>🔄 Verifying your email...</p>}
       {status === 'success' && <p>✅ Email verified! Redirecting you...</p>}
       {status === 'error' && (
-        <p>❌ Something went wrong verifying your email. Please try again.</p>
+        <>
+          <p>❌ Something went wrong verifying your email. Please try again.</p>
+          <p>
+            👉 Please go back to the login page and sign in again to activate your account.
+          </p>
+        </>
       )}
     </div>
   );
@@ -55,8 +60,11 @@ const styles = {
     height: '100vh',
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'column' as 'column',
     fontSize: '18px',
     fontFamily: 'sans-serif',
+    textAlign: 'center' as 'center',
+    padding: '0 20px',
   },
 };
 
