@@ -97,17 +97,18 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
   const [isAuthenticated, setAuthenticated] = useState(false);
   const [role, setRole] = useState<string>("");
 
+
 const signUp = async (
   email: string,
   password: string,
   profile: PatientProfile
-) => {
+): Promise<boolean> => {
   try {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: "https://www.smilestudio.works/verify", // ✅ this is critical
+        emailRedirectTo: "https://www.smilestudio.works/verify",
       },
     });
 
@@ -119,18 +120,24 @@ const signUp = async (
         msg.includes("duplicate")
       ) {
         alert("🚫 This email is already taken.");
-        return;
+        return false; // ❌ Sign-up failed
       }
+
       alert(`Sign-up failed: ${error.message}`);
-      throw error;
+      return false;
     }
 
     await AsyncStorage.setItem("temp_profile", JSON.stringify(profile));
+    return true; // ✅ Success
   } catch (err: any) {
     console.error("Sign-up error:", err);
-    throw err;
+    return false;
   }
 };
+
+
+
+
 
 const signUpClinic = async (
   email: string,
@@ -142,7 +149,7 @@ const signUpClinic = async (
       email,
       password,
       options: {
-        emailRedirectTo: "https://www.smilestudio.works/verify", // ✅ same here
+        emailRedirectTo: "https://www.smilestudio.works/verify",
       },
     });
 
@@ -153,12 +160,12 @@ const signUpClinic = async (
         msg.includes("email already") ||
         msg.includes("duplicate")
       ) {
-        alert("🚫 This email is already taken.");
-        return;
+        alert("🚫 This email is already taken. Please use a different one.");
+        return; // 🔒 prevent continuation
       }
 
       alert(`Sign-up failed: ${error.message}`);
-      throw error;
+      return;
     }
 
     await AsyncStorage.setItem(
@@ -167,7 +174,7 @@ const signUpClinic = async (
     );
   } catch (err: any) {
     console.error("Clinic sign-up error:", err);
-    throw err;
+    alert("⚠️ An unexpected error occurred. Please try again later.");
   }
 };
 

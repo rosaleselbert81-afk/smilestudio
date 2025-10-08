@@ -19,6 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useSession } from '../../lib/SessionContext';
 import { FontAwesome } from '@expo/vector-icons';
+import { supabase } from '../../lib/supabase'; // <-- Add this line (adjust path if needed)
 
 interface Errors {
   firstName?: string;
@@ -55,7 +56,7 @@ export default function SignupScreen() {
   const [errors, setErrors] = useState<Errors>({});
 
 
-const validateForm = () => {
+const validateForm = async (): Promise<boolean> => {
   const newErrors: Errors = {};
 
   if (!firstName.trim()) {
@@ -76,6 +77,16 @@ const validateForm = () => {
     newErrors.email = "Email is required";
   } else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
     newErrors.email = "Invalid email format";
+  } else {
+    // 🧠 Check if the email is already registered
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password: 'dummy' // password doesn't matter; we just care if the user exists
+    });
+
+    if (!error && data?.user) {
+      newErrors.email = "This email is already registered.";
+    }
   }
 
   if (!password) {
@@ -85,14 +96,11 @@ const validateForm = () => {
       "Password must be at least 8 characters and include uppercase, lowercase, number, and special character";
   }
 
-
   if (!confirmPassword) {
     newErrors.confirmPassword = "Please confirm your password";
   } else if (confirmPassword !== password) {
     newErrors.confirmPassword = "Passwords do not match";
   }
-
-  // Optional validations:
 
   if (!birthdate) {
     newErrors.birthdate = "Birthdate is required";
@@ -103,9 +111,9 @@ const validateForm = () => {
   }
 
   setErrors(newErrors);
-
   return Object.keys(newErrors).length === 0;
 };
+
 
 
   const pickImage = async () => {
@@ -121,40 +129,36 @@ const validateForm = () => {
   };
 
 const handleSignup = async () => {
-  // Run your validateForm, which sets errors state
-  const isValid = validateForm();
-  
+  const isValid = await validateForm();
   if (!isValid) {
     setModalVisible(false);
     return;
   }
 
-  // Additional password confirm check (optional if in validateForm already)
   if (password !== confirmPassword) {
     setErrors(prev => ({ ...prev, confirmPassword: 'Passwords do not match.' }));
     return;
   }
 
-  // ✅ Prepend '0' to mobile number before saving
   const formattedMobileNumber = mobileNumber.startsWith('0') ? mobileNumber : '0' + mobileNumber;
 
-  try {
-    await signUp(email, password, {
-      first_name: firstName,
-      last_name: lastName,
-      gender,
-      birthdate: birthdate ? birthdate.toISOString().split('T')[0] : '',
-      photo_url: photo || undefined,
-      mobile_number: formattedMobileNumber,
-    });
+  const success = await signUp(email, password, {
+    first_name: firstName,
+    last_name: lastName,
+    gender,
+    birthdate: birthdate ? birthdate.toISOString().split('T')[0] : '',
+    photo_url: photo || undefined,
+    mobile_number: formattedMobileNumber,
+  });
 
-    alert("Patient account created. Please verify your email. If you did not receive a verification, try to use other email.");
+  if (success) {
+    alert("✅ Patient account created. Please verify your email to continue.");
     setModalVisible(false);
     router.push('/login');
-  } catch (err: any) {
-    alert(err.message || 'Sign-up failed.');
   }
 };
+
+
 
 
   return (
