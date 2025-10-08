@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import { MaterialIcons } from '@expo/vector-icons'; // Icons for input fields & errors
+import { MaterialIcons } from '@expo/vector-icons'; 
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function ResetPasswordScreen() {
@@ -20,6 +20,7 @@ export default function ResetPasswordScreen() {
   const [loading, setLoading] = useState(false);
   const [tokenReady, setTokenReady] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);  // <-- NEW STATE
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isMobile = width < 480;
@@ -52,6 +53,18 @@ export default function ResetPasswordScreen() {
           Alert.alert('Error', error.message);
         } else {
           setTokenReady(true);
+
+          // Fetch user info after session is set
+          const {
+            data: { user },
+            error: userError,
+          } = await supabase.auth.getUser();
+
+          if (userError) {
+            console.error('Error fetching user:', userError.message);
+          } else if (user?.email) {
+            setEmail(user.email);
+          }
         }
       } else {
         Alert.alert('Error', 'Missing access or refresh token.');
@@ -114,26 +127,34 @@ export default function ResetPasswordScreen() {
   }
 
   return (
-    <LinearGradient colors={['#80c4c4ff', '#009b84ff']} style={{...styles.container, paddingHorizontal: isMobile ? null : '50%'}}>
+    <LinearGradient
+      colors={['#80c4c4ff', '#009b84ff']}
+      style={{ ...styles.container, paddingHorizontal: isMobile ? null : 150 }}
+    >
       <Text style={styles.title}>Set New Password</Text>
-        <View style={styles.inputRow}>
-          <MaterialIcons name="lock" size={24} color="white" />
-          <TextInput
-            style={[styles.input, passwordError && styles.inputError]}
-            secureTextEntry={!showPassword}
-            placeholder="Enter new password"
-            placeholderTextColor="rgba(255,255,255,0.7)"
-            onChangeText={onChangePassword}
-            value={newPassword}
+
+      {email && (
+        <Text style={styles.emailText}>Resetting password for: {email}</Text>
+      )}
+
+      <View style={styles.inputRow}>
+        <MaterialIcons name="lock" size={24} color="white" />
+        <TextInput
+          style={[styles.input, passwordError && styles.inputError]}
+          secureTextEntry={!showPassword}
+          placeholder="Enter new password"
+          placeholderTextColor="rgba(255,255,255,0.7)"
+          onChangeText={onChangePassword}
+          value={newPassword}
+        />
+        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+          <MaterialIcons
+            name={showPassword ? "visibility" : "visibility-off"}
+            size={24}
+            color="white"
           />
-          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-            <MaterialIcons
-              name={showPassword ? "visibility" : "visibility-off"}
-              size={24}
-              color="white"
-            />
-          </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
+      </View>
       {passwordError && (
         <View style={styles.errorBox}>
           <MaterialIcons name="error-outline" size={20} color="#ffadad" />
@@ -167,6 +188,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#ffffffff',
     letterSpacing: 1,
+  },
+  emailText: {
+    textAlign: 'center',
+    color: '#e0f7f7',
+    marginBottom: 20,
+    fontSize: 16,
+    fontWeight: '600',
   },
   inputRow: {
     flexDirection: 'row',
