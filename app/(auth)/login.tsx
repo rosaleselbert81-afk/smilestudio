@@ -161,7 +161,7 @@ export default function Login() {
               <Modal transparent animationType="fade" visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
                 <View style={styles.modalOverlay}>
                   <View style={{ ...styles.modalBox, width: !isMobile ? 550 : 280 }}>
-                    <Text style={{ ...styles.optionText, fontSize: 20, marginBottom: 20, color: '#003f30ff' }}>
+                    <Text style={{ ...styles.optionText, fontSize: 20, marginBottom: 20, color: '#00505cff' }}>
                       Patient or Clinic?
                     </Text>
 
@@ -214,7 +214,7 @@ export default function Login() {
             >
               <View style={styles.modalOverlay}>
                 <View style={[styles.modalBox, { width: isMobile ? 300 : 400 }]}>
-                  <Text style={styles.modalTitle}>Reset Your Password</Text>
+                  <Text style={{...styles.modalTitle, color: '#00505cff'}}>Reset Your Password</Text>
 
                   {!forgotPasswordSent ? (
                     <>
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalBox: {
-    backgroundColor: 'white',
+    backgroundColor: '#f1f5f9',
     paddingVertical: 30,
     paddingHorizontal: 20,
     borderRadius: 12,
