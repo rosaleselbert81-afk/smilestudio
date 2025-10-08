@@ -1,19 +1,16 @@
+import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { MaterialIcons } from '@expo/vector-icons';
 import Checkbox from 'expo-checkbox';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
-import { useSession } from '@/lib/SessionContext';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import Fontisto from '@expo/vector-icons/Fontisto';
 import MaterialIcons1 from '@expo/vector-icons/MaterialIcons';
-
 import {
   AppState,
   Image,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,8 +20,9 @@ import {
   Modal,
   useWindowDimensions,
 } from 'react-native';
+import { useSession } from '@/lib/SessionContext';
 
-// Handle Supabase auth refresh on app active/inactive
+// 🔁 Handle Supabase auth refresh on app active/inactive
 AppState.addEventListener('change', (state) => {
   if (state === 'active') {
     supabase.auth.startAutoRefresh();
@@ -38,271 +36,135 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
-  const { signIn } = useSession();
-  const { width } = useWindowDimensions();
-  const isMobile = width < 480;
   const [modalVisible, setModalVisible] = useState(false);
-  const [isRedirecting, setIsRedirecting] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotModalVisible, setForgotModalVisible] = useState(false);
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
   const [forgotError, setForgotError] = useState('');
-  
 
+  const router = useRouter();
+  const { signIn } = useSession();
+  const { width } = useWindowDimensions();
 
-const handleLogin = async () => {
-  if (!email || !password) return;
+  // Assume "web" if width is wide enough (e.g. > 480)
+  const isWeb = width >= 480;
 
-  setLoading(true);
-  setLoginError(''); // Clear previous error
-
-  try {
-    const { error } = await signIn(email, password); // Assuming this returns an object with error
-    if (error) {
-      setLoginError('Wrong email or password.');
+  useEffect(() => {
+    if (isWeb) {
+      const hash = window?.location?.hash;
+      if (hash && hash.includes('access_token')) {
+        const resetUrl = `/reset-password${hash}`;
+        window.location.replace(resetUrl);
+      }
     }
-  } catch (err) {
-    setLoginError('An unexpected error occurred.');
-    console.error(err);
-  } finally {
-    setLoading(false);
-  }
-};
+  }, [isWeb]);
 
+  const isMobile = width < 480;
 
-  async function signUpWithEmail() {
+  const handleLogin = async () => {
+    if (!email || !password) return;
+
     setLoading(true);
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-    });
+    setLoginError('');
 
-    // You can handle errors or alerts here
-    setLoading(false);
-  }
+    try {
+      const { error } = await signIn(email, password);
+      if (error) {
+        setLoginError('Wrong email or password.');
+      }
+    } catch (err) {
+      setLoginError('An unexpected error occurred.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <LinearGradient colors={['#80c4c4ff', '#009b84ff']} style={[styles.container]}>
-      <ScrollView style={{ flex: 1 }} 
-      automaticallyAdjustKeyboardInsets
-      showsVerticalScrollIndicator={false}
-      >
-        <View
-          style={{
-            width: '100%',
-            maxWidth: 500,
-            marginTop: 30,
-            marginHorizontal: 'auto',
-          }}
-        >
+    <LinearGradient colors={['#80c4c4ff', '#009b84ff']} style={styles.container}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} automaticallyAdjustKeyboardInsets>
+        <View style={{ width: '100%', maxWidth: 500, marginTop: 30, marginHorizontal: 'auto' }}>
           <Image source={require('../../assets/favicon.ico.png')} style={styles.logo} />
 
           <Text style={styles.welcome}>SMILE STUDIO</Text>
-          <Text
-            style={{
-              ...styles.welcome,
-              fontSize: 15,
-              marginTop: -10,
-              fontWeight: '300',
-              marginBottom: -15,
-            }}
-          >
+          <Text style={{ ...styles.welcome, fontSize: 15, marginTop: -10, fontWeight: '300', marginBottom: -15 }}>
             Grin Creators
           </Text>
 
           <View style={{ ...styles.container }}>
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: 'bold',
-                color: '#ffffffff',
-                alignSelf: 'flex-start',
-                marginBottom: 10,
-                letterSpacing: 1,
-              }}
-            >
-              EMAIL
-            </Text>
-            <View
-              style={{
-                ...styles.verticallySpaced,
-                flexDirection: 'row',
-                height: 60,
-                alignItems: 'center',
-                gap: 5,
-              }}
-            >
+            <Text style={styles.label}>EMAIL</Text>
+            <View style={styles.verticallySpacedRow}>
               <MaterialIcons name="email" size={24} color={'white'} />
               <TextInput
-                style={{
-                  backgroundColor: '#00000000',
-                  outlineWidth: 0,
-                  width: '100%',
-                  height: 40,
-                  color: 'rgba(255, 255, 255, 1)',
-                }}
-                onChangeText={(text) => setEmail(text)}
+                style={styles.input}
+                onChangeText={setEmail}
                 placeholder="JuanDelaCruz@address.com"
-                autoCapitalize={'none'}
+                autoCapitalize="none"
                 placeholderTextColor={'rgba(218, 218, 218, 1)'}
               />
             </View>
 
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: 'bold',
-                color: '#ffffffff',
-                alignSelf: 'flex-start',
-                marginBottom: 10,
-                letterSpacing: 1,
-              }}
-            >
-              PASSWORD
-            </Text>
-            <View
-              style={{
-                ...styles.verticallySpaced,
-                flexDirection: 'row',
-                height: 60,
-                alignItems: 'center',
-                gap: 5,
-              }}
-            >
+            <Text style={styles.label}>PASSWORD</Text>
+            <View style={styles.verticallySpacedRow}>
               <MaterialIcons1 name="password" size={24} color="white" />
-
               <TextInput
-                style={{
-                  backgroundColor: '#00000000',
-                  outlineWidth: 0,
-                  width: '80%',
-                  height: 40,
-                  color: 'rgba(255, 255, 255, 1)',
-                }}
-                onChangeText={(text) => setPassword(text)}
+                style={styles.input}
+                onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 placeholder="Password"
                 autoCapitalize="none"
-                placeholderTextColor='rgba(218, 218, 218, 1)'
+                placeholderTextColor="rgba(218, 218, 218, 1)"
               />
-
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <MaterialIcons
-                  name={showPassword ? 'visibility' : 'visibility-off'}
-                  size={24}
-                  color="white"
-                />
+                <MaterialIcons name={showPassword ? 'visibility' : 'visibility-off'} size={24} color="white" />
               </TouchableOpacity>
             </View>
+
             {loginError !== '' && (
-              <View
-                style={{
-                  backgroundColor: '#ffd0d0ff',
-                  padding: 12,
-                  borderRadius: 8,
-                  marginBottom: 10,
-                  alignSelf: 'stretch',
-                }}
-              >
-                <Text style={{ color: '#00505cff', fontWeight: 'bold', fontSize: 16, textAlign: 'center' }}>
-                  Wrong Credentials
-                </Text>
-                <Text style={{ color: '#00505cff', fontSize: 14, textAlign: 'center' }}>
-                  Invalid email or password
-                </Text>
+              <View style={styles.errorBox}>
+                <Text style={styles.errorTitle}>Wrong Credentials</Text>
+                <Text style={styles.errorMessage}>Invalid email or password</Text>
               </View>
             )}
-
 
             <View style={styles.verticallySpaced}>
               <TouchableOpacity
                 style={{
+                  ...styles.loginButton,
                   backgroundColor:
-                    email === '' || password === ''
-                      ? 'rgba(0, 0, 0, 0.1)'
-                      : '#ffffffff',
-                  borderRadius: 10,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: 15,
-                  shadowColor: '#00000045',
-                  shadowRadius: 6,
-                  shadowOffset: { width: 4, height: 4 },
+                    email === '' || password === '' ? 'rgba(0, 0, 0, 0.1)' : '#ffffffff',
                 }}
                 disabled={loading || email === '' || password === ''}
                 onPress={handleLogin}
               >
-                <Text style={{ fontWeight: 'bold', 
-                  color:                     
-                    email === '' || password === ''
-                        ? '#ffffffff'
-                        : '#00505cff',
-                  }}>
+                <Text
+                  style={{
+                    fontWeight: 'bold',
+                    color: email === '' || password === '' ? '#ffffffff' : '#00505cff',
+                  }}
+                >
                   {loading ? 'Signing In...' : 'SIGN IN'}
                 </Text>
               </TouchableOpacity>
             </View>
-            <Text
-              style={{
-                textAlign: 'center',
-                fontSize: 14,
-                color: '#ffffffff',
-                fontWeight: 'bold',
-                marginBottom: 1,
-              }}
-            >
-              Do you have an Account (Patient/Clinic)?
-            </Text>
-            <Text
-              style={{
-                textAlign: 'center',
-                fontSize: 14,
-                color: '#ffffffff',
-                fontWeight: 'bold',
-                marginBottom: 10,
-              }}
-            >
-              Sign up here!
-            </Text>
+
+            <Text style={styles.subtext}>Do you have an Account (Patient/Clinic)?</Text>
+            <Text style={styles.subtext}>Sign up here!</Text>
+
             <View style={styles.verticallySpaced}>
-              <TouchableOpacity
-                style={{
-                  backgroundColor: '#00505cff',
-                  borderRadius: 10,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: 15,
-                  shadowColor: '#00000045',
-                  shadowRadius: 6,
-                  shadowOffset: { width: 4, height: 4 },
-                }}
-                disabled={loading}
-                onPress={() => setModalVisible(true)}
-              >
-                <Text style={{ fontWeight: 'bold', color: 'rgba(255, 255, 255, 1)' }}>
-                  SIGN UP
-                </Text>
+              <TouchableOpacity style={styles.signupButton} onPress={() => setModalVisible(true)}>
+                <Text style={{ fontWeight: 'bold', color: 'rgba(255, 255, 255, 1)' }}>SIGN UP</Text>
               </TouchableOpacity>
-              <Modal
-                transparent
-                animationType="fade"
-                visible={modalVisible}
-                onRequestClose={() => setModalVisible(false)}
-              >
+
+              {/* Signup Options Modal */}
+              <Modal transparent animationType="fade" visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
                 <View style={styles.modalOverlay}>
                   <View style={{ ...styles.modalBox, width: !isMobile ? 550 : 280 }}>
-                    <Text
-                      style={{ ...styles.optionText, fontSize: 20, marginBottom: 20, color: "#003f30ff" }}
-                    >
+                    <Text style={{ ...styles.optionText, fontSize: 20, marginBottom: 20, color: '#003f30ff' }}>
                       Patient or Clinic?
                     </Text>
 
-                    {/* PATIENT BUTTON */}
                     <TouchableOpacity
                       style={{ ...styles.optionButton, backgroundColor: '#86ffc7ff' }}
                       onPress={() => {
@@ -314,7 +176,6 @@ const handleLogin = async () => {
                       <Text style={{ ...styles.optionText, color: '#498d6dff' }}>PATIENT</Text>
                     </TouchableOpacity>
 
-                    {/* CLINIC BUTTON */}
                     <TouchableOpacity
                       style={{ ...styles.optionButton, backgroundColor: '#86f7ffff' }}
                       onPress={() => {
@@ -326,31 +187,20 @@ const handleLogin = async () => {
                       <Text style={{ ...styles.optionText, color: '#4a878bff' }}>CLINIC</Text>
                     </TouchableOpacity>
 
-                    {/* CLOSE BUTTON */}
-                    <TouchableOpacity
-                      style={{ ...styles.closeButton, backgroundColor: '#b32020ff' }}
-                      onPress={() => setModalVisible(false)}
-                    >
+                    <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
                       <Text style={{ color: 'white', fontWeight: 'bold' }}>CLOSE</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
               </Modal>
             </View>
+
+            {/* Forgot Password Link */}
             <TouchableOpacity onPress={() => setForgotModalVisible(true)}>
-              <Text
-                style={{
-                  textAlign: 'center',
-                  fontSize: 14,
-                  color: '#ffffffff',
-                  textDecorationLine: 'underline',
-                  fontWeight: 'bold',
-                  marginTop: 10,
-                }}
-              >
-                Forgot Password?
-              </Text>
+              <Text style={styles.forgotLink}>Forgot Password?</Text>
             </TouchableOpacity>
+
+            {/* Forgot Password Modal */}
             <Modal
               transparent
               animationType="fade"
@@ -364,42 +214,24 @@ const handleLogin = async () => {
             >
               <View style={styles.modalOverlay}>
                 <View style={[styles.modalBox, { width: isMobile ? 300 : 400 }]}>
-                  <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15, color: '#003f30ff' }}>
-                    Reset Your Password
-                  </Text>
+                  <Text style={styles.modalTitle}>Reset Your Password</Text>
 
                   {!forgotPasswordSent ? (
                     <>
                       <TextInput
                         placeholder="Enter your email"
                         placeholderTextColor="#aaa"
-                        style={{
-                          backgroundColor: '#f0f0f0',
-                          padding: 10,
-                          width: '100%',
-                          borderRadius: 8,
-                          marginBottom: 10,
-                          color: '#000',
-                        }}
+                        style={styles.modalInput}
                         keyboardType="email-address"
                         autoCapitalize="none"
                         value={forgotEmail}
                         onChangeText={setForgotEmail}
                       />
 
-                      {forgotError !== '' && (
-                        <Text style={{ color: 'red', marginBottom: 10 }}>{forgotError}</Text>
-                      )}
+                      {forgotError !== '' && <Text style={{ color: 'red', marginBottom: 10 }}>{forgotError}</Text>}
 
                       <TouchableOpacity
-                        style={{
-                          backgroundColor: '#00505cff',
-                          paddingVertical: 12,
-                          borderRadius: 8,
-                          width: '100%',
-                          alignItems: 'center',
-                          marginBottom: 10,
-                        }}
+                        style={styles.sendResetButton}
                         onPress={async () => {
                           setForgotError('');
                           if (!forgotEmail) {
@@ -408,7 +240,7 @@ const handleLogin = async () => {
                           }
 
                           const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-                            redirectTo: 'https://smilestudio.works/reset-password',
+                            redirectTo: 'https://www.smilestudio.works/reset-password',
                           });
 
                           if (error) {
@@ -427,29 +259,15 @@ const handleLogin = async () => {
                     </Text>
                   )}
 
-                  <TouchableOpacity
-                    style={{
-                      marginTop: 10,
-                      backgroundColor: '#b32020ff',
-                      paddingVertical: 10,
-                      paddingHorizontal: 25,
-                      borderRadius: 8,
-                    }}
-                    onPress={() => {
-                      setForgotModalVisible(false);
-                      setForgotPasswordSent(false);
-                      setForgotEmail('');
-                      setForgotError('');
-                    }}
-                  >
+                  <TouchableOpacity style={styles.closeButton} onPress={() => setForgotModalVisible(false)}>
                     <Text style={{ color: 'white', fontWeight: 'bold' }}>CLOSE</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </Modal>
           </View>
-          <StatusBar style="auto" />
         </View>
+        <StatusBar style="auto" />
       </ScrollView>
     </LinearGradient>
   );
@@ -459,7 +277,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    paddingTop: Platform.OS === 'android' ? 60 : 100,
+    paddingTop: 100,
   },
   welcome: {
     fontSize: 28,
@@ -469,7 +287,15 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     letterSpacing: 1,
   },
-  verticallySpaced: {
+  label: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#ffffffff',
+    alignSelf: 'flex-start',
+    marginBottom: 10,
+    letterSpacing: 1,
+  },
+  verticallySpacedRow: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     padding: 14,
     borderRadius: 12,
@@ -477,6 +303,17 @@ const styles = StyleSheet.create({
     borderColor: '#ffffffff',
     color: '#fff',
     marginBottom: 15,
+    flexDirection: 'row',
+    height: 60,
+    alignItems: 'center',
+    gap: 5,
+  },
+  input: {
+    backgroundColor: '#00000000',
+    outlineWidth: 0,
+    width: '80%',
+    height: 40,
+    color: 'rgba(255, 255, 255, 1)',
   },
   logo: {
     width: 100,
@@ -485,10 +322,39 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     resizeMode: 'contain',
   },
-  checkboxRow: {
-    flexDirection: 'row',
+  loginButton: {
+    borderRadius: 10,
     alignItems: 'center',
-    marginVertical: 15,
+    justifyContent: 'center',
+    padding: 15,
+    shadowColor: '#00000045',
+    shadowRadius: 6,
+    shadowOffset: { width: 4, height: 4 },
+  },
+  subtext: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#ffffffff',
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  signupButton: {
+    backgroundColor: '#00505cff',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 15,
+    shadowColor: '#00000045',
+    shadowRadius: 6,
+    shadowOffset: { width: 4, height: 4 },
+  },
+  forgotLink: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#ffffffff',
+    textDecorationLine: 'underline',
+    fontWeight: 'bold',
+    marginTop: 10,
   },
   modalOverlay: {
     flex: 1,
@@ -503,6 +369,38 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     width: 280,
     alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#003f30ff',
+  },
+  modalInput: {
+    backgroundColor: '#f0f0f0',
+    padding: 10,
+    width: '100%',
+    borderRadius: 8,
+    marginBottom: 10,
+    color: '#000',
+  },
+  sendResetButton: {
+    backgroundColor: '#00505cff',
+    paddingVertical: 12,
+    borderRadius: 8,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  closeButton: {
+    marginTop: 10,
+    backgroundColor: '#b32020ff',
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    borderRadius: 8,
+    shadowColor: '#00000045',
+    shadowRadius: 6,
+    shadowOffset: { width: 4, height: 4 },
   },
   optionButton: {
     width: '100%',
@@ -520,14 +418,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'black',
   },
-  closeButton: {
-    marginTop: 10,
-    backgroundColor: 'rgba(25, 58, 119, 1)',
-    paddingVertical: 10,
-    paddingHorizontal: 25,
+  errorBox: {
+    backgroundColor: '#ffd0d0ff',
+    padding: 12,
     borderRadius: 8,
-    shadowColor: '#00000045',
-    shadowRadius: 6,
-    shadowOffset: { width: 4, height: 4 },
+    marginBottom: 10,
+    alignSelf: 'stretch',
+  },
+  errorTitle: {
+    color: '#00505cff',
+    fontWeight: 'bold',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  errorMessage: {
+    color: '#00505cff',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

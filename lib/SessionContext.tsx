@@ -30,7 +30,7 @@ type SessionContextType = {
   isAuthenticated: boolean;
   session: Session | null;
   isLoading: boolean;
-  role : string,
+  role: string;
   signIn: (email: string, password: string) => void;
   signUp: (
     email: string,
@@ -43,25 +43,19 @@ type SessionContextType = {
     clinicProfile: ClinicProfile
   ) => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (newPassword: string) => Promise<void>; // ✅ NEW
 };
 
 const SessionContext = createContext<SessionContextType>({
   isAuthenticated: false,
   session: null,
   isLoading: true,
-  role : "",
-  signIn: async (email: string, password: string) => {},
-  signUp: async (
-    email: string,
-    password: string,
-    profile: PatientProfile
-  ) => {},
-  signUpClinic: async (
-    email: string,
-    password: string,
-    clinicProfile: ClinicProfile
-  ) => {},
+  role: "",
+  signIn: async () => {},
+  signUp: async () => {},
+  signUpClinic: async () => {},
   signOut: async () => {},
+  resetPassword: async () => {}, // ✅ NEW
 });
 
 export const useSession = () => useContext(SessionContext);
@@ -77,7 +71,7 @@ const uploadPhoto = async (
     const ext = uri.split(".").pop()?.split("?")[0] || "jpg";
     const filePath = `${folder}/${Date.now()}.${ext}`;
 
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from("clinic-photos")
       .upload(filePath, blob, { upsert: true });
 
@@ -110,7 +104,6 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
   ) => {
     try {
       const { error } = await supabase.auth.signUp({ email, password });
-
       if (error) {
         const msg = error.message.toLowerCase();
         if (
@@ -121,7 +114,6 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
           alert("🚫 This email is already taken.");
           return;
         }
-
         alert(`Sign-up failed: ${error.message}`);
         throw error;
       }
@@ -140,7 +132,6 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
   ) => {
     try {
       const { error } = await supabase.auth.signUp({ email, password });
-
       if (error) {
         const msg = error.message.toLowerCase();
         if (
@@ -166,10 +157,7 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
     }
   };
 
-  const signIn = async (
-    email: string,
-    password: string
-  ) => {
+  const signIn = async (email: string, password: string) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -180,9 +168,6 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
 
       const { session, user } = data;
       if (!session || !user) throw new Error("No session or user returned.");
-
-
-      // Your existing logic to handle temp profiles insertion
 
       const { data: patientProfile } = await supabase
         .from("profiles")
@@ -229,45 +214,39 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
             ? await uploadPhoto(parsed.license_photo_url, "license")
             : null;
 
-          const { error: insertError } = await supabase
-            .from("clinic_profiles")
-            .insert([
-              {
-                id: user.id,
-                clinic_name: parsed.clinic_name,
-                address: parsed.address,
-                mobile_number: parsed.mobile_number,
-                clinic_photo_url: uploadedClinicPhotoUrl,
-                license_photo_url: uploadedLicensePhotoUrl,
-                role: "Clinic",
-              },
-            ]);
+          await supabase.from("clinic_profiles").insert([
+            {
+              id: user.id,
+              clinic_name: parsed.clinic_name,
+              address: parsed.address,
+              mobile_number: parsed.mobile_number,
+              clinic_photo_url: uploadedClinicPhotoUrl,
+              license_photo_url: uploadedLicensePhotoUrl,
+              role: "Clinic",
+            },
+          ]);
 
-          if (insertError) {
-            console.error("Clinic insert error:", insertError);
-          } else {
-            await AsyncStorage.removeItem("temp_clinic_profile");
-          }
+          await AsyncStorage.removeItem("temp_clinic_profile");
         }
       }
 
-    const adminCheck = await supabase
-      .from("admin_profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
+      const adminCheck = await supabase
+        .from("admin_profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
 
-    const clinicCheck = await supabase
-      .from("clinic_profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
+      const clinicCheck = await supabase
+        .from("clinic_profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
 
-    const patientCheck = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
+      const patientCheck = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
 
       let role = "";
 
@@ -279,13 +258,11 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
         role = "patient";
       }
 
-
-      // Optionally save role for later use
       await AsyncStorage.multiSet([
         ["access_token", session.access_token],
         ["refresh_token", session.refresh_token],
         ["user_id", user.id],
-        ["user_role", role]
+        ["user_role", role],
       ]);
 
       setRole(role);
@@ -293,9 +270,7 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
       setAuthenticated(true);
     } catch (err: any) {
       console.error("Sign-in error:", err?.message || err);
-      if (err?.message?.toLowerCase().includes("invalid login credentials")) {
-        
-      } else {
+      if (!err?.message?.toLowerCase().includes("invalid")) {
         alert("⚠️ An error occurred while signing in.");
       }
     }
@@ -312,7 +287,7 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
         "access_token",
         "refresh_token",
         "user_id",
-        "user_role"
+        "user_role",
       ]);
     } catch (err: any) {
       console.error("Sign-out error:", err.message || err);
@@ -320,79 +295,90 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
     }
   };
 
-  useEffect(() => {
-  let authSubscription: ReturnType<typeof supabase.auth.onAuthStateChange>["data"]["subscription"];
-
-  const restoreSession = async () => {
+  // ✅ Add resetPassword handler
+  const resetPassword = async (newPassword: string) => {
     try {
-      const [[, accessToken], [, refreshToken], [, storedRole]] = await AsyncStorage.multiGet([
-        "access_token",
-        "refresh_token",
-        "user_role",
-      ]);
-
-      if (accessToken && refreshToken) {
-        const { data, error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-
-        if (error) {
-          console.error("🔁 Session restore error:", error.message);
-          setAuthenticated(false);
-          setSession(null);
-        } else {
-          setSession(data.session);
-          setAuthenticated(true);
-        }
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        console.error("❌ Failed to update password:", error.message);
+        throw error;
       }
-
-      // Always try to update role from storage (even if session fails)
-      if (storedRole) {
-        setRole(storedRole);
-      }
-    } catch (err) {
-      console.error("⚠️ Session restore exception:", err);
-    } finally {
-      setIsLoading(false);
+      console.log("✅ Password updated successfully.");
+    } catch (err: any) {
+      console.error("Password update exception:", err);
+      throw err;
     }
   };
 
-  const subscribeToAuthChanges = () => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
-        await AsyncStorage.multiSet([
-          ["access_token", session.access_token],
-          ["refresh_token", session.refresh_token],
-        ]);
+  useEffect(() => {
+    let authSubscription: ReturnType<
+      typeof supabase.auth.onAuthStateChange
+    >["data"]["subscription"];
 
-        const storedRole = await AsyncStorage.getItem("user_role");
-        if (storedRole) {
-          setRole(storedRole);
-        } else {
-          setRole(""); // fallback
+    const restoreSession = async () => {
+      try {
+        const [[, accessToken], [, refreshToken], [, storedRole]] =
+          await AsyncStorage.multiGet([
+            "access_token",
+            "refresh_token",
+            "user_role",
+          ]);
+
+        if (accessToken && refreshToken) {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (error) {
+            console.error("🔁 Session restore error:", error.message);
+            setAuthenticated(false);
+            setSession(null);
+          } else {
+            setSession(data.session);
+            setAuthenticated(true);
+          }
         }
 
-        setSession(session);
-        setAuthenticated(true);
-      } else {
-        setSession(null);
-        setAuthenticated(false);
-        setRole("");
+        if (storedRole) setRole(storedRole);
+      } catch (err) {
+        console.error("⚠️ Session restore exception:", err);
+      } finally {
+        setIsLoading(false);
       }
-    });
+    };
 
-    authSubscription = subscription;
-  };
+    const subscribeToAuthChanges = () => {
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (session) {
+          await AsyncStorage.multiSet([
+            ["access_token", session.access_token],
+            ["refresh_token", session.refresh_token],
+          ]);
 
-  restoreSession();
-  subscribeToAuthChanges();
+          const storedRole = await AsyncStorage.getItem("user_role");
+          setRole(storedRole ?? "");
+          setSession(session);
+          setAuthenticated(true);
+        } else {
+          setSession(null);
+          setAuthenticated(false);
+          setRole("");
+        }
+      });
 
-  return () => {
-    if (authSubscription) authSubscription.unsubscribe();
-  };
-}, []);
+      authSubscription = subscription;
+    };
 
+    restoreSession();
+    subscribeToAuthChanges();
+
+    return () => {
+      if (authSubscription) authSubscription.unsubscribe();
+    };
+  }, []);
 
   return (
     <SessionContext.Provider
@@ -405,6 +391,7 @@ export const SessionProvider = ({ children }: PropsWithChildren) => {
         signUp,
         signUpClinic,
         signOut,
+        resetPassword, // ✅ Exposed here
       }}
     >
       {children}

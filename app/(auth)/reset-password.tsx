@@ -55,8 +55,19 @@ export default function ResetPasswordScreen() {
   }, []);
 
   const handlePasswordReset = async () => {
-    if (!newPassword || newPassword.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+    const passwordErrors: { password?: string } = {};
+
+    if (!newPassword) {
+      passwordErrors.password = "Password is required";
+    } else if (
+      !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(newPassword)
+    ) {
+      passwordErrors.password =
+        "Password must be at least 8 characters and include uppercase, lowercase, number, and special character";
+    }
+
+    if (passwordErrors.password) {
+      Alert.alert("Error", passwordErrors.password);
       return;
     }
 
