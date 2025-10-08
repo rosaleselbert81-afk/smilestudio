@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { MaterialIcons } from '@expo/vector-icons'; // Icons for input fields & errors
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function ResetPasswordScreen() {
   const [newPassword, setNewPassword] = useState('');
@@ -94,36 +96,38 @@ export default function ResetPasswordScreen() {
 
   const onChangePassword = (text: string) => {
     setNewPassword(text);
-    // Validate on every input change for live feedback
     const errorMsg = validatePassword(text);
     setPasswordError(errorMsg);
   };
 
   if (!tokenReady) {
     return (
-      <View style={styles.container}>
+      <LinearGradient colors={['#80c4c4ff', '#009b84ff']} style={styles.container}>
         <Text style={styles.title}>Verifying reset link...</Text>
-        <ActivityIndicator size="large" color="#00505cff" />
-      </View>
+        <ActivityIndicator size="large" color="#ffffffff" />
+      </LinearGradient>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={['#80c4c4ff', '#009b84ff']} style={styles.container}>
       <Text style={styles.title}>Set New Password</Text>
-      <TextInput
-        style={[
-          styles.input,
-          passwordError && { borderColor: 'red' }, // red border if error
-        ]}
-        secureTextEntry
-        placeholder="Enter new password"
-        placeholderTextColor="#999"
-        onChangeText={onChangePassword}
-        value={newPassword}
-      />
+      <View style={styles.inputRow}>
+        <MaterialIcons name="lock" size={24} color="white" />
+        <TextInput
+          style={[styles.input, passwordError && styles.inputError]}
+          secureTextEntry
+          placeholder="Enter new password"
+          placeholderTextColor="rgba(255,255,255,0.7)"
+          onChangeText={onChangePassword}
+          value={newPassword}
+        />
+      </View>
       {passwordError && (
-        <Text style={styles.errorText}>{passwordError}</Text>
+        <View style={styles.errorBox}>
+          <MaterialIcons name="error-outline" size={20} color="#ffadad" />
+          <Text style={styles.errorText}>{passwordError}</Text>
+        </View>
       )}
       <TouchableOpacity
         style={[styles.button, loading && { opacity: 0.6 }]}
@@ -134,7 +138,7 @@ export default function ResetPasswordScreen() {
           {loading ? 'Updating...' : 'Update Password'}
         </Text>
       </TouchableOpacity>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -143,39 +147,63 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     justifyContent: 'center',
-    backgroundColor: '#f4f4f4',
+    backgroundColor: 'transparent',
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 24,
     textAlign: 'center',
-    color: '#003f30ff',
+    color: '#ffffffff',
+    letterSpacing: 1,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#ffffffff',
+    height: 60,
+    marginBottom: 10,
+    gap: 10,
   },
   input: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 8,
+    flex: 1,
     fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    marginBottom: 8,
-    color: '#000',
+    color: '#ffffffff',
+    height: 40,
+  },
+  inputError: {
+    borderColor: '#ff6b6b',
+  },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffadad44',
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 16,
+    gap: 6,
   },
   errorText: {
-    color: 'red',
-    marginBottom: 16,
+    color: '#ff6b6b',
     fontSize: 14,
+    flexShrink: 1,
   },
   button: {
-    backgroundColor: '#00505cff',
+    backgroundColor: '#ffffffff',
     paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
+    shadowColor: '#00000045',
+    shadowRadius: 6,
+    shadowOffset: { width: 4, height: 4 },
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
+    color: '#00505cff',
+    fontSize: 18,
     fontWeight: 'bold',
   },
 });
