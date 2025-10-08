@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 
 const Verify = () => {
-  const router = useRouter();
   const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
 
   useEffect(() => {
@@ -28,26 +26,25 @@ const Verify = () => {
         setStatus('error');
       } else {
         setStatus('success');
-        // Redirect to dashboard or home after a short delay
-        setTimeout(() => {
-          router.push('/');
-        }, 3000);
       }
     };
 
     handleVerification();
-  }, [router]);
+  }, []);
 
   return (
     <div style={styles.container}>
       {status === 'verifying' && <p>🔄 Verifying your email...</p>}
-      {status === 'success' && <p>✅ Email verified! Redirecting you...</p>}
+      {status === 'success' && (
+        <>
+          <p>✅ Email verified successfully!</p>
+          <p>👉 Please go back to the login page and sign in to activate your account.</p>
+        </>
+      )}
       {status === 'error' && (
         <>
           <p>❌ Something went wrong verifying your email. Please try again.</p>
-          <p>
-            👉 Please go back to the login page and sign in again to activate your account.
-          </p>
+          <p>👉 Please go back to the login page and sign in again to activate your account.</p>
         </>
       )}
     </div>
@@ -65,6 +62,7 @@ const styles = {
     fontFamily: 'sans-serif',
     textAlign: 'center' as 'center',
     padding: '0 20px',
+    color: '#00505cff',
   },
 };
 
