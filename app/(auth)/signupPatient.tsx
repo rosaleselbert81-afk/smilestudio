@@ -309,7 +309,7 @@ const handleSignup = async () => {
       </View>
 
       {/* Contact Information Section */}
-      <View style={{ flex: 1, marginLeft: isMobile ? 0 : 10 }}>
+      <View style={{ flex: 1, marginLeft: isMobile ? 0 : 10, marginTop: isMobile ? 100 : null }}>
         <Text style={styles.sectionHeader}>Contact Information</Text>
 
       {/* Mobile Number */}
@@ -379,7 +379,7 @@ const handleSignup = async () => {
     </View>
 
     {/* === Password Setup Section === */}
-    <View style={{ marginBottom: 30}}>
+    <View style={{ marginBottom: 30, marginTop: isMobile ? -75 : null }}>
       <Text style={{ ...styles.sectionHeader}}>Set Password</Text>
 
       {/* Password */}

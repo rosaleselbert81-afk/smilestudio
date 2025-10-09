@@ -183,7 +183,7 @@ useEffect(() => {
               </TouchableOpacity>
             </View>
 
-            <Text style={{...styles.subtext, marginTop: 20}}>Do you have an Account (Patient/Clinic)?</Text>
+            <Text style={{...styles.subtext, marginTop: 20}}>Don't have an Account (Patient/Clinic)?</Text>
             <Text style={{...styles.subtext, marginBottom: 20}}>Sign up here!</Text>
 
             <View style={styles.verticallySpaced}>

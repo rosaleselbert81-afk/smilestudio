@@ -407,7 +407,7 @@ return (
             </View>
 
             {/* Clinic Location Section */}
-            <View style={{ marginBottom: 30, flex : 1 }}>
+            <View style={{ marginBottom: 30, flex : 1, marginTop: isMobile ? -60 : null  }}>
               <Text style={styles.sectionHeader}>Clinic Location</Text>
 
               {/* Street */}
@@ -519,7 +519,7 @@ return (
           </View>
 
           {/* Password Setup Section */}
-          <View style={{ marginBottom: 30 }}>
+          <View style={{ marginBottom: 30, marginTop: isMobile ? 65 : null }}>
             <Text style={{ ...styles.sectionHeader }}>Set Password</Text>
 
             {/* Password */}
