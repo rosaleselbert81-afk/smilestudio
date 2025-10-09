@@ -12,6 +12,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -26,6 +27,7 @@ export default function Index() {
 
   const scrollRef = useRef<ScrollView>(null);
 
+  // Refs for sections
   const sectionRefs = {
     start: useRef<View>(null),
     benefits: useRef<View>(null),
@@ -47,6 +49,8 @@ export default function Index() {
     );
   };
 
+  
+
   const login = () => {
     router.replace('/login');
   };
@@ -55,13 +59,14 @@ export default function Index() {
 
   const isMobile = width < 768;
 
+
   useEffect(() => {
-    const isWeb = Platform.OS === 'web';
+    const isWeb = Platform.OS === 'web'; // ✅ define isWeb correctly
 
     if (isWeb) {
       const hash = window?.location?.hash;
       if (hash && hash.includes('access_token')) {
-        router.push(`/reset-password${hash}`);
+        router.push(`/reset-password${hash}`); // ✅ push preserves history
       }
     }
   }, []);
@@ -69,766 +74,525 @@ export default function Index() {
   return (
     <ScrollView style={styles.container} ref={scrollRef}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.logo}>SmileStudio</Text>
+      <LinearGradient colors={['#80c4c4ff', '#009b84ff']} style={{...styles.header}}>
+        
+        <Text style={styles.logo}> Smile Studio</Text>
         {!isMobile && (
-          <View style={styles.nav}>
-            <TouchableOpacity onPress={() => scrollToSection('start')}>
-              <Text style={styles.navItem}>Get Started</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => scrollToSection('benefits')}>
-              <Text style={styles.navItem}>Benefits</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => scrollToSection('concept')}>
-              <Text style={styles.navItem}>About</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => scrollToSection('topics')}>
-              <Text style={styles.navItem}>Services</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => scrollToSection('testimonials')}>
-              <Text style={styles.navItem}>Testimonials</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.navCta} onPress={login}>
-              <Text style={styles.navCtaText}>Sign In</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+        <View style={styles.nav}>
+          <TouchableOpacity onPress={() => scrollToSection('start')}>
+            <Text style={styles.navItem}>Get Start</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => scrollToSection('benefits')}>
+            <Text style={styles.navItem}>Benefits</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => scrollToSection('concept')}>
+            <Text style={styles.navItem}>Concept</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => scrollToSection('topics')}>
+            <Text style={styles.navItem}>Topics</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => scrollToSection('purpose')}>
+            <Text style={styles.navItem}>Purpose</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => scrollToSection('testimonials')}>
+            <Text style={styles.navItem}>Testimonials</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => scrollToSection('contact')}>
+            <Text style={styles.navItem}>Contact</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      </LinearGradient>
 
       {/* Hero Section */}
       <View ref={sectionRefs.start} style={styles.hero}>
-        <View style={[styles.heroContent, isMobile && styles.heroContentMobile]}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>🏥 Trusted Healthcare Platform</Text>
-          </View>
-          <Text style={[styles.heroTitle, isMobile && styles.heroTitleMobile]}>
-            Your Smile Deserves{'\n'}Expert Care
-          </Text>
-          <Text style={[styles.heroSubtitle, isMobile && styles.heroSubtitleMobile]}>
-            Connect with trusted dental clinics in San Jose Del Monte, Bulacan. 
-            Book appointments seamlessly and take control of your oral health journey.
-          </Text>
-          <View style={styles.heroCtas}>
-            <TouchableOpacity style={styles.ctaPrimary} onPress={login}>
-              <Text style={styles.ctaPrimaryText}>Get Started Free</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.ctaSecondary}>
-              <Text style={styles.ctaSecondaryText}>Learn More</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.trustBadge}>
-            <Text style={styles.trustText}>
-              ⭐ Trusted by 7+ dental clinics • 300+ happy patients
-            </Text>
-          </View>
+        <LinearGradient colors={['#ffffffff', '#6ce2ffff']} style={styles.objects}> 
+        <Text style={{ ...styles.heroTitle, fontSize: 36 }}>
+          Explore Dental Clinics Around San Jose Delmonte Bulacan!
+        </Text>
+        <Text style={styles.heroSubtitle}>
+          We believe that a confident smile and healthy teeth are best achieved
+          when guided by expertise.
+        </Text>
+        <TouchableOpacity style={styles.ctaBtn} onPress={login}>
+          <Text style={styles.ctaText}>Get Started</Text>
+        </TouchableOpacity>
+        <Text style={styles.trusted}>
+          Trusted by 7+ Dental Clinics around San Jose Delmonte Bulacan
+        </Text>
+        <View style={styles.logos}>
+          <Text style={styles.logoItem}>🦷 Care</Text>
+          <Text style={styles.logoItem}>🥗 Eat</Text>
+          <Text style={styles.logoItem}>😁 Confidence</Text>
         </View>
+        </LinearGradient>
       </View>
 
       {/* Benefits Section */}
       <View ref={sectionRefs.benefits} style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionLabel}>BENEFITS</Text>
-          <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>
-            Why Choose Our Platform?
-          </Text>
-          <Text style={[styles.sectionSubtitle, isMobile && styles.sectionSubtitleMobile]}>
-            A modern solution designed to make dental care accessible, 
-            convenient, and stress-free for everyone.
-          </Text>
+        <LinearGradient colors={['#ffffffff', '#6ce2ffff']} style={styles.objects}> 
+        <Text style={{ ...styles.sectionTitle, fontSize: 36 }}>
+          Dental Central Hub Benefits?
+        </Text>
+        <Text style={styles.sectionSubtitle}>
+          Appointments are designed to improve your overall oral health,
+          strengthen dental wellness, and enhance the appearance of your smile.
+        </Text>
+        <View style={[styles.cardContainer, isMobile && { flexDirection: 'column', alignItems: 'center' }]}>
+          <View style={[styles.card, isMobile && { width: '90%' }]}>
+            <Text style={styles.cardIcon}>📅</Text>
+            <Text style={styles.cardTitle}>
+              Streamline Dental Appointment Scheduling
+            </Text>
+            <Text style={styles.cardDesc}>
+              Provide a seamless, user-friendly platform for patients to book,
+              reschedule, and cancel dental appointments anytime, anywhere,
+              reducing scheduling conflicts and administrative workload.
+            </Text>
+          </View>
+          <View style={[styles.card, isMobile && { width: '90%' }]}>
+            <Text style={styles.cardIcon}>💬</Text>
+            <Text style={styles.cardTitle}>
+              Improve Patient Experience Through Accessible Services
+            </Text>
+            <Text style={styles.cardDesc}>
+              Offer features like instant booking confirmation, automated
+              reminders, and easy access to dental records, ensuring convenience
+              and reducing patient wait times.
+            </Text>
+          </View>
+          <View style={[styles.card, isMobile && { width: '90%' }]}>
+            <Text style={styles.cardIcon}>🖥️</Text>
+            <Text style={styles.cardTitle}>
+              Integrate Modern Digital & AR Features for Patient Engagement
+            </Text>
+            <Text style={styles.cardDesc}>
+              Offer augmented reality (AR) tools for dental education and
+              treatment previews, fostering patient understanding and trust
+              while promoting a more interactive and engaging healthcare
+              experience.
+            </Text>
+          </View>
         </View>
-        <View style={[styles.cardGrid, isMobile && styles.cardGridMobile]}>
-          <View style={[styles.card, isMobile && styles.cardMobile]}>
-            <View style={styles.cardIconWrapper}>
-              <Text style={styles.cardIcon}>📅</Text>
-            </View>
-            <Text style={styles.cardTitle}>Seamless Scheduling</Text>
-            <Text style={styles.cardDesc}>
-              Book, reschedule, or cancel appointments with just a few taps. 
-              No more phone calls or waiting on hold.
-            </Text>
-          </View>
-          <View style={[styles.card, isMobile && styles.cardMobile]}>
-            <View style={styles.cardIconWrapper}>
-              <Text style={styles.cardIcon}>⚡</Text>
-            </View>
-            <Text style={styles.cardTitle}>Instant Confirmation</Text>
-            <Text style={styles.cardDesc}>
-              Receive real-time booking confirmations and automated reminders 
-              so you never miss an appointment.
-            </Text>
-          </View>
-          <View style={[styles.card, isMobile && styles.cardMobile]}>
-            <View style={styles.cardIconWrapper}>
-              <Text style={styles.cardIcon}>🎯</Text>
-            </View>
-            <Text style={styles.cardTitle}>AR-Powered Education</Text>
-            <Text style={styles.cardDesc}>
-              Experience augmented reality tools for treatment previews and 
-              interactive dental health education.
-            </Text>
-          </View>
-        </View>
+        </LinearGradient>
       </View>
 
-      {/* Stats Section */}
+      {/* Concept Section */}
       <View ref={sectionRefs.concept} style={styles.statsSection}>
-        <Text style={[styles.statsTitle, isMobile && styles.statsTitleMobile]}>
-          Powering Dental Care Innovation
+        <LinearGradient colors={['#ffffffff', '#6ce2ffff']} style={styles.objects}> 
+        <Text style={{ ...styles.statsTitle, fontSize: 36 }}>
+          Capstone Prototype (STI)
         </Text>
-        <Text style={styles.statsSubtitle}>
-          Built by students, trusted by professionals
-        </Text>
-        <View style={[styles.statsGrid, isMobile && styles.statsGridMobile]}>
-          <View style={[styles.statCard, isMobile && styles.statCardMobile]}>
-            <Text style={[styles.statValue, isMobile && styles.statValueMobile]}>30+</Text>
-            <Text style={styles.statLabel}>Partner Clinics</Text>
-            <Text style={styles.statSubtext}>across SJDM area</Text>
+        <View style={[styles.statsContainer, isMobile && { flexDirection: 'column', alignItems: 'center' }]}>
+          <View style={[styles.statCard, isMobile && { width: '90%' }]}>
+            <Text style={{...styles.statValue, fontSize: isMobile ? 20 : 34, textAlign: 'center'}}>30+ (expect example)</Text>
+            <Text style={styles.statLabel}>Clinics</Text>
           </View>
-          <View style={[styles.statCard, isMobile && styles.statCardMobile]}>
-            <Text style={[styles.statValue, isMobile && styles.statValueMobile]}>300+</Text>
-            <Text style={styles.statLabel}>Active Users</Text>
-            <Text style={styles.statSubtext}>and growing daily</Text>
+          <View style={[styles.statCard, isMobile && { width: '90%' }]}>
+            <Text style={{...styles.statValue, fontSize: isMobile ? 20 : 34, textAlign: 'center'}}>300+ (expect example)</Text>
+            <Text style={styles.statLabel}>Users</Text>
           </View>
-          <View style={[styles.statCard, isMobile && styles.statCardMobile]}>
-            <Text style={[styles.statValue, isMobile && styles.statValueMobile]}>99%</Text>
-            <Text style={styles.statLabel}>Satisfaction Rate</Text>
-            <Text style={styles.statSubtext}>from our patients</Text>
+          <View style={[styles.statCard, isMobile && { width: '90%' }]}>
+            <Text style={{...styles.statValue, fontSize: isMobile ? 20 : 34, textAlign: 'center'}}>4</Text>
+            <Text style={styles.statLabel}>Only Developers</Text>
           </View>
         </View>
+        </LinearGradient>
       </View>
 
-      {/* Services Section */}
-      <View ref={sectionRefs.topics} style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionLabel}>SERVICES</Text>
-          <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>
-            Everything You Need in One Place
-          </Text>
-        </View>
-        <View style={[styles.cardGrid, isMobile && styles.cardGridMobile]}>
-          <View style={[styles.card, isMobile && styles.cardMobile]}>
-            <View style={styles.cardIconWrapper}>
-              <Text style={styles.cardIcon}>📍</Text>
-            </View>
-            <Text style={styles.cardTitle}>Find Nearby Clinics</Text>
+      {/* Topics Section */}
+      <View ref={sectionRefs.topics} style={{ ...styles.section }}>
+        <LinearGradient colors={['#ffffffff', '#6ce2ffff']} style={styles.objects}> 
+        <Text style={{ ...styles.sectionTitle, fontSize: 36 }}>Topics</Text>
+        <View style={[styles.cardContainer, isMobile && { flexDirection: 'column', alignSelf: 'center' }]}>
+          <View style={[styles.card, isMobile && { width: '90%' }]}>
+            <Text style={styles.cardIcon}>📍</Text>
+            <Text style={styles.cardTitle}>Finding the Right Clinic Near You</Text>
             <Text style={styles.cardDesc}>
-              Discover trusted dental clinics near you with detailed profiles, 
-              services offered, and real-time availability.
+              Searching for a trusted clinic in San Jose Del Monte Bulacan? Our
+              hub makes it easy. Explore a variety of dental clinics conveniently
+              located near you. See their profiles, services, and availability
+              all in one place.
             </Text>
           </View>
-          <View style={[styles.card, isMobile && styles.cardMobile]}>
-            <View style={styles.cardIconWrapper}>
-              <Text style={styles.cardIcon}>🦷</Text>
-            </View>
-            <Text style={styles.cardTitle}>Expert Consultations</Text>
+          <View style={[styles.card, isMobile && { width: '90%' }]}>
+            <Text style={styles.cardIcon}>🦷</Text>
+            <Text style={styles.cardTitle}>Common Dental Concerns, Easy Solutions</Text>
             <Text style={styles.cardDesc}>
-              Get professional advice for common dental concerns from 
-              experienced practitioners in your area.
+              Many people in San Jose Del Monte Bulacan experience similar
+              dental issues, from toothaches to the need for routine check-ups.
             </Text>
           </View>
-          <View style={[styles.card, isMobile && styles.cardMobile]}>
-            <View style={styles.cardIconWrapper}>
-              <Text style={styles.cardIcon}>📱</Text>
-            </View>
-            <Text style={styles.cardTitle}>Digital Records</Text>
+          <View style={[styles.card, isMobile && { width: '90%' }]}>
+            <Text style={styles.cardIcon}>📲</Text>
+            <Text style={styles.cardTitle}>Book Your Appointment Online</Text>
             <Text style={styles.cardDesc}>
-              Access your dental history, treatment plans, and appointments 
-              securely from any device.
+              Say goodbye to long phone calls! Our dental hub empowers you to
+              easily schedule appointments.
             </Text>
           </View>
         </View>
+        </LinearGradient>
       </View>
 
-      {/* CTA Section */}
-      <View ref={sectionRefs.purpose} style={styles.ctaSection}>
-        <View style={styles.ctaSectionContent}>
-          <Text style={[styles.ctaSectionTitle, isMobile && styles.ctaSectionTitleMobile]}>
-            Ready to Transform Your{'\n'}Dental Experience?
-          </Text>
-          <Text style={[styles.ctaSectionSubtitle, isMobile && styles.ctaSectionSubtitleMobile]}>
-            Join hundreds of patients who've already discovered a better 
-            way to manage their oral health.
-          </Text>
-          <TouchableOpacity style={styles.ctaPrimaryLarge} onPress={login}>
-            <Text style={styles.ctaPrimaryTextLarge}>Start Your Journey</Text>
-          </TouchableOpacity>
-        </View>
+      {/* Purpose Section */}
+      <View ref={sectionRefs.purpose} style={styles.heroAlt}>
+        <LinearGradient colors={['#ffffffff', '#6ce2ffff']} style={styles.objects}> 
+        <Text style={styles.heroTitle}>Our Purpose</Text>
+        <Text style={styles.heroSubtitle}>
+          This platform was created to bridge the gap between patients and
+          trusted dental clinics in SJDM, Caloocan, and Metro Manila.
+        </Text>
+        <TouchableOpacity style={styles.ctaBtnAlt}>
+          <Text style={styles.ctaText} onPress={login}>Wanna get Started?</Text>
+        </TouchableOpacity>
+        </LinearGradient>
       </View>
 
       {/* Testimonials */}
-      <View ref={sectionRefs.testimonials} style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionLabel}>TESTIMONIALS</Text>
-          <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>
-            Loved by Patients
-          </Text>
-        </View>
-        <View style={[styles.testimonialGrid, isMobile && styles.testimonialGridMobile]}>
-          <View style={[styles.testimonial, isMobile && styles.testimonialMobile]}>
-            <View style={styles.stars}>
-              <Text style={styles.starText}>⭐⭐⭐⭐⭐</Text>
-            </View>
+      <View ref={sectionRefs.testimonials} style={[styles.sectionTestimonials, isMobile && { flexDirection: 'column', alignItems: 'center' }]}>
+        <LinearGradient colors={['#ffffffff', '#6ce2ffff']} style={styles.objects}> 
+        <Text style={{ ...styles.sectionTitle, fontSize: 36 }}>Patient Testimonials</Text>
+        <View style={styles.testimonials}>
+          <View style={[styles.testimonial, isMobile && { width: '90%' }]}>
             <Text style={styles.testimonialText}>
-              "The booking process was incredibly smooth. I found a great clinic 
-              near me and got an appointment within days!"
+              "I’ve never felt more confident in my smile."
             </Text>
-            <View style={styles.testimonialAuthor}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>EJ</Text>
-              </View>
-              <View>
-                <Text style={styles.authorName}>Emily Johnson</Text>
-                <Text style={styles.authorRole}>Patient since 2024</Text>
-              </View>
-            </View>
+            <Text style={styles.testimonialAuthor}>— Emily Johnson</Text>
           </View>
-          <View style={[styles.testimonial, isMobile && styles.testimonialMobile]}>
-            <View style={styles.stars}>
-              <Text style={styles.starText}>⭐⭐⭐⭐⭐</Text>
-            </View>
+          <View style={[styles.testimonial, isMobile && { width: '90%' }]}>
             <Text style={styles.testimonialText}>
-              "Finally, a platform that makes dental care accessible. The reminders 
-              and digital records are game-changers!"
+              "The staff was so friendly, and the entire process was pain-free."
             </Text>
-            <View style={styles.testimonialAuthor}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>JC</Text>
-              </View>
-              <View>
-                <Text style={styles.authorName}>James Carter</Text>
-                <Text style={styles.authorRole}>Patient since 2024</Text>
-              </View>
-            </View>
+            <Text style={styles.testimonialAuthor}>— James Carter</Text>
           </View>
         </View>
+        </LinearGradient>
       </View>
 
       {/* Footer */}
-      <View style={styles.footer}>
-        <View style={[styles.footerContent, isMobile && styles.footerContentMobile]}>
-          <View style={styles.footerBrand}>
-            <Text style={styles.footerLogo}>SmileStudio</Text>
-            <Text style={styles.footerTagline}>
-              Your trusted partner in dental health
-            </Text>
-            <View style={styles.socialIcons}>
-              <TouchableOpacity style={styles.socialIcon}>
-                <FontAwesome name="facebook" size={20} color="#64748b" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.socialIcon}>
-                <FontAwesome name="twitter" size={20} color="#64748b" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.socialIcon}>
-                <FontAwesome name="instagram" size={20} color="#64748b" />
-              </TouchableOpacity>
-            </View>
-          </View>
-          <View style={styles.footerLinks}>
-            <View style={styles.footerColumn}>
-              <Text style={styles.footerColumnTitle}>Product</Text>
-              <Text style={styles.footerLink}>Features</Text>
-              <Text style={styles.footerLink}>Pricing</Text>
-              <Text style={styles.footerLink}>Clinics</Text>
-            </View>
-            <View style={styles.footerColumn}>
-              <Text style={styles.footerColumnTitle}>Support</Text>
-              <Text style={styles.footerLink}>Help Center</Text>
-              <Text style={styles.footerLink}>Contact</Text>
-              <Text style={styles.footerLink}>FAQ</Text>
-            </View>
-            <View style={styles.footerColumn}>
-              <Text style={styles.footerColumnTitle}>Legal</Text>
-              <Text style={styles.footerLink}>Privacy</Text>
-              <Text style={styles.footerLink}>Terms</Text>
-              <Text style={styles.footerLink}>Security</Text>
-            </View>
-          </View>
+      <LinearGradient colors={['#80c4c4ff', '#009b84ff']} style={styles.footer}>
+        <Text style={styles.footerText}>© SmileStudio 2025</Text>
+        <Text style={styles.footerText}>smilestudiohub@gmail.com</Text>
+        <Text style={styles.footerText}>09218881835</Text>
+        <View style={styles.footerLinks}>
+          <Text style={styles.footerLink}>Privacy</Text>
+          <Text style={styles.footerLink}>Terms</Text>
+          <Text style={styles.footerLink}>Help</Text>
+          <Text style={styles.footerLink}>Contact</Text>
         </View>
-        <View style={styles.footerBottom}>
-          <Text style={styles.footerCopyright}>
-            © 2025 SmileStudio. All rights reserved.
-          </Text>
-          <Text style={styles.footerContact}>
-            smilestudiohub@gmail.com • 09218881835
-          </Text>
+        <View style={styles.socialIcons}>
+          <FontAwesome name="google" size={24} color="#ffffffff" />
+          <FontAwesome name="facebook" size={24} color="#ffffffff" />
         </View>
-      </View>
+      </LinearGradient>
     </ScrollView>
   );
 }
 
+// 🎨 Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fff5f7',
   },
-  
-  // Header
   header: {
-    backgroundColor: '#ffffff',
-    paddingVertical: 20,
-    paddingHorizontal: 32,
+    padding: 38,
+    paddingHorizontal: 24,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    backgroundColor: '#ffffffff',
   },
   logo: {
-    fontSize: 24,
+    fontSize: 30,
+    color: '#ffffffff',
     fontFamily: 'Poppins-Bold',
-    color: '#0ea5e9',
   },
   nav: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 32,
+    gap: 20,
   },
   navItem: {
     fontFamily: 'Poppins-Regular',
-    fontSize: 15,
-    color: '#475569',
-  },
-  navCta: {
-    backgroundColor: '#0ea5e9',
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-  },
-  navCtaText: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 14,
-    color: '#ffffff',
+    fontSize: 18,
+    color: '#ffffffff',
+    marginHorizontal: 8,
   },
 
-  // Hero
   hero: {
-    backgroundColor: '#f8fafc',
-    paddingVertical: 80,
-    paddingHorizontal: 32,
+    flex: 1,
+    flexDirection: 'column',
+    justifyContent: 'center',
     alignItems: 'center',
+    padding: 30,
+    minHeight: 700,
+    backgroundColor: '#ccf0ebff',
   },
-  heroContent: {
-    maxWidth: 800,
+  heroAlt: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  heroContentMobile: {
-    paddingHorizontal: 16,
-  },
-  badge: {
-    backgroundColor: '#dbeafe',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    marginBottom: 24,
-  },
-  badgeText: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 13,
-    color: '#0369a1',
+    padding: 30,
+    minHeight: 700,
+    backgroundColor: '#ccf0ebff',
   },
   heroTitle: {
-    fontSize: 56,
-    fontFamily: 'Poppins-Bold',
-    color: '#0f172a',
-    textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 64,
-  },
-  heroTitleMobile: {
     fontSize: 36,
-    lineHeight: 44,
+    fontFamily: 'Poppins-Bold',
+    color: '#222',
+    marginBottom: 16,
+    textAlign: 'center',
   },
   heroSubtitle: {
-    fontSize: 19,
+    fontSize: 20,
     fontFamily: 'Poppins-Regular',
-    color: '#64748b',
+    color: '#444',
+    marginBottom: 20,
     textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 28,
   },
-  heroSubtitleMobile: {
-    fontSize: 17,
-    lineHeight: 26,
-  },
-  heroCtas: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 32,
-  },
-  ctaPrimary: {
-    backgroundColor: '#0ea5e9',
+  ctaBtn: {
+    backgroundColor: '#ff416c',
     paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 10,
+    paddingHorizontal: 36,
+    borderRadius: 40,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#ff6f91',
+    shadowColor: '#ff416c',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 8,
   },
-  ctaPrimaryText: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 16,
-    color: '#ffffff',
-  },
-  ctaSecondary: {
-    backgroundColor: '#ffffff',
+  ctaBtnAlt: {
+    backgroundColor: '#416cff',
     paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#e2e8f0',
+    paddingHorizontal: 36,
+    borderRadius: 40,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: '#6f91ff',
+    shadowColor: '#416cff',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 8,
   },
-  ctaSecondaryText: {
+  ctaText: {
+    color: '#fff',
     fontFamily: 'Poppins-Bold',
+    fontSize: 18,
+  },
+  trusted: {
+    marginTop: 16,
     fontSize: 16,
-    color: '#475569',
-  },
-  trustBadge: {
-    paddingVertical: 12,
-  },
-  trustText: {
     fontFamily: 'Poppins-Regular',
-    fontSize: 14,
-    color: '#94a3b8',
+    color: '#888',
+  },
+  logos: {
+    flexDirection: 'row',
+    gap: 20,
+    marginTop: 10,
+  },
+  logoItem: {
+    fontSize: 20,
+    fontFamily: 'Poppins-Bold',
+    color: '#999',
   },
 
-  // Section
   section: {
-    paddingVertical: 80,
-    paddingHorizontal: 32,
-    backgroundColor: '#ffffff',
-  },
-  sectionHeader: {
+    padding: 30,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 48,
-  },
-  sectionLabel: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 13,
-    color: '#0ea5e9',
-    letterSpacing: 1.5,
-    marginBottom: 12,
+    minHeight: 700,
+    backgroundColor: '#ccf0ebff',
   },
   sectionTitle: {
-    fontSize: 40,
+    fontSize: 28,
     fontFamily: 'Poppins-Bold',
-    color: '#0f172a',
+    color: '#111',
     textAlign: 'center',
-    marginBottom: 16,
-  },
-  sectionTitleMobile: {
-    fontSize: 32,
+    marginBottom: 14,
   },
   sectionSubtitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: 'Poppins-Regular',
-    color: '#64748b',
+    color: '#444',
     textAlign: 'center',
-    maxWidth: 600,
-    lineHeight: 28,
-  },
-  sectionSubtitleMobile: {
-    fontSize: 16,
-    lineHeight: 24,
+    marginBottom: 28,
   },
 
-  // Cards
-  cardGrid: {
+  cardContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 24,
+    alignItems: 'flex-start',
     flexWrap: 'wrap',
-  },
-  cardGridMobile: {
-    flexDirection: 'column',
+    gap: 24,
   },
   card: {
-    width: '31%',
-    minWidth: 280,
-    backgroundColor: '#ffffff',
+    width: '30%',
+    backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 32,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  cardMobile: {
-    width: '100%',
-  },
-  cardIconWrapper: {
-    width: 64,
-    height: 64,
-    backgroundColor: '#dbeafe',
-    borderRadius: 16,
+    padding: 24,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    shadowColor: '#bbb',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 6,
   },
   cardIcon: {
-    fontSize: 32,
+    fontSize: 40,
+    marginBottom: 16,
   },
   cardTitle: {
     fontFamily: 'Poppins-Bold',
     fontSize: 20,
-    color: '#0f172a',
-    marginBottom: 12,
+    marginBottom: 10,
+    textAlign: 'center',
   },
   cardDesc: {
     fontFamily: 'Poppins-Regular',
-    fontSize: 15,
-    color: '#64748b',
-    lineHeight: 24,
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
 
-  // Stats
   statsSection: {
-    backgroundColor: '#f8fafc',
-    paddingVertical: 80,
-    paddingHorizontal: 32,
+    backgroundColor: '#ccf0ebff',
+    paddingVertical: 48,
+    paddingHorizontal: 30,
     alignItems: 'center',
+    minHeight: 700,
+    justifyContent: 'center',
   },
   statsTitle: {
-    fontSize: 40,
+    fontSize: 28,
     fontFamily: 'Poppins-Bold',
-    color: '#0f172a',
+    marginBottom: 28,
     textAlign: 'center',
-    marginBottom: 8,
   },
-  statsTitleMobile: {
-    fontSize: 32,
-  },
-  statsSubtitle: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 17,
-    color: '#64748b',
-    marginBottom: 48,
-  },
-  statsGrid: {
+  statsContainer: {
     flexDirection: 'row',
-    gap: 32,
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-  },
-  statsGridMobile: {
-    flexDirection: 'column',
+    justifyContent: 'space-around',
     width: '100%',
   },
-  statCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 40,
+  stat: {
     alignItems: 'center',
-    minWidth: 200,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  statCardMobile: {
-    width: '100%',
   },
   statValue: {
-    fontSize: 48,
+    fontSize: 34,
     fontFamily: 'Poppins-Bold',
-    color: '#0ea5e9',
-    marginBottom: 8,
-  },
-  statValueMobile: {
-    fontSize: 40,
+    color: '#ff416c',
   },
   statLabel: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 16,
-    color: '#0f172a',
-    marginBottom: 4,
-  },
-  statSubtext: {
     fontFamily: 'Poppins-Regular',
-    fontSize: 14,
-    color: '#94a3b8',
+    fontSize: 16,
+    color: '#333',
   },
 
-  // CTA Section
-  ctaSection: {
-    backgroundColor: '#0ea5e9',
-    paddingVertical: 80,
-    paddingHorizontal: 32,
-    alignItems: 'center',
-  },
-  ctaSectionContent: {
-    maxWidth: 700,
-    alignItems: 'center',
-  },
-  ctaSectionTitle: {
-    fontSize: 44,
-    fontFamily: 'Poppins-Bold',
-    color: '#ffffff',
-    textAlign: 'center',
-    marginBottom: 20,
-    lineHeight: 52,
-  },
-  ctaSectionTitleMobile: {
-    fontSize: 32,
-    lineHeight: 40,
-  },
-  ctaSectionSubtitle: {
-    fontSize: 18,
-    fontFamily: 'Poppins-Regular',
-    color: '#e0f2fe',
-    textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 28,
-  },
-  ctaSectionSubtitleMobile: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  ctaPrimaryLarge: {
-    backgroundColor: '#ffffff',
-    paddingVertical: 18,
-    paddingHorizontal: 40,
-    borderRadius: 10,
-  },
-  ctaPrimaryTextLarge: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 17,
-    color: '#0ea5e9',
-  },
-
-  // Testimonials
-  testimonialGrid: {
-    flexDirection: 'row',
-    gap: 32,
+  sectionTestimonials: {
+    padding: 30,
     justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 700,
+    backgroundColor: '#ccf0ebff',
+  },
+  testimonials: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 28,
+    gap: 20,
     flexWrap: 'wrap',
   },
-  testimonialGridMobile: {
-    flexDirection: 'column',
-  },
   testimonial: {
-    width: '45%',
-    minWidth: 320,
-    backgroundColor: '#f8fafc',
-    borderRadius: 16,
-    padding: 32,
-  },
-  testimonialMobile: {
-    width: '100%',
-  },
-  stars: {
-    marginBottom: 16,
-  },
-  starText: {
-    fontSize: 16,
+    width: '48%',
+    backgroundColor: '#fff',
+    padding: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    shadowColor: '#ccc',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
   },
   testimonialText: {
     fontFamily: 'Poppins-Regular',
-    fontSize: 16,
-    color: '#334155',
-    lineHeight: 26,
-    marginBottom: 24,
-  },
-  testimonialAuthor: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    backgroundColor: '#dbeafe',
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 16,
-    color: '#0369a1',
-  },
-  authorName: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 15,
-    color: '#0f172a',
-  },
-  authorRole: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 13,
-    color: '#94a3b8',
-  },
-
-  // Footer
-  footer: {
-    backgroundColor: '#f8fafc',
-    paddingTop: 64,
-    paddingHorizontal: 32,
-    paddingBottom: 32,
-  },
-  footerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 48,
-  },
-  footerContentMobile: {
-    flexDirection: 'column',
-    gap: 32,
-  },
-  footerBrand: {
-    flex: 1,
-  },
-  footerLogo: {
-    fontSize: 24,
-    fontFamily: 'Poppins-Bold',
-    color: '#0ea5e9',
+    fontSize: 18,
+    color: '#333',
     marginBottom: 12,
   },
-  footerTagline: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 14,
-    color: '#64748b',
-    marginBottom: 20,
+  testimonialAuthor: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 16,
+    color: '#888',
   },
-  socialIcons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  socialIcon: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
+
+  footer: {
+    backgroundColor: '#ffffffff',
+    paddingVertical: 30,
+    paddingHorizontal: 24,
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+  },
+  footerText: {
+    fontFamily: 'Poppins-Regular',
+    fontSize: 16,
+    color: '#ffffffff',
+    marginBottom: 16,
   },
   footerLinks: {
     flexDirection: 'row',
-    gap: 48,
-  },
-  footerColumn: {
-    gap: 12,
-  },
-  footerColumnTitle: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 14,
-    color: '#0f172a',
-    marginBottom: 4,
+    gap: 20,
   },
   footerLink: {
     fontFamily: 'Poppins-Regular',
-    fontSize: 14,
-    color: '#64748b',
+    fontSize: 16,
+    color: '#ffffffff'
   },
-  footerBottom: {
-    paddingTop: 32,
-    borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+  socialIcons: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 14,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
   },
-  footerCopyright: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 14,
-    color: '#94a3b8',
+  statCard: {
+    width: '30%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    shadowColor: '#aaa',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+    marginBottom: 20,
   },
-  footerContact: {
-    fontFamily: 'Poppins-Regular',
-    fontSize: 13,
-    color: '#cbd5e1',
+  logo1: {
+    width: 100,
+    height: 100,
+    alignSelf: 'center',
+    marginBottom: 50,
+    resizeMode: 'contain',
   },
+  objects: {
+    flex: 1,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
+    minHeight: 700,
+    borderRadius: 25,
+    width: "100%",
+    backgroundColor: '#ffe0ec',
+  }
 });
