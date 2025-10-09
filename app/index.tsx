@@ -1,18 +1,18 @@
 import { useRouter } from 'expo-router';
 import { useFonts } from 'expo-font';
-import AppLoading from 'expo-app-loading';
 import { FontAwesome } from '@expo/vector-icons';
-import React, { useRef, useEffect } from 'react';
-import { Platform, Image } from 'react-native';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-
+import React, { useRef, useEffect } from 'react';
 import {
+  Platform,
+  Image,
   View,
   Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   useWindowDimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -52,8 +52,6 @@ export default function Index() {
     router.replace('/login');
   };
 
-  if (!fontsLoaded) return <AppLoading />;
-
   const isMobile = width < 768;
 
   useEffect(() => {
@@ -66,6 +64,16 @@ export default function Index() {
       }
     }
   }, []);
+
+  // ✅ Show a loader while fonts are loading
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator size="large" color="#2D9CDB" />
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container} ref={scrollRef}>
