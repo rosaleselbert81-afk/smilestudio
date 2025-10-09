@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { MaterialIcons } from '@expo/vector-icons';
 import Checkbox from 'expo-checkbox';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigationContainerRef } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import Fontisto from '@expo/vector-icons/Fontisto';
@@ -50,15 +50,33 @@ export default function Login() {
   // Assume "web" if width is wide enough (e.g. > 480)
   const isWeb = width >= 480;
 
-  useEffect(() => {
-    if (isWeb) {
-      const hash = window?.location?.hash;
-      if (hash && hash.includes('access_token')) {
-        const resetUrl = `/reset-password${hash}`;
-        window.location.replace(resetUrl);
-      }
-    }
-  }, [isWeb]);
+useEffect(() => {
+  if (!isWeb) return;
+
+  // Handle Supabase password reset redirect
+  const hash = window?.location?.hash;
+  if (hash && hash.includes('access_token')) {
+    const resetUrl = `/reset-password${hash}`;
+    window.location.replace(resetUrl);
+    return;
+  }
+
+  // Push a dummy history state
+  window.history.pushState(null, '', window.location.href);
+
+  // Handle browser back
+  const handlePopState = () => {
+    router.replace('/'); // ← this redirects to index.tsx
+  };
+
+  window.addEventListener('popstate', handlePopState);
+
+  return () => {
+    window.removeEventListener('popstate', handlePopState);
+  };
+}, [isWeb]);
+
+
 
   const isMobile = width < 480;
 
@@ -83,6 +101,17 @@ export default function Login() {
 
   return (
     <LinearGradient colors={['#80c4c4ff', '#009b84ff']} style={styles.container}>
+        <TouchableOpacity
+          onPress={() => router.push('/')}  // <-- Navigate to home screen
+          style={{
+            position: 'absolute',
+            top: 50,
+            left: 20,
+            zIndex: 10,
+          }}
+        >
+          <MaterialIcons name="arrow-back" size={28} color="#fff" />
+        </TouchableOpacity>
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} automaticallyAdjustKeyboardInsets>
         <View style={{ width: '100%', maxWidth: 500, marginTop: 30, marginHorizontal: 'auto' }}>
           <Image source={require('../../assets/favicon.ico.png')} style={styles.logo} />
@@ -116,10 +145,15 @@ export default function Login() {
                 autoCapitalize="none"
                 placeholderTextColor="rgba(218, 218, 218, 1)"
               />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <MaterialIcons name={showPassword ? 'visibility' : 'visibility-off'} size={24} color="white" />
-              </TouchableOpacity>
             </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10, marginBottom: 20, marginTop: -8}}>
+                <Checkbox
+                  value={showPassword}
+                  onValueChange={setShowPassword}
+                  color={showPassword ? '#00505cff' : undefined}
+                />
+                <Text style={{ color: 'white', marginLeft: 5 }}>Show Password</Text>
+              </View>
 
             {loginError !== '' && (
               <View style={styles.errorBox}>
@@ -277,7 +311,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    paddingTop: 100,
+    paddingTop: 70,
   },
   welcome: {
     fontSize: 28,
@@ -288,7 +322,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   label: {
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: 'bold',
     color: '#ffffffff',
     alignSelf: 'flex-start',
@@ -296,15 +330,14 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   verticallySpacedRow: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(31, 31, 31, 0.08)',
     padding: 14,
     borderRadius: 12,
-    borderWidth: 1,
     borderColor: '#ffffffff',
     color: '#fff',
     marginBottom: 15,
     flexDirection: 'row',
-    height: 60,
+    height: 50,
     alignItems: 'center',
     gap: 5,
   },

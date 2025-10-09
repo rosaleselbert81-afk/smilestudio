@@ -2,7 +2,8 @@ import { useRouter } from 'expo-router';
 import { useFonts } from 'expo-font';
 import AppLoading from 'expo-app-loading';
 import { FontAwesome } from '@expo/vector-icons';
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
+import { Platform } from 'react-native';
 
 import {
   View,
@@ -57,6 +58,18 @@ export default function Index() {
   if (!fontsLoaded) return <AppLoading />;
 
   const isMobile = width < 768;
+
+
+  useEffect(() => {
+    const isWeb = Platform.OS === 'web'; // ✅ define isWeb correctly
+
+    if (isWeb) {
+      const hash = window?.location?.hash;
+      if (hash && hash.includes('access_token')) {
+        router.push(`/reset-password${hash}` as any);
+      }
+    }
+  }, []);
 
   return (
     <ScrollView style={styles.container} ref={scrollRef}>

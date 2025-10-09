@@ -2351,55 +2351,69 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                   }}
                   onRequestClose={() => setShowMapPicketModal(false)}
                 >
+                <View
+                  style={{
+                    flex: 1,
+                    backgroundColor: "rgba(0,0,0,0.4)",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    padding: 50,
+                  }}
+                >
                   <View
                     style={{
-                      flex: 1,
-                      backgroundColor: "rgba(0,0,0,0.4)",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      padding: 50,
+                      backgroundColor: "white",
+                      borderRadius: 10,
+                      padding: 16,
+                      width: isMobile ? 350 : "80%",
+                      position: "relative", // important for absolute positioning inside
                     }}
                   >
-                    <View
+                    {/* Close button in upper right corner */}
+                    <TouchableOpacity
+                      onPress={() => setShowMapPicketModal(false)}
                       style={{
-                        backgroundColor: "white",
-                        borderRadius: 10,
-                        padding: 16,
-                        width: isMobile ? 350 : "80%",
+                        position: "absolute",
+                        top: 10,
+                        right: 10,
+                        zIndex: 10,
+                        backgroundColor: "#e74c3c",
+                        width: 30,
+                        height: 30,
+                        borderRadius: 15,
+                        justifyContent: "center",
+                        alignItems: "center",
                       }}
                     >
-                      <Text style={{ marginBottom: 8, fontWeight: "bold", fontSize: 16, color: "#003f30ff" }}>
-                        Locate your clinic location
+                      <Text style={{ color: "white", fontWeight: "bold", fontSize: 18, lineHeight: 18 }}>
+                        ×
                       </Text>
-                      <Text style={{ marginBottom: 12 }}>
-                        Tip: click/tap in the map to pin your clinic location
-                      </Text>
+                    </TouchableOpacity>
 
-                      <MapPickerView
-                        allowEdit
-                        onSave={(long, lat) => {
-                          setShowMapPicketModal(false);
-                          saveClinicLocation(long, lat);
-                        }}
-                      />
+                    <Text
+                      style={{
+                        marginBottom: 8,
+                        fontWeight: "bold",
+                        fontSize: 16,
+                        color: "#00505cff",
+                      }}
+                    >
+                      Locate your clinic location
+                    </Text>
+                    <Text style={{ marginBottom: 12 }}>
+                      Tip: click/tap in the map to pin your clinic location
+                    </Text>
 
-                      {/* Bottom close button */}
-                      <TouchableOpacity
-                        onPress={() => setShowMapPicketModal(false)}
-                        style={{
-                          marginTop: 20,
-                          paddingVertical: 12,
-                          backgroundColor: "#e74c3c",
-                          borderRadius: 8,
-                          alignItems: "center",
-                        }}
-                      >
-                        <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-                          Close
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
+                    <MapPickerView
+                      allowEdit
+                      onSave={(long, lat) => {
+                        setShowMapPicketModal(false);
+                        saveClinicLocation(long, lat);
+                      }}
+                    />
                   </View>
+                </View>
+
                 </Modal>
 
 <TouchableOpacity
@@ -4787,17 +4801,33 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
                       }}
                     >
 <View style={{ position: "relative" }}>
-  <Image
-    source={{ uri: clinic.clinic_photo_url }}
-    style={{
-      width: isMobile ? 70 : 100,
-      height: isMobile ? 70 : 100,
-      borderRadius: 16,
-      marginRight: 16,
-      backgroundColor: "#fff",
-    }}
-    resizeMode="cover"
-  />
+  {clinic.clinic_photo_url ? (
+    <Image
+      source={{ uri: clinic.clinic_photo_url }}
+      style={{
+        width: isMobile ? 70 : 100,
+        height: isMobile ? 70 : 100,
+        borderRadius: 16,
+        marginRight: 16,
+        backgroundColor: "#fff",
+      }}
+      resizeMode="cover"
+    />
+  ) : (
+    <View
+      style={{
+        width: isMobile ? 70 : 100,
+        height: isMobile ? 70 : 100,
+        borderRadius: 16,
+        marginRight: 16,
+        backgroundColor: "#fff",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <FontAwesome5 name="clinic-medical" size={64} color="#4a878bff" />
+    </View>
+  )}
 
   {/* Small Button Overlay */}
   <TouchableOpacity
@@ -7066,7 +7096,6 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
         style={{
           fontSize: 24,
           fontWeight: "bold",
-          marginBottom: 10,
           textAlign: "center",
           color: "#00505cff",
         }}
@@ -7090,7 +7119,6 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
         style={{
           fontSize: 20,
           fontWeight: "bold",
-          marginBottom: 10,
           color: "#00505cff",
           textAlign: "center",
         }}
@@ -7102,7 +7130,7 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
           fontSize: 16,
           color: "#555",
           textAlign: "center",
-          marginBottom: 20,
+          marginBottom: 10,
         }}
       >
         This platform was created to bridge the gap between patients and
@@ -7124,35 +7152,35 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
         </Text>
         <View style={{ marginBottom: 20 }}>
           <Text
-            style={{ fontSize: 16, fontWeight: "600", color: "#00796b" }}
+            style={{ fontSize: 14, fontWeight: "600", color: "#00796b" }}
           >
             • Streamline Dental Appointment Scheduling
           </Text>
           <Text
-            style={{ fontSize: 14, color: "#555", marginBottom: 10 }}
+            style={{ fontSize: 12, color: "#555", marginBottom: 10 }}
           >
             Provide a seamless, user-friendly platform for patients to book,
             reschedule, and cancel appointments anytime, anywhere.
           </Text>
 
           <Text
-            style={{ fontSize: 16, fontWeight: "600", color: "#00796b" }}
+            style={{ fontSize: 14, fontWeight: "600", color: "#00796b" }}
           >
             • Improve Patient Experience Through Accessible Services
           </Text>
           <Text
-            style={{ fontSize: 14, color: "#555", marginBottom: 10 }}
+            style={{ fontSize: 12, color: "#555", marginBottom: 10 }}
           >
             Instant booking, reminders, and access to records help patients
             save time and reduce wait times.
           </Text>
 
           <Text
-            style={{ fontSize: 16, fontWeight: "600", color: "#00796b" }}
+            style={{ fontSize: 14, fontWeight: "600", color: "#00796b" }}
           >
             • AR Tools for Patient Engagement
           </Text>
-          <Text style={{ fontSize: 14, color: "#555" }}>
+          <Text style={{ fontSize: 12, color: "#555" }}>
             Preview treatments and learn with Augmented Reality for better
             understanding and trust.
           </Text>
@@ -7172,35 +7200,35 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
         </Text>
         <View style={{ marginBottom: 20 }}>
           <Text
-            style={{ fontSize: 16, fontWeight: "600", color: "#00796b" }}
+            style={{ fontSize: 14, fontWeight: "600", color: "#00796b" }}
           >
             • Finding the Right Clinic Near You
           </Text>
           <Text
-            style={{ fontSize: 14, color: "#555", marginBottom: 10 }}
+            style={{ fontSize: 12, color: "#555", marginBottom: 10 }}
           >
             Browse trusted clinics in San Jose Del Monte Bulacan with full
             profiles, services, and schedules.
           </Text>
 
           <Text
-            style={{ fontSize: 16, fontWeight: "600", color: "#00796b" }}
+            style={{ fontSize: 14, fontWeight: "600", color: "#00796b" }}
           >
             • Common Dental Concerns, Easy Solutions
           </Text>
           <Text
-            style={{ fontSize: 14, color: "#555", marginBottom: 10 }}
+            style={{ fontSize: 12, color: "#555", marginBottom: 10 }}
           >
             From toothaches to check-ups, our hub addresses common oral
             health needs.
           </Text>
 
           <Text
-            style={{ fontSize: 16, fontWeight: "600", color: "#00796b" }}
+            style={{ fontSize: 14, fontWeight: "600", color: "#00796b" }}
           >
             • Book Your Appointment Online
           </Text>
-          <Text style={{ fontSize: 14, color: "#555" }}>
+          <Text style={{ fontSize: 12, color: "#555" }}>
             Skip the calls — schedule your appointments digitally with ease.
           </Text>
         </View>
@@ -7228,170 +7256,6 @@ const handleDownloadExcel = async (appointmentsPast: Appointment[]) => {
         </Text>
       </TouchableOpacity>
     </View>
-
-          <View
-            style={{
-              padding: 20,
-              backgroundColor: "#f7f7f7ff",
-              borderRadius: 16,
-              marginTop: 20,
-              shadowColor: "#000",
-              shadowOpacity: 0.05,
-              shadowRadius: 6,
-              elevation: 2,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 28,
-                fontWeight: "bold",
-                marginBottom: 20,
-                textAlign: "center",
-                color: "#00505cff",
-              }}
-            >
-              Meet the Team
-            </Text>
-
-            <View
-              style={{
-                alignItems: "center",
-                marginBottom: 30,
-                backgroundColor: "#00505cff",
-                borderRadius: 16,
-                padding: 20,
-                shadowColor: "#000",
-                shadowOpacity: 0.1,
-                shadowRadius: 6,
-                elevation: 3,
-              }}
-            >
-              <Image
-                source={
-                  require("../../assets/team/migueldel.png") // fallback/default image
-                }
-                style={{
-                  width: 170,
-                  height: 170,
-                  borderRadius: 60,
-                  borderWidth: 2,
-                  borderColor: "#00bcd4",
-                  backgroundColor: "#eaeaea",
-                }}
-              />
-
-              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white", marginTop: 8 }}>
-                Miguel Del Rosario
-              </Text>
-              <Text style={{ fontSize: 16, color: "white", }}>
-                Project Manager
-              </Text>
-            </View>
-            <View
-              style={{
-                alignItems: "center",
-                marginBottom: 30,
-                backgroundColor: "#00505cff",
-                borderRadius: 16,
-                padding: 20,
-                shadowColor: "#000",
-                shadowOpacity: 0.1,
-                shadowRadius: 6,
-                elevation: 3,
-              }}
-            >
-              <Image
-                source={
-                  require("../../assets/team/paala.png") // fallback/default image
-                }
-                style={{
-                  width: 170,
-                  height: 170,
-                  borderRadius: 60,
-                  borderWidth: 2,
-                  borderColor: "#00bcd4",
-                  backgroundColor: "#eaeaea",
-                }}
-              />
-
-              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white", marginTop: 8 }}>
-                Paala James
-              </Text>
-              <Text style={{ fontSize: 16, color: "white",}}>
-                Programmer Specialist
-              </Text>
-            </View>
-
-            <View
-              style={{
-                alignItems: "center",
-                marginBottom: 30,
-                backgroundColor: "#00505cff",
-                borderRadius: 16,
-                padding: 20,
-                shadowColor: "#000",
-                shadowOpacity: 0.1,
-                shadowRadius: 6,
-                elevation: 3,
-              }}
-            >
-              <Image
-                source={
-                  require("../../assets/team/elbert.png") // fallback/default image
-                }
-                style={{
-                  width: 170,
-                  height: 170,
-                  borderRadius: 60,
-                  borderWidth: 2,
-                  borderColor: "#00bcd4",
-                  backgroundColor: "#eaeaea",
-                }}
-              />
-
-              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white", marginTop: 8 }}>
-                Elbert Rosales
-              </Text>
-              <Text style={{ fontSize: 16, color: "white",}}>
-                Quality Assurance
-              </Text>
-            </View>
-
-            <View
-              style={{
-                alignItems: "center",
-                marginBottom: 30,
-                backgroundColor: "#00505cff",
-                borderRadius: 16,
-                padding: 20,
-                shadowColor: "#000",
-                shadowOpacity: 0.1,
-                shadowRadius: 6,
-                elevation: 3,
-              }}
-            >
-              <Image
-                source={
-                  require("../../assets/team/rex.png") // fallback/default image
-                }
-                style={{
-                  width: 170,
-                  height: 170,
-                  borderRadius: 60,
-                  borderWidth: 2,
-                  borderColor: "#00bcd4",
-                  backgroundColor: "#eaeaea",
-                }}
-              />
-
-              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white", marginTop: 8 }}>
-                Rex Carlo Rosales
-              </Text>
-              <Text style={{ fontSize: 16, color: "white",}}>
-                System Analyst
-              </Text>
-              </View>
-            </View>
           </ScrollView>
         </View>
         )}

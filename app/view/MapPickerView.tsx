@@ -279,7 +279,14 @@ export default function MapPickerView(props: MapPickerViewType) {
         <Text>{`Selected location at x:${longitude} y:${latitude}`}</Text>
       }
       {Platform.OS === "web" ? (
-        <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
+        <div 
+          ref={mapContainerRef} 
+          style={{ 
+            width: "100%", 
+            height: width > 720 ? "100%" : 300,  // or a fixed height like 300 for mobile
+            minHeight: 300 
+          }} 
+        />
       ) : (
         renderNativeMap()
       )}

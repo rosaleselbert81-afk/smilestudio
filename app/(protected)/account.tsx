@@ -194,6 +194,12 @@ export default function Account() {
   const [requestViewVisible, setRequestViewVisible] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState([]);
 
+  const [dateError, setDateError] = useState(false);
+  const [timeError, setTimeError] = useState(false);
+  const [dentistError, setDentistError] = useState(false);
+  const [messageError, setMessageError] = useState(false);
+  const [showAllClinics, setShowAllClinics] = useState(false);
+
   const openRequestView = (requestStr) => {
     try {
       const parsed = JSON.parse(requestStr);
@@ -2651,98 +2657,130 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                 borderRadius: 10,
               }}
             >
-              <TouchableOpacity
+            <TouchableOpacity
+              style={{
+                ...styles.card,
+                backgroundColor: '#00505cff',
+                marginBottom: 8,
+                width: isMobile ? "91%" : "98%",
+                height: 50,
+                alignSelf: "center",
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onPress={() => {
+                setTMap(true);
+              }}
+            >
+              <FontAwesome5 name="map-marked-alt" size={16} color="white" style={{ marginRight: 8 }} />
+              <Text style={{ color: 'white', fontWeight: 'bold' }}>
+                View All Registered Clinics in Map
+              </Text>
+            </TouchableOpacity>
+            <Modal
+              transparent
+              animationType="fade"
+              visible={tMap}
+              onRequestClose={() => setTMap(false)}
+            >
+              <View
                 style={{
-                  ...styles.card,
-                  backgroundColor: "#00505cff",
-                  marginBottom: 8,
-                  width: isMobile ? "91%" : "98%",
-                  height: 40,
-                  alignSelf: "center",
-                }}
-                onPress={() => {
-                  setTMap(true);
-                }}
-              >
-              <Text style={{color: 'white'}}>View All Registered Clinics in Map</Text>
-              </TouchableOpacity>
-              <Modal
-                transparent
-                animationType="fade"
-                visible={tMap}
-                onRequestClose={() => {
-                  setTMap(false);
+                  flex: 1,
+                  justifyContent: "center",
+                  alignItems: "center",
                 }}
               >
                 <View
                   style={{
-                    flex: 1,
-                    backgroundColor: "rgba(0, 0, 0, 0)",
-                    justifyContent: "center",
-                    alignItems: "center",
+                    width: isMobile ? "90%" : "80%",
+                    maxHeight: "90%",
+                    backgroundColor: "white",
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: "#ccc",
                     padding: 20,
+                    position: "relative",
                   }}
                 >
-                  <View
+                  {/* ✅ Circular red "X" close button in top right */}
+                  <TouchableOpacity
+                    onPress={() => setTMap(false)}
                     style={{
-                      backgroundColor: "white",
-                      borderRadius: 12,
-                      borderWidth: 2,
-                      borderColor: "rgba(214, 214, 214, 1)",
-                      padding: 20,
+                      position: "absolute",
+                      top: 10,
+                      right: 10,
+                      zIndex: 10,
+                      backgroundColor: "#e74c3c",
+                      width: 30,
+                      height: 30,
+                      borderRadius: 15,
+                      justifyContent: "center",
                       alignItems: "center",
-                      width: isMobile ? 350 : "80%",
-                      height: isMobile ? 450 : "80%",
                     }}
                   >
                     <Text
                       style={{
-                        fontSize: 24,
+                        color: "white",
                         fontWeight: "bold",
-                        marginBottom: 20,
+                        fontSize: 18,
+                        lineHeight: 18,
+                      }}
+                    >
+                      ×
+                    </Text>
+                  </TouchableOpacity>
+
+                  <ScrollView
+                    contentContainerStyle={{
+                      paddingTop: 10,
+                    }}
+                    showsVerticalScrollIndicator={false}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 22,
+                        fontWeight: "bold",
+                        marginBottom: 10,
+                        color: "#00505cff",
                         alignSelf: isMobile ? "center" : "flex-start",
-                        color: "#003f30ff",
                       }}
                     >
                       Map
                     </Text>
+
                     <Text
                       style={{
                         fontSize: 15,
-                        color: "#000000ff",
+                        color: "#000",
                         fontStyle: "italic",
-                        textAlign: "left",
-                        marginBottom: 4,
+                        marginBottom: 10,
+                        alignSelf: "flex-start",
                       }}
                     >
                       Click/Tap the pin to view dental clinic details
                     </Text>
-                    <MapPickerView allowEdit={false} pins={clinicList} />
-                    <TouchableOpacity
-                      onPress={() => setTMap(false)}
+
+                    <View
                       style={{
-                        backgroundColor: "#e74c3c",
-                        paddingVertical: 10,
-                        paddingHorizontal: 15,
-                        borderRadius: 8,
-                        marginTop: 10,
-                        minHeight: 20,
+                        width: "100%",
+                        height: isMobile ? 350 : 450,
+                        marginBottom: 20,
                       }}
                     >
-                      <Text style={{
-                        color: "white",
-                        fontWeight: "bold",
-                        textAlign: "center",
-                      }}>
-                        Close
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+                      <MapPickerView allowEdit={false} pins={clinicList} />
+                    </View>
+                  </ScrollView>
                 </View>
-              </Modal>
+              </View>
+            </Modal>
+
+
+
               {clinicList.length === 0 ? (
                 <Text style={{ textAlign: "center" }}>No clinics found.</Text>
               ) : (
+                <>
               <View
                 style={{
                   flexDirection: isMobile ? "column" : "row",
@@ -2751,29 +2789,28 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                 }}
               >
                 {clinicList
-                .filter((clinic) => clinic.isFirst === false)
-                .map((clinic, index) => (
-                  <LinearGradient
-                    colors={["#ffffffff", "#bdeeffff"]}
-                    key={clinic.id || index}
-                    style={{
-                      flexDirection: "row",
-                      backgroundColor: "#fff",
-                      padding: 20,
-                      margin: 8,
-                      borderRadius: 16,
-                      shadowColor: "#000",
-                      shadowOpacity: 0.15,
-                      shadowRadius: 6,
-                      shadowOffset: { width: 0, height: 4 },
-                      elevation: 4,
-                      alignItems: "center",
-                      minHeight: 140,
-
-                      // responsive width
-                      width: isMobile ? "95%" : "45%",
-                    }}
-                  >
+                  .filter((clinic) => clinic.isFirst === false)
+                  .slice(0, showAllClinics ? clinicList.length : 8) // Show only 8 clinics unless "showAllClinics" is true
+                  .map((clinic, index) => (
+                    <LinearGradient
+                      colors={["#ffffffff", "#bdeeffff"]}
+                      key={clinic.id || index}
+                      style={{
+                        flexDirection: "row",
+                        backgroundColor: "#fff",
+                        padding: 20,
+                        margin: 8,
+                        borderRadius: 16,
+                        shadowColor: "#000",
+                        shadowOpacity: 0.15,
+                        shadowRadius: 6,
+                        shadowOffset: { width: 0, height: 4 },
+                        elevation: 4,
+                        alignItems: "center",
+                        minHeight: 140,
+                        width: isMobile ? "95%" : "45%",
+                      }}
+                    >
                     {/* Left side: Image + Info */}
                     <View
                       style={{
@@ -2785,17 +2822,33 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                     >
                       {/* 222 */}
 <View style={{ position: "relative" }}>
-  <Image
-    source={{ uri: clinic.clinic_photo_url }}
-    style={{
-      width: isMobile ? 70 : 100,
-      height: isMobile ? 70 : 100,
-      borderRadius: 16,
-      marginRight: 16,
-      backgroundColor: "#fff",
-    }}
-    resizeMode="cover"
-  />
+  {clinic.clinic_photo_url ? (
+    <Image
+      source={{ uri: clinic.clinic_photo_url }}
+      style={{
+        width: isMobile ? 70 : 100,
+        height: isMobile ? 70 : 100,
+        borderRadius: 16,
+        marginRight: 16,
+        backgroundColor: "#fff",
+      }}
+      resizeMode="cover"
+    />
+  ) : (
+    <View
+      style={{
+        width: isMobile ? 70 : 100,
+        height: isMobile ? 70 : 100,
+        borderRadius: 16,
+        marginRight: 16,
+        backgroundColor: "#fff",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <FontAwesome5 name="clinic-medical" size={64} color="#4a878bff" />
+    </View>
+  )}
 
   {/* Small Button Overlay */}
   <TouchableOpacity
@@ -3076,14 +3129,14 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
           paddingBottom: 12,
           borderBottomWidth: 1,
           borderColor: "#e0e0e0",
-          backgroundColor: "#b9ffdcff",
+          backgroundColor: "white",
         }}
       >
         <TouchableOpacity onPress={() => setFullProfile(false)}>
           <MaterialIcons
             name="keyboard-arrow-left"
             size={34}
-            color="#003f30ff"
+            color="#00505cff"
           />
         </TouchableOpacity>
         <Text
@@ -3091,7 +3144,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
             fontSize: 24,
             fontWeight: "bold",
             marginLeft: 12,
-            color: "#003f30ff",
+            color: "#00505cff",
             bottom: 2,
           }}
         >
@@ -3099,7 +3152,9 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
         </Text>
       </View>
 
-      <ScrollView>
+      <ScrollView 
+      style={{ backgroundColor: '#f1f5f9' }}
+      >
 
       {/* Cover Photo and Profile Picture */}
       <View>
@@ -3187,6 +3242,77 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
           <Text style={{ fontSize: 14 }}>
             🦷 Dentist Availability: {selectedClinicDentist ? "Yes" : "No"}
           </Text>
+            {!isMobile && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-around",
+                  paddingHorizontal: 16,
+                  marginTop: 8,
+                  backgroundColor: "transparent",
+                }}
+              >
+              <TouchableOpacity
+                onPress={() => {
+                  setFullProfile(false);
+                  setviewClinic(false);
+                  setDashboardView("chats");
+                }}
+                style={{
+                  backgroundColor: "#3498db",
+                  paddingVertical: 12,
+                  paddingHorizontal: 20,
+                  borderRadius: 8,
+                  flex: 1,
+                  marginHorizontal: 5,
+                  alignItems: "center",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                }}
+              >
+                <FontAwesome5 name="comments" size={18} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={{ color: "#fff", fontWeight: "600", textAlign: 'center' }}>Message</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  setModalAppoint(true);
+                }}
+                style={{
+                  backgroundColor: "#34db6cff",
+                  paddingVertical: 12,
+                  paddingHorizontal: 20,
+                  borderRadius: 8,
+                  flex: 1,
+                  marginHorizontal: 5,
+                  alignItems: "center",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                }}
+              >
+                <FontAwesome5 name="calendar-check" size={18} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={{ color: "#fff", fontWeight: "600", textAlign: 'center' }}>Appoint</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setModalMap(true)}
+                style={{
+                  backgroundColor: "#f39c12",
+                  paddingVertical: 12,
+                  paddingHorizontal: 20,
+                  borderRadius: 8,
+                  flex: 1,
+                  marginHorizontal: 5,
+                  alignItems: "center",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                }}
+              >
+                <FontAwesome5 name="map-marker-alt" size={18} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={{ color: "#fff", fontWeight: "600", textAlign: 'center' }}>View in Map</Text>
+              </TouchableOpacity>
+              </View>
+            )}
         </View>
         
 
@@ -3479,69 +3605,79 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
       
 
       {/* Action Buttons1 at Bottom */}
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-around",
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          borderTopWidth: 1,
-          borderColor: "#ddd",
-          backgroundColor: "#b9ffdcff",
-        }}
-      >
-        <TouchableOpacity
-          onPress={() => {
-            setFullProfile(false);
-            setviewClinic(false);
-            setDashboardView("chats");
-          }}
+      {isMobile && (
+        <View
           style={{
-            backgroundColor: "#3498db",
+            flexDirection: "row",
+            justifyContent: "space-around",
+            paddingHorizontal: 16,
             paddingVertical: 12,
-            paddingHorizontal: 20,
-            borderRadius: 8,
-            flex: 1,
-            marginHorizontal: 5,
-            alignItems: "center",
+            borderTopWidth: 1,
+            borderColor: "#ddd",
+            backgroundColor: "white",
           }}
         >
-          <Text style={{ color: "#fff", fontWeight: "600" }}>Message</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => {
-            // setSelectedClinicId(clinic.id);
-            // setappointmentName(clinic.clinic_name);
-            setModalAppoint(true);
-          }}
-          style={{
-            backgroundColor: "#34db6cff",
-            paddingVertical: 12,
-            paddingHorizontal: 20,
-            borderRadius: 8,
-            flex: 1,
-            marginHorizontal: 5,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ color: "#fff", fontWeight: "600" }}>Appoint</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              setFullProfile(false);
+              setviewClinic(false);
+              setDashboardView("chats");
+            }}
+            style={{
+              backgroundColor: "#3498db",
+              paddingVertical: 12,
+              paddingHorizontal: 20,
+              borderRadius: 8,
+              flex: 1,
+              marginHorizontal: 5,
+              alignItems: "center",
+              flexDirection: "row",
+              justifyContent: "center",
+            }}
+          >
+            <FontAwesome5 name="comments" size={18} color="#fff" style={{ marginRight: 8 }} />
+            <Text style={{ color: "#fff", fontWeight: "600", textAlign: 'center' }}>Message</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() => setModalMap(true)}
-          style={{
-            backgroundColor: "#f39c12",
-            paddingVertical: 12,
-            paddingHorizontal: 20,
-            borderRadius: 8,
-            flex: 1,
-            marginHorizontal: 5,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ color: "#fff", fontWeight: "600" }}>View in Map</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            onPress={() => {
+              setModalAppoint(true);
+            }}
+            style={{
+              backgroundColor: "#34db6cff",
+              paddingVertical: 12,
+              paddingHorizontal: 20,
+              borderRadius: 8,
+              flex: 1,
+              marginHorizontal: 5,
+              alignItems: "center",
+              flexDirection: "row",
+              justifyContent: "center",
+            }}
+          >
+            <FontAwesome5 name="calendar-check" size={18} color="#fff" style={{ marginRight: 8 }} />
+            <Text style={{ color: "#fff", fontWeight: "600", textAlign: 'center' }}>Appoint</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setModalMap(true)}
+            style={{
+              backgroundColor: "#f39c12",
+              paddingVertical: 12,
+              paddingHorizontal: 20,
+              borderRadius: 8,
+              flex: 1,
+              marginHorizontal: 5,
+              alignItems: "center",
+              flexDirection: "row",
+              justifyContent: "center",
+            }}
+          >
+            <FontAwesome5 name="map-marker-alt" size={18} color="#fff" style={{ marginRight: 8 }} />
+            <Text style={{ color: "#fff", fontWeight: "600", textAlign: 'center' }}>View in Map</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   </Modal>
 
@@ -3779,7 +3915,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
 
 
                               {/* Date */}
-                              <Text style={{ alignSelf: "flex-start", marginBottom: 5 }}>Date</Text>
+                              <Text style={{ alignSelf: "flex-start", marginBottom: 5 }}>*Date</Text>
                               <CalendarPicker
                                 day={date.getDate()}
                                 month={date.getMonth() + 1}
@@ -3796,7 +3932,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                               />
 
                               {/* Time */}
-                              <Text style={{ alignSelf: "flex-start", marginBottom: 5 }}>Time</Text>
+                              <Text style={{ alignSelf: "flex-start", marginBottom: 5 }}>*Time</Text>
                               <TimePicker
                                 minuteSkipBy={1}
                                 onTimeSelected={(hh, mm, atm) => {
@@ -3819,7 +3955,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
 
 {/* Choose Dentist */}
 <Text style={{ alignSelf: "flex-start", marginBottom: 5, marginTop: 10 }}>
-  Choose Dentist/Staff
+  *Choose Dentist/Staff
 </Text>                  
 
 {/* Trigger Button to open Dentist Modal */}
@@ -4013,7 +4149,7 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
 
                               {/* Message */}
                               <Text style={{ alignSelf: "flex-start", marginBottom: 5, marginTop: 10 }}>
-                                Message to clinic: Reason of Appointment
+                                *Message to clinic: Reason of Appointment
                               </Text>
 
                               {/* Trigger Button to open Offer Modal */}
@@ -4928,14 +5064,11 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                         transparent
                         animationType="fade"
                         visible={modalMap}
-                        onRequestClose={() => {
-                          setModalMap(false);
-                        }}
+                        onRequestClose={() => setModalMap(false)}
                       >
                         <View
                           style={{
                             flex: 1,
-                            backgroundColor: "rgba(0, 0, 0, 0)",
                             justifyContent: "center",
                             alignItems: "center",
                             padding: 20,
@@ -4945,24 +5078,46 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                             style={{
                               backgroundColor: "white",
                               borderRadius: 12,
-                              borderWidth: 2,
-                              borderColor: "rgba(214, 214, 214, 1)",
+                              borderWidth: 1,
+                              borderColor: "#ccc",
                               padding: 20,
-                              alignItems: "center",
                               width: !isMobile ? "90%" : "100%",
+                              position: "relative",
                             }}
                           >
+                            {/* ✅ Circular red close button in upper right */}
+                            <TouchableOpacity
+                              onPress={() => setModalMap(false)}
+                              style={{
+                                position: "absolute",
+                                top: 10,
+                                right: 10,
+                                zIndex: 10,
+                                backgroundColor: "#e74c3c",
+                                width: 30,
+                                height: 30,
+                                borderRadius: 15,
+                                justifyContent: "center",
+                                alignItems: "center",
+                              }}
+                            >
+                              <Text style={{ color: "white", fontWeight: "bold", fontSize: 18, lineHeight: 18 }}>
+                                ×
+                              </Text>
+                            </TouchableOpacity>
+
                             <Text
                               style={{
                                 fontSize: 24,
                                 fontWeight: "bold",
                                 marginBottom: 20,
                                 alignSelf: isMobile ? "center" : "flex-start",
-                                color: "#003f30ff",
+                                color: "#00505cff",
                               }}
                             >
                               Map
                             </Text>
+
                             {(mapView[0] || mapView[1]) ? (
                               <MapPickerView
                                 pinLongitude={mapView[0]}
@@ -4972,35 +5127,38 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
                             ) : (
                               <Text>No map provided by the clinic</Text>
                             )}
-                            <TouchableOpacity
-                              style={{
-                                backgroundColor: "#e74c3c",
-                                paddingVertical: 10,
-                                paddingHorizontal: 15,
-                                borderRadius: 8,
-                                marginTop: 10,
-                                minHeight: 20,
-                              }}
-                              onPress={() => setModalMap(false)}
-                            >
-                              <Text
-                                style={{
-                                  color: "white",
-                                  fontWeight: "bold",
-                                  textAlign: "center",
-                                }}
-                              >
-                                close
-                              </Text>
-                            </TouchableOpacity>
                           </View>
                         </View>
                       </Modal>
+
                     </View>
                   </LinearGradient>
                 ))}
               </View>
 
+    {clinicList.filter((clinic) => clinic.isFirst === false).length > 8 && (
+      <View style={{ alignItems: "center", marginTop: 20, marginBottom: 20 }}>
+        <TouchableOpacity
+          onPress={() => setShowAllClinics(!showAllClinics)}
+          style={{
+            backgroundColor: "#00505cff",
+            paddingVertical: 12,
+            paddingHorizontal: 30,
+            borderRadius: 8,
+            shadowColor: "#000",
+            shadowOpacity: 0.2,
+            shadowRadius: 4,
+            shadowOffset: { width: 0, height: 2 },
+            elevation: 3,
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>
+            {showAllClinics ? "Show Less" : `Show More (${clinicList.filter((clinic) => clinic.isFirst === false).length - 8} more)`}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    )}
+    </>
               )}
             </ScrollView>
 
@@ -6056,169 +6214,116 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
       </TouchableOpacity>
     </View>
 
-          <View
-            style={{
-              padding: 20,
-              backgroundColor: "#f7f7f7ff",
-              borderRadius: 16,
-              marginTop: 20,
-              shadowColor: "#000",
-              shadowOpacity: 0.05,
-              shadowRadius: 6,
-              elevation: 2,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 28,
-                fontWeight: "bold",
-                marginBottom: 20,
-                textAlign: "center",
-                color: "#00505cff",
-              }}
-            >
-              Meet the Team
-            </Text>
+<View
+  style={{
+    padding: 20,
+    backgroundColor: "#f7f7f7ff",
+    borderRadius: 16,
+    marginTop: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  }}
+>
+  <Text
+    style={{
+      fontSize: 28,
+      fontWeight: "bold",
+      marginBottom: 20,
+      textAlign: "center",
+      color: "#00505cff",
+    }}
+  >
+    Meet the Team
+  </Text>
 
-            <View
-              style={{
-                alignItems: "center",
-                marginBottom: 30,
-                backgroundColor: "#00505cff",
-                borderRadius: 16,
-                padding: 20,
-                shadowColor: "#000",
-                shadowOpacity: 0.1,
-                shadowRadius: 6,
-                elevation: 3,
-              }}
-            >
-              <Image
-                source={
-                  require("../../assets/team/migueldel.png") // fallback/default image
-                }
-                style={{
-                  width: 170,
-                  height: 170,
-                  borderRadius: 60,
-                  borderWidth: 2,
-                  borderColor: "#00bcd4",
-                  backgroundColor: "#eaeaea",
-                }}
-              />
+  <View
+    style={{
+      flexDirection: !isMobile ? "row" : "column",
+      flexWrap: !isMobile ? "wrap" : "nowrap",
+      justifyContent: !isMobile ? "space-between" : "center",
+    }}
+  >
+    {[
+      {
+        key: "miguel",
+        image: require("../../assets/team/migueldel.png"),
+        name: "Miguel Del Rosario",
+        role: "Project Manager",
+      },
+      {
+        key: "paala",
+        image: require("../../assets/team/paala.png"),
+        name: "Paala James",
+        role: "Programmer Specialist",
+      },
+      {
+        key: "elbert",
+        image: require("../../assets/team/elbert.png"),
+        name: "Elbert Rosales",
+        role: "Quality Assurance",
+      },
+      {
+        key: "rex",
+        image: require("../../assets/team/rex.png"),
+        name: "Rex Carlo Rosales",
+        role: "System Analyst",
+      },
+    ].map(({ key, image, name, role }) => (
+      <View
+        key={key}
+        style={{
+          alignItems: "center",
+          marginBottom: 30,
+          backgroundColor: "#00505cff",
+          borderRadius: 16,
+          padding: 20,
+          shadowColor: "#000",
+          shadowOpacity: 0.1,
+          shadowRadius: 6,
+          elevation: 3,
+          width: !isMobile ? "48%" : "100%", // 2x2 grid for web, full width on mobile
+          marginBottom: 20,
+        }}
+      >
+        <Image
+          source={image}
+          style={{
+            width: 170,
+            height: 170,
+            borderRadius: 60,
+            borderWidth: 2,
+            borderColor: "#00bcd4",
+            backgroundColor: "#eaeaea",
+          }}
+        />
 
-              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white", marginTop: 8 }}>
-                Miguel Del Rosario
-              </Text>
-              <Text style={{ fontSize: 16, color: "white", }}>
-                Project Manager
-              </Text>
-            </View>
-            <View
-              style={{
-                alignItems: "center",
-                marginBottom: 30,
-                backgroundColor: "#00505cff",
-                borderRadius: 16,
-                padding: 20,
-                shadowColor: "#000",
-                shadowOpacity: 0.1,
-                shadowRadius: 6,
-                elevation: 3,
-              }}
-            >
-              <Image
-                source={
-                  require("../../assets/team/paala.png") // fallback/default image
-                }
-                style={{
-                  width: 170,
-                  height: 170,
-                  borderRadius: 60,
-                  borderWidth: 2,
-                  borderColor: "#00bcd4",
-                  backgroundColor: "#eaeaea",
-                }}
-              />
+        <Text
+          style={{
+            fontSize: 18,
+            fontWeight: "bold",
+            color: "white",
+            marginTop: 8,
+            textAlign: "center",
+          }}
+        >
+          {name}
+        </Text>
+        <Text
+          style={{
+            fontSize: 16,
+            color: "white",
+            textAlign: "center",
+          }}
+        >
+          {role}
+        </Text>
+      </View>
+    ))}
+  </View>
+</View>
 
-              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white", marginTop: 8 }}>
-                Paala James
-              </Text>
-              <Text style={{ fontSize: 16, color: "white",}}>
-                Programmer Specialist
-              </Text>
-            </View>
-
-            <View
-              style={{
-                alignItems: "center",
-                marginBottom: 30,
-                backgroundColor: "#00505cff",
-                borderRadius: 16,
-                padding: 20,
-                shadowColor: "#000",
-                shadowOpacity: 0.1,
-                shadowRadius: 6,
-                elevation: 3,
-              }}
-            >
-              <Image
-                source={
-                  require("../../assets/team/elbert.png") // fallback/default image
-                }
-                style={{
-                  width: 170,
-                  height: 170,
-                  borderRadius: 60,
-                  borderWidth: 2,
-                  borderColor: "#00bcd4",
-                  backgroundColor: "#eaeaea",
-                }}
-              />
-
-              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white", marginTop: 8 }}>
-                Elbert Rosales
-              </Text>
-              <Text style={{ fontSize: 16, color: "white",}}>
-                Quality Assurance
-              </Text>
-            </View>
-
-            <View
-              style={{
-                alignItems: "center",
-                marginBottom: 30,
-                backgroundColor: "#00505cff",
-                borderRadius: 16,
-                padding: 20,
-                shadowColor: "#000",
-                shadowOpacity: 0.1,
-                shadowRadius: 6,
-                elevation: 3,
-              }}
-            >
-              <Image
-                source={
-                  require("../../assets/team/rex.png") // fallback/default image
-                }
-                style={{
-                  width: 170,
-                  height: 170,
-                  borderRadius: 60,
-                  borderWidth: 2,
-                  borderColor: "#00bcd4",
-                  backgroundColor: "#eaeaea",
-                }}
-              />
-
-              <Text style={{ fontSize: 18, fontWeight: "bold", color: "white", marginTop: 8 }}>
-                Rex Carlo Rosales
-              </Text>
-              <Text style={{ fontSize: 16, color: "white",}}>
-                System Analyst
-              </Text>
-              </View>
-            </View>
           </ScrollView>
         </View>
         )}

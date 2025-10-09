@@ -17,6 +17,7 @@ import type { ChatRoom, Message } from "../../lib/types";
 import { useChatRoom } from "@/hooks/useChatRoom";
 import { useSession } from "@/lib/SessionContext";
 import { supabase } from "@/lib/supabase";
+import { FontAwesome5 } from '@expo/vector-icons';
 
 interface ChatScreenProps {
   roomId: string;
@@ -307,14 +308,25 @@ export const ChatRoomsList: React.FC<ChatRoomsListProps> = ({
         onPress={() => onRoomSelect(item.id, otherUserName)}
       >
         <View style={styles.roomHeader}>
+        {otherUserAvatarUrl ? (
           <Image
-            source={
-              otherUserAvatarUrl
-                ? { uri: otherUserAvatarUrl }
-                : require("../../assets/default.png") // add your default avatar path
-            }
+            source={{ uri: otherUserAvatarUrl }}
             style={styles.avatar}
           />
+        ) : (
+          <View
+            style={[
+              styles.avatar,
+              {
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "#fff", // optional, match your style
+              },
+            ]}
+          >
+            <FontAwesome5 name="clinic-medical" size={24} color="#4a878bff" />
+          </View>
+        )}
         <Text
           style={[
             styles.roomTitle,
