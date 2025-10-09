@@ -3,8 +3,7 @@ import { useFonts } from 'expo-font';
 import AppLoading from 'expo-app-loading';
 import { FontAwesome } from '@expo/vector-icons';
 import React, { useRef, useEffect } from 'react';
-import { Platform, Image } from 'react-native';
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import { Platform } from 'react-native';
 
 import {
   View,
@@ -70,49 +69,37 @@ export default function Index() {
   return (
     <ScrollView style={styles.container} ref={scrollRef}>
       {/* Header */}
-    <View style={styles.header}>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-    <Image
-      source={require('../assets/adaptive-icon.png')} // replace with your actual logo path
-      style={{
-        width: 40,
-        height: 40,
-      }}
-      resizeMode="contain"
-    />
-        <Text style={[styles.logo, { marginLeft: 8, color: 'white'}]}>Smile<Text style={[{ color: '#00205cff'}]}>Stu</Text><Text style={[{ color: '#1c6ac5ff'}]}>dio</Text></Text>
+      <View style={styles.header}>
+        <Text style={styles.logo}>SmileStudio</Text>
+        {!isMobile && (
+          <View style={styles.nav}>
+            <TouchableOpacity onPress={() => scrollToSection('start')}>
+              <Text style={styles.navItem}>Get Started</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => scrollToSection('benefits')}>
+              <Text style={styles.navItem}>Benefits</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => scrollToSection('concept')}>
+              <Text style={styles.navItem}>About</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => scrollToSection('topics')}>
+              <Text style={styles.navItem}>Services</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => scrollToSection('testimonials')}>
+              <Text style={styles.navItem}>Testimonials</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.navCta} onPress={login}>
+              <Text style={styles.navCtaText}>Sign In</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
-
-      {!isMobile && (
-        <View style={styles.nav}>
-          <TouchableOpacity onPress={() => scrollToSection('start')}>
-            <Text style={styles.navItem}>Get Started</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => scrollToSection('benefits')}>
-            <Text style={styles.navItem}>Benefits</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => scrollToSection('concept')}>
-            <Text style={styles.navItem}>About</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => scrollToSection('topics')}>
-            <Text style={styles.navItem}>Services</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => scrollToSection('testimonials')}>
-            <Text style={styles.navItem}>Testimonials</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navCta} onPress={login}>
-            <Text style={styles.navCtaText}>Sign In</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
-
 
       {/* Hero Section */}
       <View ref={sectionRefs.start} style={styles.hero}>
         <View style={[styles.heroContent, isMobile && styles.heroContentMobile]}>
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>Healthcare Platform</Text>
+            <Text style={styles.badgeText}>🏥 Trusted Healthcare Platform</Text>
           </View>
           <Text style={[styles.heroTitle, isMobile && styles.heroTitleMobile]}>
             Your Smile Deserves{'\n'}Expert Care
@@ -125,6 +112,9 @@ export default function Index() {
             <TouchableOpacity style={styles.ctaPrimary} onPress={login}>
               <Text style={styles.ctaPrimaryText}>Get Started Free</Text>
             </TouchableOpacity>
+            <TouchableOpacity style={styles.ctaSecondary}>
+              <Text style={styles.ctaSecondaryText}>Learn More</Text>
+            </TouchableOpacity>
           </View>
           <View style={styles.trustBadge}>
             <Text style={styles.trustText}>
@@ -135,56 +125,50 @@ export default function Index() {
       </View>
 
       {/* Benefits Section */}
-    <View ref={sectionRefs.benefits} style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionLabel}>BENEFITS</Text>
-        <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>
-          Why Choose Our Platform?
-        </Text>
-        <Text style={[styles.sectionSubtitle, isMobile && styles.sectionSubtitleMobile]}>
-          A modern solution designed to make dental care accessible, 
-          convenient, and stress-free for everyone.
-        </Text>
-      </View>
-
-      <View style={[styles.cardGrid, isMobile && styles.cardGridMobile]}>
-        {/* Card 1 */}
-        <View style={[styles.card, isMobile && styles.cardMobile]}>
-          <View style={styles.cardIconWrapper}>
-            <FontAwesome5 name="calendar-check" size={30} color="#007AFF" />
-          </View>
-          <Text style={styles.cardTitle}>Seamless Scheduling</Text>
-          <Text style={styles.cardDesc}>
-            Book, reschedule, or cancel appointments with just a few taps. 
-            No more phone calls or waiting on hold.
+      <View ref={sectionRefs.benefits} style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionLabel}>BENEFITS</Text>
+          <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>
+            Why Choose Our Platform?
+          </Text>
+          <Text style={[styles.sectionSubtitle, isMobile && styles.sectionSubtitleMobile]}>
+            A modern solution designed to make dental care accessible, 
+            convenient, and stress-free for everyone.
           </Text>
         </View>
-
-        {/* Card 2 */}
-        <View style={[styles.card, isMobile && styles.cardMobile]}>
-          <View style={styles.cardIconWrapper}>
-            <FontAwesome5 name="bolt" size={30} color="#FF9500" />
+        <View style={[styles.cardGrid, isMobile && styles.cardGridMobile]}>
+          <View style={[styles.card, isMobile && styles.cardMobile]}>
+            <View style={styles.cardIconWrapper}>
+              <Text style={styles.cardIcon}>📅</Text>
+            </View>
+            <Text style={styles.cardTitle}>Seamless Scheduling</Text>
+            <Text style={styles.cardDesc}>
+              Book, reschedule, or cancel appointments with just a few taps. 
+              No more phone calls or waiting on hold.
+            </Text>
           </View>
-          <Text style={styles.cardTitle}>Instant Confirmation</Text>
-          <Text style={styles.cardDesc}>
-            Receive real-time booking confirmations and automated reminders 
-            so you never miss an appointment.
-          </Text>
-        </View>
-
-        {/* Card 3 */}
-        <View style={[styles.card, isMobile && styles.cardMobile]}>
-          <View style={styles.cardIconWrapper}>
-            <FontAwesome5 name="bullseye" size={30} color="#34C759" />
+          <View style={[styles.card, isMobile && styles.cardMobile]}>
+            <View style={styles.cardIconWrapper}>
+              <Text style={styles.cardIcon}>⚡</Text>
+            </View>
+            <Text style={styles.cardTitle}>Instant Confirmation</Text>
+            <Text style={styles.cardDesc}>
+              Receive real-time booking confirmations and automated reminders 
+              so you never miss an appointment.
+            </Text>
           </View>
-          <Text style={styles.cardTitle}>AR-Powered Education</Text>
-          <Text style={styles.cardDesc}>
-            Experience augmented reality tools for treatment previews and 
-            interactive dental health education.
-          </Text>
+          <View style={[styles.card, isMobile && styles.cardMobile]}>
+            <View style={styles.cardIconWrapper}>
+              <Text style={styles.cardIcon}>🎯</Text>
+            </View>
+            <Text style={styles.cardTitle}>AR-Powered Education</Text>
+            <Text style={styles.cardDesc}>
+              Experience augmented reality tools for treatment previews and 
+              interactive dental health education.
+            </Text>
+          </View>
         </View>
       </View>
-    </View>
 
       {/* Stats Section */}
       <View ref={sectionRefs.concept} style={styles.statsSection}>
@@ -381,17 +365,19 @@ const styles = StyleSheet.create({
   
   // Header
   header: {
-    backgroundColor: '#80c4c4',
+    backgroundColor: '#ffffff',
     paddingVertical: 20,
     paddingHorizontal: 32,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
   },
   logo: {
     fontSize: 24,
     fontFamily: 'Poppins-Bold',
-    color: '#ffffff',
+    color: '#0ea5e9',
   },
   nav: {
     flexDirection: 'row',
@@ -401,16 +387,13 @@ const styles = StyleSheet.create({
   navItem: {
     fontFamily: 'Poppins-Regular',
     fontSize: 15,
-    color: '#ffffff',
+    color: '#475569',
   },
   navCta: {
-    backgroundColor: '#00505c',
+    backgroundColor: '#0ea5e9',
     paddingVertical: 10,
     paddingHorizontal: 24,
-    borderRadius: 10,
-    shadowColor: '#00000045',
-    shadowRadius: 6,
-    shadowOffset: { width: 4, height: 4 },
+    borderRadius: 8,
   },
   navCtaText: {
     fontFamily: 'Poppins-Bold',
@@ -420,7 +403,7 @@ const styles = StyleSheet.create({
 
   // Hero
   hero: {
-    backgroundColor: '#ccf0eb',
+    backgroundColor: '#f8fafc',
     paddingVertical: 80,
     paddingHorizontal: 32,
     alignItems: 'center',
@@ -433,7 +416,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   badge: {
-    backgroundColor: '#86ffc7',
+    backgroundColor: '#dbeafe',
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
@@ -442,12 +425,12 @@ const styles = StyleSheet.create({
   badgeText: {
     fontFamily: 'Poppins-Bold',
     fontSize: 13,
-    color: '#498d6d',
+    color: '#0369a1',
   },
   heroTitle: {
     fontSize: 56,
     fontFamily: 'Poppins-Bold',
-    color: '#00505c',
+    color: '#0f172a',
     textAlign: 'center',
     marginBottom: 20,
     lineHeight: 64,
@@ -459,7 +442,7 @@ const styles = StyleSheet.create({
   heroSubtitle: {
     fontSize: 19,
     fontFamily: 'Poppins-Regular',
-    color: '#003f30',
+    color: '#64748b',
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 28,
@@ -474,13 +457,10 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   ctaPrimary: {
-    backgroundColor: '#00505c',
+    backgroundColor: '#0ea5e9',
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 10,
-    shadowColor: '#00000045',
-    shadowRadius: 6,
-    shadowOffset: { width: 4, height: 4 },
   },
   ctaPrimaryText: {
     fontFamily: 'Poppins-Bold',
@@ -493,12 +473,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#80c4c4',
+    borderColor: '#e2e8f0',
   },
   ctaSecondaryText: {
     fontFamily: 'Poppins-Bold',
     fontSize: 16,
-    color: '#00505c',
+    color: '#475569',
   },
   trustBadge: {
     paddingVertical: 12,
@@ -506,7 +486,7 @@ const styles = StyleSheet.create({
   trustText: {
     fontFamily: 'Poppins-Regular',
     fontSize: 14,
-    color: '#498d6d',
+    color: '#94a3b8',
   },
 
   // Section
@@ -522,14 +502,14 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontFamily: 'Poppins-Bold',
     fontSize: 13,
-    color: '#00505c',
+    color: '#0ea5e9',
     letterSpacing: 1.5,
     marginBottom: 12,
   },
   sectionTitle: {
     fontSize: 40,
     fontFamily: 'Poppins-Bold',
-    color: '#00505c',
+    color: '#0f172a',
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -539,7 +519,7 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     fontSize: 18,
     fontFamily: 'Poppins-Regular',
-    color: '#003f30',
+    color: '#64748b',
     textAlign: 'center',
     maxWidth: 600,
     lineHeight: 28,
@@ -563,13 +543,10 @@ const styles = StyleSheet.create({
     width: '31%',
     minWidth: 280,
     backgroundColor: '#ffffff',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 32,
     borderWidth: 1,
-    borderColor: '#80c4c4',
-    shadowColor: '#00000045',
-    shadowRadius: 6,
-    shadowOffset: { width: 4, height: 4 },
+    borderColor: '#e2e8f0',
   },
   cardMobile: {
     width: '100%',
@@ -577,8 +554,8 @@ const styles = StyleSheet.create({
   cardIconWrapper: {
     width: 64,
     height: 64,
-    backgroundColor: '#86ffc7',
-    borderRadius: 12,
+    backgroundColor: '#dbeafe',
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
@@ -589,19 +566,19 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontFamily: 'Poppins-Bold',
     fontSize: 20,
-    color: '#00505c',
+    color: '#0f172a',
     marginBottom: 12,
   },
   cardDesc: {
     fontFamily: 'Poppins-Regular',
     fontSize: 15,
-    color: '#003f30',
+    color: '#64748b',
     lineHeight: 24,
   },
 
   // Stats
   statsSection: {
-    backgroundColor: '#ccf0eb',
+    backgroundColor: '#f8fafc',
     paddingVertical: 80,
     paddingHorizontal: 32,
     alignItems: 'center',
@@ -609,7 +586,7 @@ const styles = StyleSheet.create({
   statsTitle: {
     fontSize: 40,
     fontFamily: 'Poppins-Bold',
-    color: '#00505c',
+    color: '#0f172a',
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -619,7 +596,7 @@ const styles = StyleSheet.create({
   statsSubtitle: {
     fontFamily: 'Poppins-Regular',
     fontSize: 17,
-    color: '#003f30',
+    color: '#64748b',
     marginBottom: 48,
   },
   statsGrid: {
@@ -634,15 +611,12 @@ const styles = StyleSheet.create({
   },
   statCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 40,
     alignItems: 'center',
     minWidth: 200,
     borderWidth: 1,
-    borderColor: '#80c4c4',
-    shadowColor: '#00000045',
-    shadowRadius: 6,
-    shadowOffset: { width: 4, height: 4 },
+    borderColor: '#e2e8f0',
   },
   statCardMobile: {
     width: '100%',
@@ -650,7 +624,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 48,
     fontFamily: 'Poppins-Bold',
-    color: '#00505c',
+    color: '#0ea5e9',
     marginBottom: 8,
   },
   statValueMobile: {
@@ -659,18 +633,18 @@ const styles = StyleSheet.create({
   statLabel: {
     fontFamily: 'Poppins-Bold',
     fontSize: 16,
-    color: '#00505c',
+    color: '#0f172a',
     marginBottom: 4,
   },
   statSubtext: {
     fontFamily: 'Poppins-Regular',
     fontSize: 14,
-    color: '#498d6d',
+    color: '#94a3b8',
   },
 
   // CTA Section
   ctaSection: {
-    backgroundColor: '#00505c',
+    backgroundColor: '#0ea5e9',
     paddingVertical: 80,
     paddingHorizontal: 32,
     alignItems: 'center',
@@ -694,7 +668,7 @@ const styles = StyleSheet.create({
   ctaSectionSubtitle: {
     fontSize: 18,
     fontFamily: 'Poppins-Regular',
-    color: '#86ffc7',
+    color: '#e0f2fe',
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 28,
@@ -708,14 +682,11 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     paddingHorizontal: 40,
     borderRadius: 10,
-    shadowColor: '#00000045',
-    shadowRadius: 6,
-    shadowOffset: { width: 4, height: 4 },
   },
   ctaPrimaryTextLarge: {
     fontFamily: 'Poppins-Bold',
     fontSize: 17,
-    color: '#00505c',
+    color: '#0ea5e9',
   },
 
   // Testimonials
@@ -731,11 +702,9 @@ const styles = StyleSheet.create({
   testimonial: {
     width: '45%',
     minWidth: 320,
-    backgroundColor: '#ccf0eb',
-    borderRadius: 12,
+    backgroundColor: '#f8fafc',
+    borderRadius: 16,
     padding: 32,
-    borderWidth: 1,
-    borderColor: '#80c4c4',
   },
   testimonialMobile: {
     width: '100%',
@@ -749,7 +718,7 @@ const styles = StyleSheet.create({
   testimonialText: {
     fontFamily: 'Poppins-Regular',
     fontSize: 16,
-    color: '#003f30',
+    color: '#334155',
     lineHeight: 26,
     marginBottom: 24,
   },
@@ -761,7 +730,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 48,
     height: 48,
-    backgroundColor: '#86ffc7',
+    backgroundColor: '#dbeafe',
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
@@ -769,22 +738,22 @@ const styles = StyleSheet.create({
   avatarText: {
     fontFamily: 'Poppins-Bold',
     fontSize: 16,
-    color: '#498d6d',
+    color: '#0369a1',
   },
   authorName: {
     fontFamily: 'Poppins-Bold',
     fontSize: 15,
-    color: '#00505c',
+    color: '#0f172a',
   },
   authorRole: {
     fontFamily: 'Poppins-Regular',
     fontSize: 13,
-    color: '#498d6d',
+    color: '#94a3b8',
   },
 
   // Footer
   footer: {
-    backgroundColor: '#80c4c4',
+    backgroundColor: '#f8fafc',
     paddingTop: 64,
     paddingHorizontal: 32,
     paddingBottom: 32,
@@ -804,13 +773,13 @@ const styles = StyleSheet.create({
   footerLogo: {
     fontSize: 24,
     fontFamily: 'Poppins-Bold',
-    color: '#ffffff',
+    color: '#0ea5e9',
     marginBottom: 12,
   },
   footerTagline: {
     fontFamily: 'Poppins-Regular',
     fontSize: 14,
-    color: '#ffffff',
+    color: '#64748b',
     marginBottom: 20,
   },
   socialIcons: {
@@ -824,6 +793,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   footerLinks: {
     flexDirection: 'row',
@@ -835,29 +806,29 @@ const styles = StyleSheet.create({
   footerColumnTitle: {
     fontFamily: 'Poppins-Bold',
     fontSize: 14,
-    color: '#ffffff',
+    color: '#0f172a',
     marginBottom: 4,
   },
   footerLink: {
     fontFamily: 'Poppins-Regular',
     fontSize: 14,
-    color: '#ffffff',
+    color: '#64748b',
   },
   footerBottom: {
     paddingTop: 32,
     borderTopWidth: 1,
-    borderTopColor: '#009b84',
+    borderTopColor: '#e2e8f0',
     alignItems: 'center',
     gap: 8,
   },
   footerCopyright: {
     fontFamily: 'Poppins-Regular',
     fontSize: 14,
-    color: '#ffffff',
+    color: '#94a3b8',
   },
   footerContact: {
     fontFamily: 'Poppins-Regular',
     fontSize: 13,
-    color: '#ffffff',
+    color: '#cbd5e1',
   },
 });
