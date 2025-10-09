@@ -214,52 +214,46 @@ export default function Index() {
       </View>
 
       {/* Services Section */}
-    <View ref={sectionRefs.topics} style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionLabel}>SERVICES</Text>
-        <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>
-          Everything You Need in One Place
-        </Text>
-      </View>
-
-      <View style={[styles.cardGrid, isMobile && styles.cardGridMobile]}>
-        {/* Card 1 */}
-        <View style={[styles.card, isMobile && styles.cardMobile]}>
-          <View style={styles.cardIconWrapper}>
-            <FontAwesome5 name="map-marker-alt" size={30} color="#FF3B30" />
-          </View>
-          <Text style={styles.cardTitle}>Find Nearby Clinics</Text>
-          <Text style={styles.cardDesc}>
-            Discover trusted dental clinics near you with detailed profiles, 
-            services offered, and real-time availability.
+      <View ref={sectionRefs.topics} style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionLabel}>SERVICES</Text>
+          <Text style={[styles.sectionTitle, isMobile && styles.sectionTitleMobile]}>
+            Everything You Need in One Place
           </Text>
         </View>
-
-        {/* Card 2 */}
-        <View style={[styles.card, isMobile && styles.cardMobile]}>
-          <View style={styles.cardIconWrapper}>
-            <FontAwesome5 name="tooth" size={30} color="#5856D6" />
+        <View style={[styles.cardGrid, isMobile && styles.cardGridMobile]}>
+          <View style={[styles.card, isMobile && styles.cardMobile]}>
+            <View style={styles.cardIconWrapper}>
+              <Text style={styles.cardIcon}>📍</Text>
+            </View>
+            <Text style={styles.cardTitle}>Find Nearby Clinics</Text>
+            <Text style={styles.cardDesc}>
+              Discover trusted dental clinics near you with detailed profiles, 
+              services offered, and real-time availability.
+            </Text>
           </View>
-          <Text style={styles.cardTitle}>Expert Consultations</Text>
-          <Text style={styles.cardDesc}>
-            Get professional advice for common dental concerns from 
-            experienced practitioners in your area.
-          </Text>
-        </View>
-
-        {/* Card 3 */}
-        <View style={[styles.card, isMobile && styles.cardMobile]}>
-          <View style={styles.cardIconWrapper}>
-            <FontAwesome5 name="mobile-alt" size={30} color="#007AFF" />
+          <View style={[styles.card, isMobile && styles.cardMobile]}>
+            <View style={styles.cardIconWrapper}>
+              <Text style={styles.cardIcon}>🦷</Text>
+            </View>
+            <Text style={styles.cardTitle}>Expert Consultations</Text>
+            <Text style={styles.cardDesc}>
+              Get professional advice for common dental concerns from 
+              experienced practitioners in your area.
+            </Text>
           </View>
-          <Text style={styles.cardTitle}>Digital Records</Text>
-          <Text style={styles.cardDesc}>
-            Access your dental history, treatment plans, and appointments 
-            securely from any device.
-          </Text>
+          <View style={[styles.card, isMobile && styles.cardMobile]}>
+            <View style={styles.cardIconWrapper}>
+              <Text style={styles.cardIcon}>📱</Text>
+            </View>
+            <Text style={styles.cardTitle}>Digital Records</Text>
+            <Text style={styles.cardDesc}>
+              Access your dental history, treatment plans, and appointments 
+              securely from any device.
+            </Text>
+          </View>
         </View>
       </View>
-    </View>
 
       {/* CTA Section */}
       <View ref={sectionRefs.purpose} style={styles.ctaSection}>
