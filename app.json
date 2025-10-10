@@ -20,7 +20,13 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.smilestudioPROTO"
+      "package": "com.anonymous.smilestudioPROTO",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -51,6 +57,14 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Show current location on map."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow SmileStudio to access your camera for AR filters",
+          "microphonePermission": "Allow SmileStudio to access your microphone for video recording",
+          "recordAudioAndroid": true
         }
       ]
     ],

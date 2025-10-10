@@ -30,21 +30,11 @@ allprojects {
     google()
     mavenCentral()
     maven { url 'https://www.jitpack.io' }
-    
-    // === Banuba private Maven repo ===
-    maven {
-      url = uri("https://maven.pkg.github.com/banuba/banuba-sdk-android")
-      credentials {
-        username = "rosaleselbert81@gmail.com"      // Replace with your Banuba GitHub username
-        password = "Qk5CIBnRhN6L0rxvmT1A6Ql5g/jP8M0TPrgGMdWP4Dl79/6bfyZ9BbjzFuMVF+SayE9Gu+wQjnJtAi1qIqrbTGi5nSiUYKCBqGEPBj0npTDFsjJ/nkcDE4FiErWd96cgsYAlDnFPE0F9r4md98z9+p1SX+vfbYN+50C3GeSsAOJnHel400nczbccS7cHajrpgHhjqoV7utklhhSlbrRup0hyZlHU+I+nAd34lLZNyiMaSk7SHah0OiglRKrJTc/rx8kr/BdeqNEO1DP/au2spfeSBqVYPOObQINAn2DVuur0xWGr4doSl40MeQN4KVtfr7lzAR8YQmQEC2NJ0J7pVvdf8pZvA9CzHLPt1K9ig5BghojgVrz6bpcqLyHl6X5bDAiMjmeQN+ObF+vJtRf0my777Ll6HVXdHWhNSBrOJLAwEBOQDlTGH5u1Hw3IFT1gwhG56RlVp6ZouZJ73lC5K3jC3+aFP8spXds6SKYjAosp2r34Nq3l8918+zOy0RvLFZk1FPEjtQW24veoPFyyVBxtMCo8gLqXmnACawqyPHsdTUyfNvkVRFgnFCQSLWginx0bNvPubegu1Fcn/y3xuf83kwVnCeZgXCeIQYENwq9wfnEvlNErvhu6tMhBPHE6tdJ2DFlmMGBETB7717DQPGcW"         // Replace with your Banuba GitHub token
-      }
-    }
   }
 }
 
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
-
 // @generated begin @rnmapbox/maps-v2-maven - expo prebuild (DO NOT MODIFY) sync-32f1b7024bb5099f2805443b1960a3233ccde124
 
 allprojects {

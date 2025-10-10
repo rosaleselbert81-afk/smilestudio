@@ -1291,65 +1291,64 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
           </View>
         </View>
       </Modal>
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={modalMessage}
-          onRequestClose={() => setModalMessage(false)}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalMessage}
+        onRequestClose={() => setModalMessage(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
         >
           <View
             style={{
-              flex: 1,
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 100,
+              backgroundColor: "#fff",
+              padding: 20,
+              borderRadius: 10,
+              borderWidth: 1,
+              borderColor: "#f1f5f9",
+              width: "80%",
+              maxWidth: 500,
             }}
           >
-            <View
+            <Text
               style={{
-                backgroundColor: "#fff",
-                padding: 20,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: "#ccc",
-                width: "80%",
-                maxWidth: 500,
+                fontSize: 18,
+                fontWeight: "bold",
+                marginBottom: 10,
+                color: "#00505cff",
               }}
             >
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "bold",
-                  marginBottom: 10,
-                  color: "#003f30ff",
-                }}
-              >
-                Message
-              </Text>
-              <Text
-                style={{
-                  fontSize: 16,
-                  marginBottom: 20,
-                  color: "#333",
-                }}
-              >
-                {selectedMessage}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setModalMessage(false)}
-                style={{
-                  alignSelf: "flex-end",
-                  backgroundColor: "#003f30",
-                  paddingVertical: 8,
-                  paddingHorizontal: 16,
-                  borderRadius: 5,
-                }}
-              >
-                <Text style={{ color: "#fff", fontWeight: "600" }}>Close</Text>
-              </TouchableOpacity>
-            </View>
+              Message
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                marginBottom: 20,
+                color: "#333",
+              }}
+            >
+              {selectedMessage}
+            </Text>
+            <TouchableOpacity
+              onPress={() => setModalMessage(false)}
+              style={{
+                alignSelf: "flex-end",
+                backgroundColor: "#00505cff",
+                paddingVertical: 8,
+                paddingHorizontal: 16,
+                borderRadius: 5,
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "600" }}>Close</Text>
+            </TouchableOpacity>
           </View>
-        </Modal>
+        </View>
+      </Modal>
 
       {/* Glider Panel */}
       <View
@@ -6219,72 +6218,65 @@ function isAtLeast30MinsBeforeClosing(appointment: Date, closing: ClockScheduleT
           </View>
         )}
 
-        {/* Request View Modal */}
-        <Modal
-          visible={requestViewVisible}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={() => setRequestViewVisible(false)}
-        >
-          <View
-            style={{
-              flex: 1,
-              justifyContent: "center",
-              alignItems: "center",
-              padding: 16,
-            }}
+          {/* Request View Modal */}
+          <Modal
+            visible={requestViewVisible}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setRequestViewVisible(false)}
           >
             <View
               style={{
-                width: "90%",
-                maxWidth: 400,
-                backgroundColor: "white",
-                borderRadius: 8,
-                padding: 20,
+                flex: 1,
+                justifyContent: "center",
                 alignItems: "center",
               }}
             >
-              <Text
+              <View
                 style={{
-                  fontWeight: "700",
-                  fontSize: 18,
-                  marginBottom: 12,
-                  textAlign: "center",
+                  backgroundColor: "#fff",
+                  padding: 20,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: "#f1f5f9",
+                  width: "80%",
+                  maxWidth: 500,
                 }}
               >
-                Requested Dentists/Staff
-              </Text>
+                <Text style={{ fontWeight: "700", fontSize: 18, marginBottom: 12, color: "#00505cff" }}>
+                  Requested Dentists/Staff
+                </Text>
 
-              <Text
-                style={{
-                  fontSize: 16,
-                  marginBottom: 20,
-                  textAlign: "center",
-                  whiteSpace: "pre-line",
-                }}
-              >
-                {selectedRequest.map((line, i) => (
-                  <Text key={i}>
-                    {line}
-                    {"\n"}
-                  </Text>
-                ))}
-              </Text>
+                <ScrollView style={{ marginBottom: 20 }}>
+                  {!selectedRequest || selectedRequest.length === 0 || selectedRequest === "" ? (
+                    <Text style={{ fontSize: 16, textAlign: "center", color: "#888" }}>
+                      No dentists/staff were requested.
+                    </Text>
+                  ) : (
+                    selectedRequest.map((line, i) => (
+                      <Text key={i} style={{ fontSize: 16, textAlign: "left" }}>
+                        {line}
+                        {"\n"}
+                      </Text>
+                    ))
+                  )}
+                </ScrollView>
 
-              <TouchableOpacity
-                style={{
-                  backgroundColor: "#007bff",
-                  paddingVertical: 10,
-                  paddingHorizontal: 30,
-                  borderRadius: 6,
-                }}
-                onPress={() => setRequestViewVisible(false)}
-              >
-                <Text style={{ color: "white", fontWeight: "bold" }}>Close</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={{
+                    alignSelf: "flex-end",
+                    backgroundColor: "#00505cff",
+                    paddingVertical: 8,
+                    paddingHorizontal: 16,
+                    borderRadius: 5,
+                  }}
+                  onPress={() => setRequestViewVisible(false)}
+                >
+                  <Text style={{ color: "white", fontWeight: "bold" }}>Close</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </Modal>
+          </Modal>
 
         {/* Dashboard Chats --------------------------------------------------------------------------------------- */}
 

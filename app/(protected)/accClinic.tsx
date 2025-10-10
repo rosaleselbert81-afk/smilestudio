@@ -194,6 +194,11 @@ const [newDentistName, setNewDentistName] = useState('');
 const [newSpecialization, setNewSpecialization] = useState('');
 const [dentistToRemoveIndex, setDentistToRemoveIndex] = useState<number | null>(null);
 
+// Add these state variables at the top with your other states
+const [selectedPatient, setSelectedPatient] = useState(null);
+const [patientHistoryModal, setPatientHistoryModal] = useState(false);
+const [patientAppointmentHistory, setPatientAppointmentHistory] = useState([]);
+
 // Modal visibility states
 const [limitReachedDentistModalVisible, setLimitReachedDentistModalVisible] = useState(false);
 const [removeDentistConfirmModalVisible, setRemoveDentistConfirmModalVisible] = useState(false);
@@ -1493,6 +1498,363 @@ const getNoShowRate = () => {
   };
 };
 
+// Function to fetch patient's appointment history
+const fetchPatientHistory = async (patientId) => {
+  try {
+    const { data, error } = await supabase
+      .from("appointments")
+      .select(`
+        *,
+        clinic_profiles (
+          clinic_name,
+          address
+        ),
+        profiles (
+          first_name,
+          last_name,
+          mobile_number,  
+          email,
+          birthdate,     
+          gender       
+        )
+      `)
+      .eq("patient_id", patientId)
+      // ❌ REMOVE THIS LINE - it limits to only current clinic's appointments
+      // .eq("clinic_id", session?.user.id)
+      .order("created_at", { ascending: false })
+      .limit(3);
+
+    if (error) throw error;
+
+    return data || [];
+  } catch (err) {
+    console.error("Error fetching patient history:", err.message);
+    return [];
+  }
+};
+
+const openPatientHistory = async (patientId, patientInfo) => {
+  const history = await fetchPatientHistory(patientId);
+  setPatientAppointmentHistory(history);
+  
+  // Use the complete profile data from the first history item if available
+  if (history && history.length > 0 && history[0].profiles) {
+    setSelectedPatient(history[0].profiles);
+  } else {
+    setSelectedPatient(patientInfo);
+  }
+  
+  setPatientHistoryModal(true);
+};
+
+// Function to close patient history modal
+const closePatientHistory = () => {
+  setPatientHistoryModal(false);
+  setSelectedPatient(null);
+  setPatientAppointmentHistory([]);
+};
+
+// Patient History Modal Component
+const PatientHistoryModalComponent = () => (
+  <Modal
+    visible={patientHistoryModal}
+    transparent
+    animationType="fade"
+    onRequestClose={closePatientHistory}
+  >
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <View
+        style={{
+          backgroundColor: "#fff",
+          borderRadius: 12,
+          padding: 24,
+          width: isMobile ? "90%" : "70%",
+          maxWidth: 800,
+          borderWidth: 2,
+          borderColor: '#ccc',
+          maxHeight: "85%",
+        }}
+      >
+        {/* Header */}
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 20,
+            borderBottomWidth: 2,
+            borderBottomColor: "#00505cff",
+            paddingBottom: 12,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 22,
+              fontWeight: "bold",
+              color: "#00505cff",
+            }}
+          >
+            Patient Information
+          </Text>
+          <TouchableOpacity onPress={closePatientHistory}>
+            <FontAwesome5 name="times" size={24} color="#666" />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Patient Details */}
+          {selectedPatient && (
+            <View
+              style={{
+                backgroundColor: "#f5f5f5",
+                padding: 16,
+                borderRadius: 8,
+                marginBottom: 20,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "bold",
+                  color: "#00505cff",
+                  marginBottom: 12,
+                }}
+              >
+                Personal Details
+              </Text>
+
+              <View style={{ gap: 8 }}>
+                <View style={{ flexDirection: "row" }}>
+                  <Text style={{ fontWeight: "600", width: 120 }}>Name:</Text>
+                  <Text style={{ flex: 1 }}>
+                    {`${selectedPatient.first_name} ${selectedPatient.last_name}`}
+                  </Text>
+                </View>
+
+                {selectedPatient.email && (
+                  <View style={{ flexDirection: "row" }}>
+                    <Text style={{ fontWeight: "600", width: 120 }}>Email:</Text>
+                    <Text style={{ flex: 1 }}>{selectedPatient.email}</Text>
+                  </View>
+                )}
+
+                {selectedPatient.mobile_number && (
+                  <View style={{ flexDirection: "row" }}>
+                    <Text style={{ fontWeight: "600", width: 120 }}>Phone:</Text>
+                    <Text style={{ flex: 1 }}>{selectedPatient.mobile_number}</Text>
+                  </View>
+                )}
+
+                {selectedPatient.address && (
+                  <View style={{ flexDirection: "row" }}>
+                    <Text style={{ fontWeight: "600", width: 120 }}>Address:</Text>
+                    <Text style={{ flex: 1 }}>{selectedPatient.address}</Text>
+                  </View>
+                )}
+
+                {selectedPatient.birthdate && (
+                  <View style={{ flexDirection: "row" }}>
+                    <Text style={{ fontWeight: "600", width: 120 }}>Birth Date:</Text>
+                    <Text style={{ flex: 1 }}>
+                      {new Date(selectedPatient.birthdate).toLocaleDateString()}
+                    </Text>
+                  </View>
+                )}
+
+                {selectedPatient.gender && (
+                  <View style={{ flexDirection: "row" }}>
+                    <Text style={{ fontWeight: "600", width: 120 }}>Gender:</Text>
+                    <Text style={{ flex: 1 }}>{selectedPatient.gender}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+
+          {/* Appointment History */}
+          <View>
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: "bold",
+                color: "#00505cff",
+                marginBottom: 12,
+              }}
+            >
+              Recent Appointment History (Last 3)
+            </Text>
+
+            {patientAppointmentHistory.length === 0 ? (
+              <View
+                style={{
+                  backgroundColor: "#fff3cd",
+                  padding: 20,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: "#ffc107",
+                  alignItems: "center",
+                }}
+              >
+                <FontAwesome5
+                  name="user-plus"
+                  size={40}
+                  color="#ffc107"
+                  style={{ marginBottom: 10 }}
+                />
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: "600",
+                    color: "#856404",
+                  }}
+                >
+                  New Patient
+                </Text>
+                <Text style={{ color: "#856404", marginTop: 4 }}>
+                  No previous appointments found
+                </Text>
+              </View>
+            ) : (
+              patientAppointmentHistory.map((apt, index) => (
+                <View
+                  key={apt.id}
+                  style={{
+                    backgroundColor: "#fff",
+                    borderRadius: 8,
+                    padding: 16,
+                    marginBottom: 12,
+                    borderWidth: 1,
+                    borderColor: "#ddd",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 2,
+                    elevation: 2,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Text style={{ fontWeight: "bold", color: "#00505cff" }}>
+                      Appointment #{patientAppointmentHistory.length - index}
+                    </Text>
+                    <View
+                      style={{
+                        backgroundColor:
+                          apt.isAccepted === true
+                            ? "#4caf50"
+                            : apt.isAccepted === false
+                            ? "#f44336"
+                            : "#ff9800",
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        borderRadius: 4,
+                      }}
+                    >
+                      <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>
+                        {apt.isAccepted === true
+                          ? "Accepted"
+                          : apt.isAccepted === false
+                          ? "Rejected"
+                          : "Pending"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={{ gap: 6 }}>
+                    <View style={{ flexDirection: "row" }}>
+                      <Text style={{ fontWeight: "600", width: 140 }}>Date & Time:</Text>
+                      <Text style={{ flex: 1 }}>
+                        {new Date(apt.date_time).toLocaleString(undefined, {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}
+                      </Text>
+                    </View>
+
+                    <View style={{ flexDirection: "row" }}>
+                      <Text style={{ fontWeight: "600", width: 140 }}>Request:</Text>
+                      <Text style={{ flex: 1 }}>
+                        {(() => {
+                          try {
+                            return JSON.parse(apt.request).join(", ");
+                          } catch {
+                            return apt.request || "N/A";
+                          }
+                        })()}
+                      </Text>
+                    </View>
+
+                    <View style={{ flexDirection: "row" }}>
+                      <Text style={{ fontWeight: "600", width: 140 }}>Clinic:</Text>
+                      <Text style={{ flex: 1 }}>
+                        {apt.clinic_profiles?.clinic_name || "N/A"}
+                      </Text>
+                    </View>
+
+                    {apt.clinic_profiles?.address && (
+                      <View style={{ flexDirection: "row" }}>
+                        <Text style={{ fontWeight: "600", width: 140 }}>Location:</Text>
+                        <Text style={{ flex: 1, fontSize: 12, color: "#666" }}>
+                          {apt.clinic_profiles.address}
+                        </Text>
+                      </View>
+                    )}
+
+                    {apt.message && (
+                      <View style={{ flexDirection: "row" }}>
+                        <Text style={{ fontWeight: "600", width: 140 }}>Message:</Text>
+                        <Text style={{ flex: 1 }}>{apt.message}</Text>
+                      </View>
+                    )}
+
+                    {apt.isAttended !== null && (
+                      <View style={{ flexDirection: "row" }}>
+                        <Text style={{ fontWeight: "600", width: 140 }}>Attendance:</Text>
+                        <Text
+                          style={{
+                            flex: 1,
+                            color: apt.isAttended ? "#4caf50" : "#f44336",
+                            fontWeight: "600",
+                          }}
+                        >
+                          {apt.isAttended ? "Attended" : "Not Attended"}
+                        </Text>
+                      </View>
+                    )}
+
+                    {apt.rejection_note && (
+                      <View style={{ flexDirection: "row" }}>
+                        <Text style={{ fontWeight: "600", width: 140 }}>Rejection Note:</Text>
+                        <Text style={{ flex: 1, color: "#f44336" }}>
+                          {apt.rejection_note}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        </ScrollView>
+      </View>
+    </View>
+  </Modal>
+);
 
   return (
     <LinearGradient
@@ -1866,64 +2228,64 @@ const getNoShowRate = () => {
           </View>
         </View>
       </Modal>
-              <Modal
-          animationType="fade"
-          transparent={true}
-          visible={modalMessage}
-          onRequestClose={() => setModalMessage(false)}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalMessage}
+        onRequestClose={() => setModalMessage(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
         >
           <View
             style={{
-              flex: 1,
-              justifyContent: "center",
-              alignItems: "center",
+              backgroundColor: "#fff",
+              padding: 20,
+              borderRadius: 10,
+              borderWidth: 1,
+              borderColor: "#f1f5f9",
+              width: "80%",
+              maxWidth: 500,
             }}
           >
-            <View
+            <Text
               style={{
-                backgroundColor: "#fff",
-                padding: 20,
-                borderRadius: 10,
-                borderWidth: 1,
-                borderColor: "#f1f5f9",
-                width: "80%",
-                maxWidth: 500,
+                fontSize: 18,
+                fontWeight: "bold",
+                marginBottom: 10,
+                color: "#00505cff",
               }}
             >
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "bold",
-                  marginBottom: 10,
-                  color: "#00505cff",
-                }}
-              >
-                Message
-              </Text>
-              <Text
-                style={{
-                  fontSize: 16,
-                  marginBottom: 20,
-                  color: "#333",
-                }}
-              >
-                {selectedMessage}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setModalMessage(false)}
-                style={{
-                  alignSelf: "flex-end",
-                  backgroundColor: "#00505cff",
-                  paddingVertical: 8,
-                  paddingHorizontal: 16,
-                  borderRadius: 5,
-                }}
-              >
-                <Text style={{ color: "#fff", fontWeight: "600" }}>Close</Text>
-              </TouchableOpacity>
-            </View>
+              Message
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                marginBottom: 20,
+                color: "#333",
+              }}
+            >
+              {selectedMessage}
+            </Text>
+            <TouchableOpacity
+              onPress={() => setModalMessage(false)}
+              style={{
+                alignSelf: "flex-end",
+                backgroundColor: "#00505cff",
+                paddingVertical: 8,
+                paddingHorizontal: 16,
+                borderRadius: 5,
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "600" }}>Close</Text>
+            </TouchableOpacity>
           </View>
-        </Modal>
+        </View>
+      </Modal>
       {/* Glider Panel */}
       <View
         style={{
@@ -5138,258 +5500,299 @@ const getNoShowRate = () => {
 
         {/* Dashboard Appointments --------------------------------------------------------------------------------------- */}
 
-          {dashboardView === "appointments" && (
+{dashboardView === "appointments" && (
+  <View
+    style={[
+      styles.dashboard,
+      {
+        width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
+        right: dashboardView === "appointments" ? 11 : 20000,
+      },
+    ]}
+  >
+    <Text
+      style={{
+        fontSize: 24,
+        fontWeight: "bold",
+        marginBottom: 20,
+        alignSelf: isMobile ? "center" : "flex-start",
+        color: "#00505cff",
+      }}
+    >
+      Appointments
+    </Text>
+
+    {isMobile ? (
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 12 }}>
+        {appointmentsCurrentList.length === 0 ? (
+          <View style={{ width: "100%", alignItems: "center", marginTop: 40 }}>
+            <Text style={{ fontSize: 20, color: "gray" }}>
+              - No Appointments -
+            </Text>
+          </View>
+        ) : (
+          appointmentsCurrentList.map((item) => (
             <View
-              style={[
-                styles.dashboard,
-                {
-                  width: !isDesktop ? "95%" : expanded ? "80%" : "95%",
-                  right: dashboardView === "appointments" ? 11 : 20000,
-                },
-              ]}
+              key={item.id}
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: 10,
+                padding: 16,
+                marginBottom: 16,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 3,
+                borderWidth: 1,
+                borderColor: "#ddd",
+              }}
             >
-              <Text
-                style={{
-                  fontSize: 24,
-                  fontWeight: "bold",
-                  marginBottom: 20,
-                  alignSelf: isMobile ? "center" : "flex-start",
-                  color: "#00505cff",
-                }}
-              >
-                Appointments
+              {/* Patient with clickable clipboard */}
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontWeight: "700", marginBottom: 6 }}>
+                    Patient:
+                  </Text>
+                  <Text>
+                    {`${item.profiles.first_name} ${item.profiles.last_name}`}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => {
+                    // Fetch full patient data including history
+                    openPatientHistory(item.patient_id, {
+                      first_name: item.profiles.first_name,
+                      last_name: item.profiles.last_name,
+                    });
+                  }}
+                  style={{
+                    backgroundColor: "#00505cff",
+                    padding: 10,
+                    borderRadius: 8,
+                  }}
+                >
+                  <FontAwesome5 name="clipboard-list" size={20} color="#fff" />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={{ fontWeight: "700", marginBottom: 6 }}>
+                Message:
+              </Text>
+              <Text style={{ marginBottom: 10 }}>
+                {item.message.length > 40 ? (
+                  <>
+                    {item.message.slice(0, 40)}...
+                    <Text
+                      onPress={() => {
+                        setSelectedMessage(item.message);
+                        setModalMessage(true);
+                      }}
+                      style={{
+                        color: "blue",
+                        textDecorationLine: "underline",
+                      }}
+                    >
+                      {" "}
+                      See More
+                    </Text>
+                  </>
+                ) : (
+                  item.message
+                )}
               </Text>
 
-              {isMobile ? (
-                <ScrollView contentContainerStyle={{ paddingHorizontal: 12 }}>
-                  {appointmentsCurrentList.length === 0 ? (
-                    <View style={{ width: "100%", alignItems: "center", marginTop: 40 }}>
-                      <Text style={{ fontSize: 20, color: "gray" }}>
-                        - No Appointments -
-                      </Text>
-                    </View>
-                  ) : (
-                    appointmentsCurrentList.map((item) => (
-                      <View
-                        key={item.id}
+              <Text style={{ fontWeight: "700", marginBottom: 6 }}>
+                Request:
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  openRequestView(item.request);
+                }}
+              >
+                <Text
+                  style={{
+                    color: "blue",
+                    textDecorationLine: "underline",
+                    marginBottom: 10,
+                  }}
+                >
+                  View Request
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={{ fontWeight: "700", marginBottom: 6 }}>
+                Request Date & Time:
+              </Text>
+              <Text style={{ marginBottom: 10 }}>
+                {new Date(item.date_time).toLocaleString(undefined, {
+                  year: "numeric",
+                  month: "numeric",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                })}
+              </Text>
+
+              <Text style={{ fontWeight: "700", marginBottom: 6 }}>
+                Created At:
+              </Text>
+              <Text>{new Date(item.created_at || 0).toLocaleString()}</Text>
+            </View>
+          ))
+        )}
+      </ScrollView>
+    ) : (
+      <ScrollView horizontal contentContainerStyle={{ flexGrow: 1 }}>
+        <View style={{ flex: 1, minWidth: 1000 }}>
+          <FlatList
+            data={appointmentsCurrentList}
+            keyExtractor={(e) => e.id.toString()}
+            contentContainerStyle={{
+              alignItems: "stretch",
+              paddingHorizontal: 12,
+            }}
+            ListHeaderComponent={() => (
+              <View
+                style={{
+                  flexDirection: "row",
+                  backgroundColor: "#00505cff",
+                  paddingVertical: 16,
+                  paddingHorizontal: 20,
+                  borderTopLeftRadius: 8,
+                  borderTopRightRadius: 8,
+                  minWidth: "100%",
+                  gap: 16,
+                }}
+              >
+                <Text style={{ flex: 1, fontWeight: "bold", color: "#fff" }}>
+                  Patient
+                </Text>
+                <Text style={{ flex: 1, fontWeight: "bold", color: "#fff" }}>
+                  Message
+                </Text>
+                <Text style={{ flex: 1, fontWeight: "bold", color: "#fff" }}>
+                  Request
+                </Text>
+                <Text style={{ flex: 1, fontWeight: "bold", color: "#fff" }}>
+                  Request Date & Time
+                </Text>
+                <Text style={{ flex: 1, fontWeight: "bold", color: "#fff" }}>
+                  Created At
+                </Text>
+              </View>
+            )}
+            renderItem={({ item, index }) => (
+              <View
+                style={{
+                  flexDirection: "row",
+                  borderBottomWidth: 1,
+                  borderColor: "#ddd",
+                  paddingVertical: 18,
+                  paddingHorizontal: 20,
+                  backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#fff",
+                  gap: 16,
+                }}
+              >
+                <View style={{ flex: 1, flexDirection: "row", alignItems: "center" }}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      // Fetch full patient data including history
+                      openPatientHistory(item.patient_id, {
+                        first_name: item.profiles.first_name,
+                        last_name: item.profiles.last_name,
+                      });
+                    }}
+                    style={{
+                      marginRight: 8,
+                      padding: 6,
+                      backgroundColor: "#00505cff",
+                      borderRadius: 6,
+                    }}
+                  >
+                    <FontAwesome5 name="clipboard-list" size={16} color="#fff" />
+                  </TouchableOpacity>
+                  <Text>{`${item.profiles.first_name} ${item.profiles.last_name}`}</Text>
+                </View>
+
+                <Text style={{ flex: 1 }}>
+                  {item.message.length > 20 ? (
+                    <>
+                      {item.message.slice(0, 20) + "... "}
+                      <Text
+                        onPress={() => {
+                          setSelectedMessage(item.message);
+                          setModalMessage(true);
+                        }}
                         style={{
-                          backgroundColor: "#fff",
-                          borderRadius: 10,
-                          padding: 16,
-                          marginBottom: 16,
-                          shadowColor: "#000",
-                          shadowOffset: { width: 0, height: 2 },
-                          shadowOpacity: 0.1,
-                          shadowRadius: 4,
-                          elevation: 3,
-                          borderWidth: 1,
-                          borderColor: "#ddd",
+                          color: "#1976d2",
+                          textDecorationLine: "underline",
                         }}
                       >
-                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>
-                          Patient:
-                        </Text>
-                        <Text style={{ marginBottom: 10 }}>
-                          {`${item.profiles.first_name} ${item.profiles.last_name}`}
-                        </Text>
-
-                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>
-                          Message:
-                        </Text>
-                        <Text style={{ marginBottom: 10 }}>
-                          {item.message.length > 40 ? (
-                            <>
-                              {item.message.slice(0, 40)}...
-                              <Text
-                                onPress={() => {
-                                  setSelectedMessage(item.message);
-                                  setModalMessage(true);
-                                }}
-                                style={{
-                                  color: "blue",
-                                  textDecorationLine: "underline",
-                                }}
-                              >
-                                {" "}
-                                See More
-                              </Text>
-                            </>
-                          ) : (
-                            item.message
-                          )}
-                        </Text>
-
-                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>
-                          Request:
-                        </Text>
-                        <TouchableOpacity
-                          onPress={() => {
-                            openRequestView(item.request);
-                          }}
-                        >
-                          <Text
-                            style={{
-                              color: "blue",
-                              textDecorationLine: "underline",
-                              marginBottom: 10,
-                            }}
-                          >
-                            View Request
-                          </Text>
-                        </TouchableOpacity>
-
-                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>
-                          Request Date & Time:
-                        </Text>
-                        <Text style={{ marginBottom: 10 }}>
-                          {new Date(item.date_time).toLocaleString(undefined, {
-                            year: "numeric",
-                            month: "numeric",
-                            day: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                          })}
-                        </Text>
-
-                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>
-                          Created At:
-                        </Text>
-                        <Text>{new Date(item.created_at || 0).toLocaleString()}</Text>
-                      </View>
-                    ))
+                        See More
+                      </Text>
+                    </>
+                  ) : (
+                    item.message
                   )}
-                </ScrollView>
-              ) : (
-                <ScrollView horizontal contentContainerStyle={{ flexGrow: 1 }}>
-                  <View style={{ flex: 1, minWidth: 1000 }}>
-                    <FlatList
-                      data={appointmentsCurrentList}
-                      keyExtractor={(e) => e.id.toString()}
-                      contentContainerStyle={{
-                        alignItems: "stretch",
-                        paddingHorizontal: 12,
-                      }}
-                      ListHeaderComponent={() => (
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            backgroundColor: "#00505cff",
-                            paddingVertical: 16,
-                            paddingHorizontal: 20,
-                            borderTopLeftRadius: 8,
-                            borderTopRightRadius: 8,
-                            minWidth: "100%",
-                            gap: 16,
-                          }}
-                        >
-                          <Text style={{ flex: 1, fontWeight: "bold", color: "#fff" }}>
-                            Patient
-                          </Text>
-                          <Text style={{ flex: 1, fontWeight: "bold", color: "#fff" }}>
-                            Message
-                          </Text>
-                          <Text style={{ flex: 1, fontWeight: "bold", color: "#fff" }}>
-                            Request
-                          </Text>
-                          <Text style={{ flex: 1, fontWeight: "bold", color: "#fff" }}>
-                            Request Date & Time
-                          </Text>
-                          <Text style={{ flex: 1, fontWeight: "bold", color: "#fff" }}>
-                            Created At
-                          </Text>
-                        </View>
-                      )}
-                      renderItem={({ item, index }) => (
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            borderBottomWidth: 1,
-                            borderColor: "#ddd",
-                            paddingVertical: 18,
-                            paddingHorizontal: 20,
-                            backgroundColor: index % 2 === 0 ? "#f9f9f9" : "#fff",
-                            gap: 16,
-                          }}
-                        >
-                          <Text style={{ flex: 1 }}>
-                            {`${item.profiles.first_name} ${item.profiles.last_name}`}
-                          </Text>
+                </Text>
 
-                          <Text style={{ flex: 1 }}>
-                            {item.message.length > 20 ? (
-                              <>
-                                {item.message.slice(0, 20) + "... "}
-                                <Text
-                                  onPress={() => {
-                                    setSelectedMessage(item.message);
-                                    setModalMessage(true);
-                                  }}
-                                  style={{
-                                    color: "#1976d2",
-                                    textDecorationLine: "underline",
-                                  }}
-                                >
-                                  See More
-                                </Text>
-                              </>
-                            ) : (
-                              item.message
-                            )}
-                          </Text>
+                <TouchableOpacity
+                  style={{ flex: 1 }}
+                  onPress={() => {
+                    openRequestView(item.request);
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "#1976d2",
+                      textDecorationLine: "underline",
+                      fontSize: 15,
+                    }}
+                  >
+                    View Request
+                  </Text>
+                </TouchableOpacity>
 
-                          <TouchableOpacity
-                            style={{ flex: 1 }}
-                            onPress={() => {
-                              openRequestView(item.request);
-                            }}
-                          >
-                            <Text
-                              style={{
-                                color: "#1976d2",
-                                textDecorationLine: "underline",
-                                fontSize: 15,
-                              }}
-                            >
-                              View Request
-                            </Text>
-                          </TouchableOpacity>
+                <Text style={{ flex: 1 }}>
+                  {new Date(item.date_time).toLocaleString(undefined, {
+                    year: "numeric",
+                    month: "numeric",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                    hour12: true,
+                  })}
+                </Text>
 
-                          <Text style={{ flex: 1 }}>
-                            {new Date(item.date_time).toLocaleString(undefined, {
-                              year: "numeric",
-                              month: "numeric",
-                              day: "numeric",
-                              hour: "numeric",
-                              minute: "2-digit",
-                              hour12: true,
-                            })}
-                          </Text>
+                <Text style={{ flex: 1 }}>
+                  {new Date(item.created_at || 0).toLocaleString()}
+                </Text>
+              </View>
+            )}
+            ListEmptyComponent={() => (
+              <View
+                style={{
+                  width: "100%",
+                  alignItems: "center",
+                  marginTop: 40,
+                }}
+              >
+                <Text style={{ fontSize: 20, color: "gray" }}>
+                  - No Appointments -
+                </Text>
+              </View>
+            )}
+          />
+        </View>
+      </ScrollView>
+    )}
 
-                          <Text style={{ flex: 1 }}>
-                            {new Date(item.created_at || 0).toLocaleString()}
-                          </Text>
-                        </View>
-                      )}
-                      ListEmptyComponent={() => (
-                        <View
-                          style={{
-                            width: "100%",
-                            alignItems: "center",
-                            marginTop: 40,
-                          }}
-                        >
-                          <Text style={{ fontSize: 20, color: "gray" }}>
-                            - No Appointments -
-                          </Text>
-                        </View>
-                      )}
-                    />
-                  </View>
-                </ScrollView>
-              )}
-            </View>
-          )}
+    {/* Add the Patient History Modal Component */}
+    <PatientHistoryModalComponent />
+  </View>
+)}
 
 
           {/* Request View Modal */}
@@ -5408,12 +5811,13 @@ const getNoShowRate = () => {
             >
               <View
                 style={{
-                  width: isMobile ? "90%" : "20%",
-                  backgroundColor: "#ffffffff",
-                  borderRadius: 8,
+                  backgroundColor: "#fff",
                   padding: 20,
-                  alignItems: "center",
-                  maxHeight: "80%",
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: "#f1f5f9",
+                  width: "80%",
+                  maxWidth: 500,
                 }}
               >
                 <Text style={{ fontWeight: "700", fontSize: 18, marginBottom: 12, color: "#00505cff" }}>
@@ -5427,7 +5831,7 @@ const getNoShowRate = () => {
                     </Text>
                   ) : (
                     selectedRequest.map((line, i) => (
-                      <Text key={i} style={{ fontSize: 16, textAlign: "center" }}>
+                      <Text key={i} style={{ fontSize: 16, textAlign: "left" }}>
                         {line}
                         {"\n"}
                       </Text>
@@ -5437,11 +5841,11 @@ const getNoShowRate = () => {
 
                 <TouchableOpacity
                   style={{
-                    backgroundColor: "#b32020ff",
-                    paddingVertical: 10,
-                    paddingHorizontal: 30,
-                    borderRadius: 6,
-                    alignSelf: "center",
+                    alignSelf: "flex-end",
+                    backgroundColor: "#00505cff",
+                    paddingVertical: 8,
+                    paddingHorizontal: 16,
+                    borderRadius: 5,
                   }}
                   onPress={() => setRequestViewVisible(false)}
                 >
@@ -5501,13 +5905,30 @@ const getNoShowRate = () => {
                           borderColor: "#ddd",
                         }}
                       >
-                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>Patient:</Text>
-                        <Text style={{ marginBottom: 10 }}>
-                          {wrapText(
-                            `${item.profiles.first_name} ${item.profiles.last_name}`,
-                            40
-                          )}
-                        </Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontWeight: "700", marginBottom: 6 }}>Patient:</Text>
+                          <Text>
+                            {wrapText(
+                              `${item.profiles.first_name} ${item.profiles.last_name}`,
+                              40
+                            )}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          onPress={() => openPatientHistory(item.patient_id, {
+                            first_name: item.profiles.first_name,
+                            last_name: item.profiles.last_name,
+                          })}
+                          style={{
+                            backgroundColor: "#00505cff",
+                            padding: 10,
+                            borderRadius: 8,
+                          }}
+                        >
+                          <FontAwesome5 name="clipboard-list" size={20} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
 
                         <Text style={{ fontWeight: "700", marginBottom: 6 }}>Request Date & Time:</Text>
                         <Text style={{ marginBottom: 10 }}>
@@ -5652,13 +6073,26 @@ const getNoShowRate = () => {
                             gap: 16,
                           }}
                         >
-                          {/* Patient */}
-                          <Text style={{ flex: 1, color: "#333" }}>
-                            {wrapText(
-                              `${item.profiles.first_name} ${item.profiles.last_name}`,
-                              40
-                            )}
-                          </Text>
+                        <View style={{ flex: 1, flexDirection: "row", alignItems: "center" }}>
+                          <TouchableOpacity
+                            onPress={() => {
+                              // Fetch full patient data including history
+                              openPatientHistory(item.patient_id, {
+                                first_name: item.profiles.first_name,
+                                last_name: item.profiles.last_name,
+                              });
+                            }}
+                            style={{
+                              marginRight: 8,
+                              padding: 6,
+                              backgroundColor: "#00505cff",
+                              borderRadius: 6,
+                            }}
+                          >
+                            <FontAwesome5 name="clipboard-list" size={16} color="#fff" />
+                          </TouchableOpacity>
+                          <Text>{`${item.profiles.first_name} ${item.profiles.last_name}`}</Text>
+                        </View>
 
                           {/* Date & Time */}
                           <Text style={{ flex: 1, color: "#333" }}>
@@ -5757,6 +6191,7 @@ const getNoShowRate = () => {
                   </View>
                 </ScrollView>
               )}
+              <PatientHistoryModalComponent />
             </View>
           )}
 
@@ -5903,10 +6338,27 @@ const getNoShowRate = () => {
                           borderColor: "#ddd",
                         }}
                       >
-                        <Text style={{ fontWeight: "700", marginBottom: 6 }}>Patient:</Text>
-                        <Text style={{ marginBottom: 10 }}>
-                          {`${item.profiles.first_name} ${item.profiles.last_name}`}
-                        </Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontWeight: "700", marginBottom: 6 }}>Patient:</Text>
+                          <Text>
+                            {`${item.profiles.first_name} ${item.profiles.last_name}`}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          onPress={() => openPatientHistory(item.patient_id, {
+                            first_name: item.profiles.first_name,
+                            last_name: item.profiles.last_name,
+                          })}
+                          style={{
+                            backgroundColor: "#00505cff",
+                            padding: 10,
+                            borderRadius: 8,
+                          }}
+                        >
+                          <FontAwesome5 name="clipboard-list" size={20} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
 
                         <Text style={{ fontWeight: "700", marginBottom: 6 }}>
                           Request Date & Time:
@@ -6092,10 +6544,26 @@ const getNoShowRate = () => {
                             minWidth: "100%",
                           }}
                         >
-                          {/* Patient */}
-                          <Text style={{ flex: 1, color: "#333" }}>
-                            {`${item.profiles.first_name} ${item.profiles.last_name}`}
-                          </Text>
+                        <View style={{ flex: 1, flexDirection: "row", alignItems: "center" }}>
+                          <TouchableOpacity
+                            onPress={() => {
+                              // Fetch full patient data including history
+                              openPatientHistory(item.patient_id, {
+                                first_name: item.profiles.first_name,
+                                last_name: item.profiles.last_name,
+                              });
+                            }}
+                            style={{
+                              marginRight: 8,
+                              padding: 6,
+                              backgroundColor: "#00505cff",
+                              borderRadius: 6,
+                            }}
+                          >
+                            <FontAwesome5 name="clipboard-list" size={16} color="#fff" />
+                          </TouchableOpacity>
+                          <Text>{`${item.profiles.first_name} ${item.profiles.last_name}`}</Text>
+                        </View>
 
                           {/* Request Date & Time */}
                           <Text style={{ flex: 1, color: "#333" }}>
@@ -6223,6 +6691,7 @@ const getNoShowRate = () => {
                   </View>
                 </ScrollView>
               )}
+              <PatientHistoryModalComponent />
             </View>
           )}
 
@@ -6320,7 +6789,7 @@ const getNoShowRate = () => {
                 )}
                 {!verified && !requestVerification && (
                   <Text style={{ marginBottom: 10, color: "#666", textAlign: "center"  }}>
-                    Optional: Uploading a photo of Business Permit helps verify your clinic's legitimacy fast.
+                    Optional: Please Upload DTI Permit.
                   </Text>
                 )}
 
